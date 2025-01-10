@@ -18,10 +18,12 @@ LoadedTexture GuessingMenu::game_letter_guess("game.letter.guess");
 LoadedTexture GuessingMenu::game_letter_normal("game.letter.normal");
 LoadedTexture GuessingMenu::game_letter_slot("game.letter.slot");
 LoadedTexture GuessingMenu::game_letter_slot_background("game.letter.slot_background");
+LoadedTexture GuessingMenu::game_finger("game.finger");
 
 Texture GuessingMenu::game_letter_slot_ = Texture(nullptr, "Letter Slot Composition");
 
 LoadedFont GuessingMenu::sDefaultFont("fredoka.bold", 26);
+LoadedFont GuessingMenu::sDefaultFontBiggest("fredoka.bold", 46);
 LoadedFont GuessingMenu::sDefaultFontBigger("fredoka.bold", 36);
 LoadedFont GuessingMenu::sDefaultFontSmaller("fredoka.medium", 18);
 
@@ -30,21 +32,34 @@ GuessingMenu::GuessingMenu()
     auto drawing = Application::Get()->GetDrawing();
 
     // Turn title text
-    SDL_Surface* turn_title_surface =
-        TTF_RenderText_Blended(sDefaultFontSmaller.GetFont()->TTFFont(), "turn", { 255, 255, 255, 255 });
-    Texture* turn_title_render = Assets::Get()->TextureFromSurface(turn_title_surface)
-        ->FlagForAutomaticDeletion();
-    SDL_FreeSurface(turn_title_surface);
-    auto turn_title = (new Frame(Vec2i(0, 4), turn_title_render->GetSize(), turn_title_render))
+    Texture* turn_title_render;
+    {
+        SDL_Surface* sdl_surface =
+            TTF_RenderText_Blended(sDefaultFontSmaller.GetFont()->TTFFont(),
+                                   "turn",
+                                   strlen("turn"),
+                                   { 255, 255, 255, 255 });
+        turn_title_render = Assets::Get()->TextureFromSurface(sdl_surface)
+            ->FlagForAutomaticDeletion();
+        SDL_DestroySurface(sdl_surface);
+    }
+    auto turn_title = (new Frame(Vec2i(0, 4),
+                                 Vec2i(turn_title_render->GetWidth(), turn_title_render->GetHeight()),
+                                 turn_title_render))
         ->SetName("TurnTitle");
 
     // Turn number text
-    SDL_Surface* turn_surface =
-        TTF_RenderText_Blended(sDefaultFontBigger.GetFont()->TTFFont(), "6", { 255, 255, 255, 255 });
-    Texture* turn_number_render = Assets::Get()->TextureFromSurface(turn_surface)
-        ->FlagForAutomaticDeletion();
-    SDL_FreeSurface(turn_surface);
-    auto turn_number = (new Frame(Vec2i(0, -4), turn_number_render->GetSize(), turn_number_render))
+    Texture* turn_number_render;
+    {
+        SDL_Surface* sdl_surface =
+            TTF_RenderText_Blended(sDefaultFontBigger.GetFont()->TTFFont(), "6", strlen("6"), { 255, 255, 255, 255 });
+        turn_number_render = Assets::Get()->TextureFromSurface(sdl_surface)
+            ->FlagForAutomaticDeletion();
+        SDL_DestroySurface(sdl_surface);
+    }
+    auto turn_number = (new Frame(Vec2i(0, -4),
+                                  Vec2i(turn_number_render->GetWidth(), turn_number_render->GetHeight()),
+                                  turn_number_render))
         ->SetAlign(ALIGN_CENTER, DONT_ALIGN)
         ->SetName("TurnNumber");
 
@@ -66,21 +81,35 @@ GuessingMenu::GuessingMenu()
         ->SetName("Picture");
 
     // Game info text1
-    SDL_Surface* surface =
-        TTF_RenderText_Blended(sDefaultFontSmaller.GetFont()->TTFFont(), "You are guessing", { 0, 0, 0, 255 });
-    Texture* line_render = Assets::Get()->TextureFromSurface(surface)
-        ->FlagForAutomaticDeletion();
-    SDL_FreeSurface(surface);
-    auto text1 = (new Frame(Vec2i(0, 0), line_render->GetSize(), line_render))
-        ->SetName("Text1");
+    Texture* game_info_text1;
+    {
+        SDL_Surface* sdl_surface =
+            TTF_RenderText_Blended(sDefaultFontSmaller.GetFont()->TTFFont(),
+                                   "You are guessing",
+                                   strlen("You are guessing"),
+                                   { 0, 0, 0, 255 });
+        game_info_text1 = Assets::Get()->TextureFromSurface(sdl_surface)
+            ->FlagForAutomaticDeletion();
+        SDL_DestroySurface(sdl_surface);
+    }
+    auto text1 =
+        (new Frame(Vec2i(0, 0), Vec2i(game_info_text1->GetWidth(), game_info_text1->GetHeight()), game_info_text1))
+            ->SetName("Text1");
 
     // Game info text2
-    SDL_Surface* surface2 =
-        TTF_RenderText_Blended(sDefaultFontSmaller.GetFont()->TTFFont(), "Name S.'s drawing.", { 0, 0, 0, 255 });
-    Texture* line_render2 = Assets::Get()->TextureFromSurface(surface2);
-    SDL_FreeSurface(surface2);
-    auto text2 = (new Frame(Vec2i(0, 0), line_render2->GetSize(), line_render2))
-        ->SetName("Text2");
+    Texture* game_info_text2;
+    {
+        SDL_Surface* sdl_surface =
+            TTF_RenderText_Blended(sDefaultFontSmaller.GetFont()->TTFFont(),
+                                   "Name S.'s drawing.",
+                                   strlen("Name S.'s drawing."),
+                                   { 0, 0, 0, 255 });
+        game_info_text2 = Assets::Get()->TextureFromSurface(sdl_surface);
+        SDL_DestroySurface(sdl_surface);
+    }
+    auto text2 =
+        (new Frame(Vec2i(0, 0), Vec2i(game_info_text2->GetWidth(), game_info_text2->GetHeight()), game_info_text2))
+            ->SetName("Text2");
 
     // Game info text frame
     auto round_info_frame = (new Frame(Vec2i(10, 0), Vec2i(50, 30), DONT_DRAW))
@@ -103,12 +132,49 @@ GuessingMenu::GuessingMenu()
         ->SetName("Header")
         ->SetChildren({ turn_display, picture, round_info });
 
+    // Finger text
+    Texture* finger_render;
+    {
+        SDL_Surface* sdl_surface =
+            TTF_RenderText_Blended(sDefaultFontBiggest.GetFont()->TTFFont(),
+                                   "TAP TO GUESS.",
+                                   strlen("TAP TO GUESS."),
+                                   { 136, 136, 136, 255 });
+        finger_render = Assets::Get()->TextureFromSurface(sdl_surface);
+        SDL_DestroySurface(sdl_surface);
+    }
+    auto finger_text =
+        (new Frame(Vec2i(0, 0), Vec2i(finger_render->GetSize()), finger_render))
+            ->SetAlign(ALIGN_CENTER, DONT_ALIGN)
+            ->SetName("Text2");
+
+    // The finger
+    auto finger = (new Frame(Vec2i(0, 0),
+                             Vec2i(Rectangles::ScaleToBounds(game_finger.GetTexture()->GetSize(),
+                                                             Vec2f(400.0f, 400.0f))),
+                             game_finger.GetTexture()))
+        ->SetAlign(ALIGN_CENTER, DONT_ALIGN)
+        ->SetName("Finger");
+
+    // Finger frame
+    auto finger_frame = (new Frame(Vec2i(0, 0),
+                                   Vec2i(0, 0),
+                                   DONT_DRAW))
+        ->SetFlex(FLEX_HEIGHT, 10)
+        ->SetAdaptive(true, true)
+        ->SetAlign(ALIGN_CENTER, ALIGN_CENTER)
+        ->SetName("FingerBox")
+        ->SetChildren({ finger_text, finger });
+
+    // Canvas
     auto canvas = (new Frame(Vec2i(0, 0),
                              Vec2i(0, 0),
                              DRAW_RECT))
         ->SetFullyOccupy(true, false)
         ->SetOccupy(false, true)
-        ->SetColor(255, 255, 255, 255);
+        ->SetColor(255, 255, 255, 255)
+        ->SetName("Canvas")
+        ->SetChildren({ finger_frame });
 
     // Guessing letters
     std::vector<Element*> guessing_letters;
@@ -144,40 +210,49 @@ GuessingMenu::GuessingMenu()
     // Top row letters
     std::vector<Element*> top_row_letters;
     for (int i = 0; i < 6; i++) {
-        auto letter_character = "A";
-//        SDL_Surface* character_surface =
-//            TTF_RenderText_Blended(sDefaultFontBigger.GetFont()->TTFFont(),
-//                                   letter_character,
-//                                   { 255, 255, 255, 255 });
-//        std::wcout << Strings::FStringColorsW(L"&eError: %s", SDL_GetError()) << std::endl;
-//        Texture* character_render = Assets::Get()->TextureFromSurface(surface);
-//        SDL_FreeSurface(character_surface);
-//        SDL_Rect character_rect = {
-//            33 - character_render->GetWidth() / 2,
-//            33 - character_render->GetHeight() / 2,
-//            character_render->GetWidth(),
-//            character_render->GetHeight(),
-//        };
-//        auto letter = (new Texture(SDL_CreateTexture(drawing->Renderer(),
-//                                                     SDL_PIXELFORMAT_RGBA8888,
-//                                                     SDL_TEXTUREACCESS_TARGET,
-//                                                     game_letter_normal.GetTexture()->GetWidth(),
-//                                                     game_letter_normal.GetTexture()->GetHeight())))
-//            ->FlagForAutomaticDeletion();
-//        letter->SetBlendMode(SDL_BLENDMODE_BLEND);
-//        drawing->SetRenderTarget(letter);
-//        drawing->RenderTextureFullscreen(game_letter_normal.GetTexture()->SDLTexture(), nullptr);
-//        drawing->RenderTexture(character_render->SDLTexture(), nullptr, character_rect);
-//        drawing->SetRenderTarget(nullptr);
-//        delete character_render;
-//
-//        auto new_letter = (new Button(Vec2i(0, 0),
-//                                      Vec2i(66, 66),
-//                                      letter))
-//            ->SetAlign(DONT_ALIGN, ALIGN_CENTER)
-//            ->SetName("Letter");
-//
-//        top_row_letters.push_back(new_letter);
+        auto letter_character = Strings::RandomUppercaseLetter();
+        Texture* character_render;
+        {
+            SDL_Surface* sdl_surface =
+                TTF_RenderText_Blended(sDefaultFontBiggest.GetFont()->TTFFont(),
+                                       letter_character,
+                                       strlen(letter_character),
+                                       { 255, 255, 255, 255 });
+            character_render = Assets::Get()->TextureFromSurface(sdl_surface);
+            SDL_DestroySurface(sdl_surface);
+        }
+        auto size = game_letter_normal.GetTexture()->GetSize();
+        SDL_FRect character_rect = {
+            (float)(size.x / 2 - character_render->GetWidth()),
+            (float)(size.y / 2 - character_render->GetHeight()),
+            (float)(character_render->GetWidth() * 2),
+            (float)(character_render->GetHeight() * 2),
+        };
+        SDL_FRect character_rect_higher = character_rect;
+        character_rect_higher.y -= 4;
+        auto letter = (new Texture(SDL_CreateTexture(drawing->Renderer(),
+                                                     SDL_PIXELFORMAT_RGBA8888,
+                                                     SDL_TEXTUREACCESS_TARGET,
+                                                     game_letter_normal.GetTexture()->GetWidth(),
+                                                     game_letter_normal.GetTexture()->GetHeight())))
+            ->FlagForAutomaticDeletion();
+        letter->SetBlendMode(SDL_BLENDMODE_BLEND);
+        drawing->SetRenderTarget(letter);
+        drawing->RenderTextureFullscreen(game_letter_normal.GetTexture()->SDLTexture(), nullptr);
+        character_render->SetColorMod(41, 77, 104);
+        drawing->RenderTexture(character_render->SDLTexture(), nullptr, character_rect_higher);
+        character_render->SetColorMod(255, 255, 255);
+        drawing->RenderTexture(character_render->SDLTexture(), nullptr, character_rect);
+        drawing->SetRenderTarget(nullptr);
+        delete character_render;
+
+        auto new_letter = (new Button(Vec2i(0, 0),
+                                      Vec2i(66, 66),
+                                      letter))
+            ->SetAlign(DONT_ALIGN, ALIGN_CENTER)
+            ->SetName("Letter");
+
+        top_row_letters.push_back(new_letter);
     }
 
     // Top row
@@ -283,12 +358,10 @@ GuessingMenu::GuessingMenu()
 
 void GuessingMenu::HandleEvent(SDL_Event& sdl_event, EventContext& event_summary) {
     switch (sdl_event.type) {
-        case SDL_WINDOWEVENT: {
-            if (sdl_event.window.event == SDL_WINDOWEVENT_RESIZED) {
-                SetSize(Vec2i(0, 0),
-                        Application::Get()->GetResolution(),
-                        Application::Get()->GetResolution());
-            }
+        case SDL_EVENT_WINDOW_RESIZED: {
+            SetSize(Vec2i(0, 0),
+                    Application::Get()->GetResolution(),
+                    Application::Get()->GetResolution());
 
             break;
         }

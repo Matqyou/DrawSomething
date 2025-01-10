@@ -18,15 +18,15 @@ void Drawing::SetRenderTarget(Texture* target) {
     else SDL_SetRenderTarget(m_Renderer, nullptr);
 }
 
-void Drawing::DrawRect(const SDL_Rect& rect) {
-    SDL_RenderDrawRect(m_Renderer, &rect);
+void Drawing::DrawRect(const SDL_FRect& rect) {
+    SDL_RenderRect(m_Renderer, &rect);
 }
 
-void Drawing::FillRect(const SDL_Rect& rect) {
+void Drawing::FillRect(const SDL_FRect& rect) {
     SDL_RenderFillRect(m_Renderer, &rect);
 }
 
-void Drawing::FillCircle(const Vec2d& center, double radius, SDL_Color color) {
+void Drawing::FillCircle(const Vec2f& center, float radius, SDL_FColor color) {
     const int segments = 100; // Number of segments for the circle
     float angle_step = 2.0f * M_PI / segments;
 
@@ -42,9 +42,9 @@ void Drawing::FillCircle(const Vec2d& center, double radius, SDL_Color color) {
 
         // Draw triangles for the circle
         SDL_Vertex vertices[3] = {
-            { (float)center.x, (float)center.y, color, { 0, 0 }},
-            { (float)x1, (float)y1, color, { 0, 0 }},
-            { (float)x2, (float)y2, color, { 0, 0 }}
+            { {(float)center.x, (float)center.y}, color, {0, 0} },
+            { {x1, y1}, color, {0, 0} },
+            { {x2, y2}, color, {0, 0} }
         };
 
         SDL_RenderGeometry(m_Renderer, nullptr, vertices, 3, nullptr, 0);
@@ -52,33 +52,33 @@ void Drawing::FillCircle(const Vec2d& center, double radius, SDL_Color color) {
 }
 
 void Drawing::DrawLine(const Vec2i& start, const Vec2i& end) {
-    SDL_RenderDrawLine(m_Renderer, start.x, start.y, end.x, end.y);
+    SDL_RenderLine(m_Renderer, start.x, start.y, end.x, end.y);
 }
 
 void Drawing::DrawLine(const Vec2d& start, const Vec2d& end) {
-    SDL_RenderDrawLineF(m_Renderer, (float)start.x, (float)start.y, (float)end.x, (float)end.y);
+    SDL_RenderLine(m_Renderer, (float)start.x, (float)start.y, (float)end.x, (float)end.y);
 }
 
-void Drawing::DrawLine(const Vec2d& start, const Vec2d& end, double size, SDL_Color color) {
+void Drawing::DrawLine(const Vec2f& start, const Vec2f& end, double size, SDL_FColor color) {
     float half_thickness = size / 2.0f;
 
     // Vector between start and end
-    Vec2d direction = (end - start).Normalize();
+    Vec2f direction = (end - start).Normalize();
 
     // Perpendicular vector to the direction
-    Vec2d perp_dir(-direction.y, direction.x);
+    Vec2f perp_dir(-direction.y, direction.x);
 
     // Calculate the vertices of the thick line rectangle
-    Vec2d p1 = start + perp_dir * half_thickness;
-    Vec2d p2 = start - perp_dir * half_thickness;
-    Vec2d p3 = end - perp_dir * half_thickness;
-    Vec2d p4 = end + perp_dir * half_thickness;
+    Vec2f p1 = start + perp_dir * half_thickness;
+    Vec2f p2 = start - perp_dir * half_thickness;
+    Vec2f p3 = end - perp_dir * half_thickness;
+    Vec2f p4 = end + perp_dir * half_thickness;
 
     SDL_Vertex vertices[4] = {
-        { (float)p1.x, (float)p1.y, color, { 0, 0 }},  // Vertex 0
-        { (float)p2.x, (float)p2.y, color, { 0, 0 }},  // Vertex 1
-        { (float)p3.x, (float)p3.y, color, { 0, 0 }},  // Vertex 2
-        { (float)p4.x, (float)p4.y, color, { 0, 0 }}   // Vertex 3
+        { {p1.x, p1.y}, color, {0, 0} },
+        { {p2.x, p2.y}, color, {0, 0} },
+        { {p3.x, p3.y}, color, {0, 0} },
+        { {p4.x, p4.y}, color, {0, 0} }
     };
 
     int indices[6] = {
@@ -87,7 +87,6 @@ void Drawing::DrawLine(const Vec2d& start, const Vec2d& end, double size, SDL_Co
     };
 
     SDL_RenderGeometry(m_Renderer, nullptr, vertices, 4, indices, 6);
-
 
     // Draw the rounded caps
     FillCircle(start, half_thickness, color);
@@ -98,13 +97,14 @@ void Drawing::DrawDegrees(const Vec2d& point_a, const Vec2d& point_b, SDL_Color 
     double radians = (point_b - point_a).Atan2();
 
     auto angle_text = Strings::FString("%.1f°", round(radians / M_PI * 1800.0) / 10.0);
-    auto text_surface = TTF_RenderUTF8_Blended(sAngleFont.GetFont()->TTFFont(),
+    auto text_surface = TTF_RenderText_Blended(sAngleFont.GetFont()->TTFFont(),
                                                angle_text.c_str(),
+                                               angle_text.size(),
                                                text_color);
     auto texture = SDL_CreateTextureFromSurface(m_Renderer, text_surface);
-    int width, height;
-    SDL_QueryTexture(texture, nullptr, nullptr, &width, &height);
-    SDL_FreeSurface(text_surface);
+    float width, height;
+    SDL_GetTextureSize(texture, &width, &height);
+    SDL_DestroySurface(text_surface);
 
     auto text_position = point_a + (point_a - point_b).Normalize() * 10;
     SDL_FRect text_rect = {
@@ -113,7 +113,7 @@ void Drawing::DrawDegrees(const Vec2d& point_a, const Vec2d& point_b, SDL_Color 
         (float)width,
         (float)height
     };
-    RenderTextureF(texture, nullptr, text_rect);
+    RenderTexture(texture, nullptr, text_rect);
     SDL_DestroyTexture(texture);
 }
 
@@ -138,17 +138,19 @@ void Drawing::DrawAnglemark(const Vec2d& point_a,
         double y = std::sin(radians_a + current * direction) * radius;
 
         auto point = point_b + Vec2d(x, y);
-        SDL_RenderDrawPoint(m_Renderer, (int)point.x, (int)point.y);
+        SDL_RenderPoint(m_Renderer, (int)point.x, (int)point.y);
     }
 
     auto angle_text = Strings::FString("%.1f°", round(radians / M_PI * 1800.0) / 10.0);
-    auto text_surface = TTF_RenderUTF8_Blended(sAngleFont.GetFont()->TTFFont(),
+    auto text_surface = TTF_RenderText_Blended(sAngleFont.GetFont()->TTFFont(),
                                                angle_text.c_str(),
+                                               angle_text.size(),
                                                text_color);
     auto texture = SDL_CreateTextureFromSurface(m_Renderer, text_surface);
-    int width, height;
-    SDL_QueryTexture(texture, nullptr, nullptr, &width, &height);
-    SDL_FreeSurface(text_surface);
+    float width, height;
+    SDL_GetTextureSize(texture, &width, &height);
+
+    SDL_DestroySurface(text_surface);
 
     auto text_position = point_b + (((point_a - point_b) + (point_c - point_b)) / 2.0).Normalize() * (radius + 10.0);
     SDL_FRect text_rect = {
@@ -157,29 +159,25 @@ void Drawing::DrawAnglemark(const Vec2d& point_a,
         (float)width,
         (float)height
     };
-    RenderTextureF(texture, nullptr, text_rect);
+    RenderTexture(texture, nullptr, text_rect);
     SDL_DestroyTexture(texture);
 }
 
-void Drawing::RenderTexture(SDL_Texture* texture, SDL_Rect* srcrect, const SDL_Rect& dstrect) {
-    SDL_RenderCopy(m_Renderer, texture, srcrect, &dstrect);
+void Drawing::RenderTexture(SDL_Texture* texture, SDL_FRect* srcrect, const SDL_FRect& dstrect) {
+    SDL_RenderTexture(m_Renderer, texture, srcrect, &dstrect);
 }
 
-void Drawing::RenderTextureF(SDL_Texture* texture, SDL_Rect* srcrect, const SDL_FRect& dstrect) {
-    SDL_RenderCopyF(m_Renderer, texture, srcrect, &dstrect);
-}
-
-void Drawing::RenderTextureFullscreen(SDL_Texture* texture, SDL_Rect* srcrect) {
-    SDL_RenderCopy(m_Renderer, texture, srcrect, nullptr);
+void Drawing::RenderTextureFullscreen(SDL_Texture* texture, SDL_FRect* srcrect) {
+    SDL_RenderTexture(m_Renderer, texture, srcrect, nullptr);
 }
 
 void Drawing::RenderTextureEx(SDL_Texture* texture,
-                              SDL_Rect* srcrect,
-                              const SDL_Rect& dstrect,
+                              SDL_FRect* srcrect,
+                              const SDL_FRect& dstrect,
                               double angle,
-                              SDL_Point* center,
-                              SDL_RendererFlip flip) {
-    SDL_RenderCopyEx(m_Renderer, texture, srcrect, &dstrect, angle, center, flip);
+                              SDL_FPoint* center,
+                              SDL_FlipMode flip) {
+    SDL_RenderTextureRotated(m_Renderer, texture, srcrect, &dstrect, angle, center, flip);
 }
 
 void Drawing::Clear() {

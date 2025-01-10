@@ -36,17 +36,17 @@ void Button::RunCallback() const {
 
 void Button::HandleEvent(SDL_Event& event, EventContext& event_summary) {
     switch (event.type) {
-        case SDL_MOUSEMOTION: {
+        case SDL_EVENT_MOUSE_MOTION: {
             if (event_summary.cursor_changed == CursorChange::NO_CHANGE &&
                 PointCollides(event.motion.x, event.motion.y)) {
                 event_summary.cursor_changed = CursorChange::TO_POINTER;
-                SDL_SetCursor(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND));
+                SDL_SetCursor(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_POINTER));
                 break;
             }
 
             break;
         }
-        case SDL_MOUSEBUTTONDOWN: {
+        case SDL_EVENT_MOUSE_BUTTON_DOWN: {
             if (
                 PointCollides(event.button.x, event.button.y)) {
                 SetFocus(this);

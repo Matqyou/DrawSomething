@@ -14,6 +14,10 @@ template<class T>
 Vec2<T>::Vec2(const Vec2& v) : x(v.x), y(v.y) { }
 
 template<class T>
+template<class U>
+Vec2<T>::Vec2(const Vec2<U>& other) : x(static_cast<T>(other.x)), y(static_cast<T>(other.y)) {}
+
+template<class T>
 Vec2<T>& Vec2<T>::operator=(const Vec2& v) {
     x = v.x;
     y = v.y;

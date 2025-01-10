@@ -9,9 +9,9 @@
 #include <mutex>
 #include <vector>
 #include <unordered_map>
-#include "SDL_image.h"
-#include "SDL_mixer.h"
-#include "SDL_ttf.h"
+#include "SDL3_image/SDL_image.h"
+#include "SDL3_mixer/SDL_mixer.h"
+#include "SDL3_ttf/SDL_ttf.h"
 #include "../../../shared/core/Singleton.h"
 #include "../../../shared/core/Vec2.h"
 
@@ -26,7 +26,8 @@ private:
     friend class AssetsClass;
     const std::string m_Key;
     SDL_Texture* m_SDLTexture;
-    TextureInfo m_Information;
+    float m_Width;
+    float m_Height;
     std::string m_LoadExtension;
 
     bool m_AutomaticDeletion;
@@ -37,11 +38,9 @@ public:
 
     // Getting
     [[nodiscard]] SDL_Texture* SDLTexture() const { return m_SDLTexture; }
-    [[nodiscard]] Uint32 GetFormat() const { return m_Information.format; }
-    [[nodiscard]] int GetAccess() const { return m_Information.access; }
-    [[nodiscard]] int GetWidth() const { return m_Information.w; }
-    [[nodiscard]] int GetHeight() const { return m_Information.h; }
-    [[nodiscard]] Vec2i GetSize() const { return { m_Information.w, m_Information.h }; }
+    [[nodiscard]] float GetWidth() const { return m_Width; }
+    [[nodiscard]] float GetHeight() const { return m_Height; }
+    [[nodiscard]] Vec2f GetSize() const { return { m_Width, m_Height }; }
     [[nodiscard]] const std::string& Key() const { return m_Key; }
 
     // Options
@@ -146,7 +145,7 @@ public:
 
     // Generating
     Texture* TextureFromSurface(SDL_Surface* sdl_surface);
-    Texture* CreateTexture(Uint32 format, int access, int w, int h);
+    Texture* CreateTexture(SDL_PixelFormat format, SDL_TextureAccess access, int w, int h);
 
     // Manipulating
     static void RequireTexture(LoadedTexture* register_texture);

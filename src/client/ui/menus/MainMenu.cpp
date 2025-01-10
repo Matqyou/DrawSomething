@@ -113,12 +113,10 @@ MainMenu::MainMenu()
 
 void MainMenu::HandleEvent(SDL_Event& sdl_event, EventContext& event_summary) {
     switch (sdl_event.type) {
-        case SDL_WINDOWEVENT: {
-            if (sdl_event.window.event == SDL_WINDOWEVENT_RESIZED) {
-                SetSize(Vec2i(0, 0),
-                        Application::Get()->GetResolution(),
-                        Application::Get()->GetResolution());
-            }
+        case SDL_EVENT_WINDOW_RESIZED: {
+            SetSize(Vec2i(0, 0),
+                    Application::Get()->GetResolution(),
+                    Application::Get()->GetResolution());
 
             break;
         }

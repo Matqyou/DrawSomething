@@ -8,7 +8,7 @@
 #include <vector>
 #include <unordered_map>
 #include <string>
-#include "SDL_mixer.h"
+#include <cstdarg>
 
 // ANSI color codes
 const std::unordered_map<char, std::string> minecraftToAnsi = {
@@ -89,163 +89,169 @@ namespace Strings {
 //        return message + L"\033[0m"; // Ensure the string ends with a reset code
 //    }
 
-    std::wstring FStringColorsW(const wchar_t* format, ...) {
-        va_list args;
-        va_start(args, format);
+std::wstring FStringColorsW(const wchar_t* format, ...) {
+    va_list args;
+    va_start(args, format);
 
-        // Determine the required buffer size
-        va_list argsCopy;
-        va_copy(argsCopy, args);
-        int bufferSize = std::vswprintf(nullptr, 0, format, argsCopy) + 1; // +1 for null terminator
-        va_end(argsCopy);
+    // Determine the required buffer size
+    va_list argsCopy;
+    va_copy(argsCopy, args);
+    int bufferSize = std::vswprintf(nullptr, 0, format, argsCopy) + 1; // +1 for null terminator
+    va_end(argsCopy);
 
-        if (bufferSize <= 0) {
-            va_end(args);
-            throw std::runtime_error("Failed to calculate buffer size for formatted string.");
-        }
-
-        // Allocate buffer and format the string
-        std::vector<wchar_t> buffer(bufferSize);
-        int result = std::vswprintf(buffer.data(), bufferSize, format, args);
+    if (bufferSize <= 0) {
         va_end(args);
+        throw std::runtime_error("Failed to calculate buffer size for formatted string.");
+    }
 
-        if (result < 0) {
-            throw std::runtime_error("String formatting failed.");
-        }
+    // Allocate buffer and format the string
+    std::vector<wchar_t> buffer(bufferSize);
+    int result = std::vswprintf(buffer.data(), bufferSize, format, args);
+    va_end(args);
 
-        std::wstring message(buffer.data());
+    if (result < 0) {
+        throw std::runtime_error("String formatting failed.");
+    }
 
-        // Replace Minecraft-style color codes with ANSI codes
-        size_t pos = 0;
-        while ((pos = message.find(L'&', pos)) != std::wstring::npos) {
-            if (pos + 1 < message.length()) {
-                wchar_t colorCode = message[pos + 1];
-                auto it = minecraftToAnsiW.find(colorCode);
-                if (it != minecraftToAnsiW.end()) {
-                    // Replace &<code> with the corresponding ANSI code
-                    message.replace(pos, 2, it->second);
-                    continue; // Skip past the replacement
-                }
+    std::wstring message(buffer.data());
+
+    // Replace Minecraft-style color codes with ANSI codes
+    size_t pos = 0;
+    while ((pos = message.find(L'&', pos)) != std::wstring::npos) {
+        if (pos + 1 < message.length()) {
+            wchar_t colorCode = message[pos + 1];
+            auto it = minecraftToAnsiW.find(colorCode);
+            if (it != minecraftToAnsiW.end()) {
+                // Replace &<code> with the corresponding ANSI code
+                message.replace(pos, 2, it->second);
+                continue; // Skip past the replacement
             }
-            ++pos; // Move past this '&'
         }
-
-        return message + L"\033[0m"; // Ensure the string ends with a reset code
+        ++pos; // Move past this '&'
     }
 
+    return message + L"\033[0m"; // Ensure the string ends with a reset code
+}
 
-    std::string FStringColors(const char* format, ...) {
-        va_list args;
-        va_start(args, format);
+std::string FStringColors(const char* format, ...) {
+    va_list args;
+    va_start(args, format);
 
-        // Determine the required buffer size
-        va_list argsCopy;
-        va_copy(argsCopy, args);
-        int bufferSize = std::vsnprintf(nullptr, 0, format, argsCopy) + 1; // +1 for null terminator
-        va_end(argsCopy);
+    // Determine the required buffer size
+    va_list argsCopy;
+    va_copy(argsCopy, args);
+    int bufferSize = std::vsnprintf(nullptr, 0, format, argsCopy) + 1; // +1 for null terminator
+    va_end(argsCopy);
 
-        // Create the buffer with the required size
-        char* buffer = new char[bufferSize];
+    // Create the buffer with the required size
+    char* buffer = new char[bufferSize];
 
-        // Format the string
-        std::vsnprintf(buffer, bufferSize, format, args);
-        va_end(args);
+    // Format the string
+    std::vsnprintf(buffer, bufferSize, format, args);
+    va_end(args);
 
-        std::string message(buffer);
-        delete[] buffer;
+    std::string message(buffer);
+    delete[] buffer;
 
-        // Replace Minecraft-style color codes with ANSI codes
-        size_t pos = 0;
-        while ((pos = message.find('&', pos)) != std::string::npos) {
-            if (pos + 1 < message.length()) {
-                char colorCode = message[pos + 1];
-                auto it = minecraftToAnsi.find(colorCode);
-                if (it != minecraftToAnsi.end()) {
-                    // Replace &<code> with the corresponding ANSI code
-                    message.replace(pos, 2, it->second);
-                    continue; // Skip past the replacement
-                }
+    // Replace Minecraft-style color codes with ANSI codes
+    size_t pos = 0;
+    while ((pos = message.find('&', pos)) != std::string::npos) {
+        if (pos + 1 < message.length()) {
+            char colorCode = message[pos + 1];
+            auto it = minecraftToAnsi.find(colorCode);
+            if (it != minecraftToAnsi.end()) {
+                // Replace &<code> with the corresponding ANSI code
+                message.replace(pos, 2, it->second);
+                continue; // Skip past the replacement
             }
-            ++pos; // Move past this '&'
         }
-
-        return message + "\033[0m"; // Ensure the string ends with a reset code
+        ++pos; // Move past this '&'
     }
 
-    std::wstring FStringW(const wchar_t* format, ...) {
-        va_list args;
-        va_start(args, format);
+    return message + "\033[0m"; // Ensure the string ends with a reset code
+}
 
-        // Determine the required buffer size
-        va_list argsCopy;
-        va_copy(argsCopy, args);
-        int bufferSize = std::vswprintf(nullptr, 0, format, argsCopy) + 1;  // +1 for null terminator
-        va_end(argsCopy);
+std::wstring FStringW(const wchar_t* format, ...) {
+    va_list args;
+    va_start(args, format);
 
-        // Create the buffer with the required size
-        auto buffer = new wchar_t[bufferSize];
+    // Determine the required buffer size
+    va_list argsCopy;
+    va_copy(argsCopy, args);
+    int bufferSize = std::vswprintf(nullptr, 0, format, argsCopy) + 1;  // +1 for null terminator
+    va_end(argsCopy);
 
-        // Format the string
-        std::vswprintf(buffer, bufferSize, format, args);
-        va_end(args);
+    // Create the buffer with the required size
+    auto buffer = new wchar_t[bufferSize];
 
-        std::wstring message(buffer);
-        delete[] buffer;
+    // Format the string
+    std::vswprintf(buffer, bufferSize, format, args);
+    va_end(args);
 
-        return message;
-    }
+    std::wstring message(buffer);
+    delete[] buffer;
 
+    return message;
+}
 
 std::string FString(const char* format, ...) {
-        va_list args;
-        va_start(args, format);
+    va_list args;
+    va_start(args, format);
 
-        // Determine the required buffer size
-        va_list argsCopy;
-        va_copy(argsCopy, args);
-        int bufferSize = std::vsnprintf(nullptr, 0, format, argsCopy) + 1;  // +1 for null terminator
-        va_end(argsCopy);
+    // Determine the required buffer size
+    va_list argsCopy;
+    va_copy(argsCopy, args);
+    int bufferSize = std::vsnprintf(nullptr, 0, format, argsCopy) + 1;  // +1 for null terminator
+    va_end(argsCopy);
 
-        // Create the buffer with the required size
-        char* buffer = new char[bufferSize];
+    // Create the buffer with the required size
+    char* buffer = new char[bufferSize];
 
-        // Format the string
-        std::vsnprintf(buffer, bufferSize, format, args);
-        va_end(args);
-        std::string message(buffer);
-        delete[] buffer;
-        return message;
-    }
+    // Format the string
+    std::vsnprintf(buffer, bufferSize, format, args);
+    va_end(args);
+    std::string message(buffer);
+    delete[] buffer;
+    return message;
+}
 
-    std::string ErasePrefix(std::string string, const std::string& prefix) {
-        size_t pos = string.find(prefix);
-        if (pos != std::string::npos)
-            string.erase(pos, prefix.length());
+std::string ErasePrefix(std::string string, const std::string& prefix) {
+    size_t pos = string.find(prefix);
+    if (pos != std::string::npos)
+        string.erase(pos, prefix.length());
 
-        return string;
-    }
+    return string;
+}
 
-    std::string EraseSuffix(std::string string, const std::string& suffix) {
-        size_t pos = string.rfind(suffix);
-        if (pos != std::string::npos && pos + suffix.length() == string.length())
-            string.erase(pos, suffix.length());
+std::string EraseSuffix(std::string string, const std::string& suffix) {
+    size_t pos = string.rfind(suffix);
+    if (pos != std::string::npos && pos + suffix.length() == string.length())
+        string.erase(pos, suffix.length());
 
-        return string;
-    }
+    return string;
+}
 
-    std::wstring RepeatStringW(const std::wstring& str, int times) {
-        std::wstring result;
-        for (int i = 0; i < times; ++i)
-            result += str;
+std::wstring RepeatStringW(const std::wstring& str, int times) {
+    std::wstring result;
+    for (int i = 0; i < times; ++i)
+        result += str;
 
-        return result;
-    }
+    return result;
+}
 
-    std::string RepeatString(const std::string& str, int times) {
-        std::string result;
-        for (int i = 0; i < times; ++i)
-            result += str;
+std::string RepeatString(const std::string& str, int times) {
+    std::string result;
+    for (int i = 0; i < times; ++i)
+        result += str;
 
-        return result;
-    }
+    return result;
+}
+
+const char* RandomUppercaseLetter() {
+    static char letter[2];
+    letter[0] = 'A' + (std::rand() % 26);
+    letter[1] = '\0';
+    return letter;
+}
+
 }
