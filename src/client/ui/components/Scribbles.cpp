@@ -122,17 +122,17 @@ void Scribbles::Draw() {
 
     if (playing) {
         drawing->SetRenderTarget(texture);
-        drawing->DrawLine(last_pen, pen, 20, { 0, 0, 0, 255 });
+        drawing->DrawLine(Vec2f(last_pen.x, last_pen.y), Vec2f(pen.x, pen.y), 20, { 0, 0, 0, 255 });
         drawing->SetRenderTarget(nullptr);
     }
 
-    drawing->RenderTexture(texture->SDLTexture(), nullptr, { (int)pos.x, (int)pos.y, full_size.x, full_size.y });
+    drawing->RenderTexture(texture->SDLTexture(), nullptr, { (float)pos.x, (float)pos.y, (float)full_size.x, (float)full_size.y });
 }
 
 void Scribbles::DrawDebug() {
     auto drawing = Application::Get()->GetDrawing();
     drawing->SetColor(255, 0, 0, 255);
-    drawing->DrawRect({ (int)pos.x, (int)pos.y, full_size.x, full_size.y });
+    drawing->DrawRect({ (float)pos.x, (float)pos.y, (float)full_size.x, (float)full_size.y });
 
     Vec2d previous_node;
     bool not_first = false;
@@ -144,5 +144,5 @@ void Scribbles::DrawDebug() {
     }
 
     drawing->SetColor(0, 255, 0, 255);
-    drawing->FillRect({ (int)(pen.x - 3 + pos.x), (int)(pen.y - 3 + pos.y), 6, 6 });
+    drawing->FillRect({ (float)(pen.x - 3 + pos.x), (float)(pen.y - 3 + pos.y), 6, 6 });
 }

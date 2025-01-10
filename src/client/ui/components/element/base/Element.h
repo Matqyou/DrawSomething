@@ -4,9 +4,10 @@
 
 #pragma once
 
-#include "SDL.h"
+#include "SDL3/SDL.h"
 #include "../../../../core/app/Drawing.h"
 #include "../../event/EventContext.h"
+#include "../../../../core/Rectangles.h"
 
 enum ElementAlign {
     ALIGN_BEHIND_LEFT,
@@ -88,9 +89,9 @@ struct Element {
     virtual ~Element();
 
     // Getting
-    [[nodiscard]] SDL_Rect GetRect() const { return SDL_Rect(pos.x, pos.y, size.x, size.y); }
-    [[nodiscard]] SDL_Rect GetVisualRect() const {
-        return SDL_Rect(pos.x + visual_offset.x,
+    [[nodiscard]] SDL_FRect GetRect() const { return SDL_FRect(pos.x, pos.y, size.x, size.y); }
+    [[nodiscard]] SDL_FRect GetVisualRect() const {
+        return SDL_FRect(pos.x + visual_offset.x,
                         pos.y + visual_offset.y,
                         visual_size.x,
                         visual_size.y);

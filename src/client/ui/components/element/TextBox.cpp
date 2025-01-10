@@ -7,33 +7,50 @@
 
 LoadedFont TextBox::sDefaultFont("minecraft", 24);
 
+#include <vector>
+#include <string>
+#include <stdexcept>
+#include <SDL3_ttf/SDL_ttf.h>
+
 std::vector<std::string> TextBox::WrapText(const std::string& text, TTF_Font* font, int max_width) {
     std::vector<std::string> lines;
     std::string current_line;
     std::string current_word;
-    int word_width, word_height;
+    int measured_width = 0;
+    size_t measured_length = 0;
+
+    auto measure_text = [&](const std::string& str) -> int {
+        if (TTF_MeasureString(font, str.c_str(), str.length(), max_width, &measured_width, &measured_length)) {
+            return measured_width;
+        } else {
+            throw std::runtime_error("Failed to measure text: " + std::string(SDL_GetError()));
+        }
+    };
 
     for (char ch : text) {
         if (ch == ' ' || ch == '\n') {
             // Measure the current line with the new word appended
-            TTF_SizeText(font, (current_line + current_word).c_str(), &word_width, &word_height);
+            int new_line_width = measure_text(current_line + current_word);
 
-            if (word_width > max_width && !current_line.empty()) {
+            if (new_line_width > max_width && !current_line.empty()) {
                 lines.push_back(current_line);
                 current_line.clear();
             }
 
             // Check if the word itself exceeds max_width
-            TTF_SizeText(font, current_word.c_str(), &word_width, &word_height);
+            int word_width = measure_text(current_word);
             if (word_width > max_width) {
                 // Split the word into smaller chunks
+                std::string split_word;
                 for (size_t i = 0; i < current_word.size(); ++i) {
-                    std::string part = current_word.substr(0, i + 1);
-                    TTF_SizeText(font, part.c_str(), &word_width, &word_height);
+                    split_word += current_word[i];
+                    int part_width = measure_text(split_word);
 
-                    if (word_width > max_width) {
-                        lines.push_back(current_line);
-                        current_line.clear();
+                    if (part_width > max_width) {
+                        if (!current_line.empty()) {
+                            lines.push_back(current_line);
+                            current_line.clear();
+                        }
                         current_line = current_word.substr(i); // Remaining part
                         break;
                     }
@@ -55,9 +72,9 @@ std::vector<std::string> TextBox::WrapText(const std::string& text, TTF_Font* fo
 
     // Handle any remaining word or line
     if (!current_word.empty()) {
-        TTF_SizeText(font, (current_line + current_word).c_str(), &word_width, &word_height);
+        int final_line_width = measure_text(current_line + current_word);
 
-        if (word_width > max_width) {
+        if (final_line_width > max_width) {
             lines.push_back(current_line);
             current_line = current_word;
         } else {
@@ -70,7 +87,6 @@ std::vector<std::string> TextBox::WrapText(const std::string& text, TTF_Font* fo
 
     return lines;
 }
-
 
 TextBox::TextBox(const Vec2i& pos, const Vec2i& size, void (* enter_callback)(const std::string&))
     : Element(ELEMENT_TEXTBOX, pos, size, DRAW_RECT),
@@ -100,7 +116,7 @@ void TextBox::UpdateRender() {
 //    delete text_render;
 //    SDL_Surface* TempSurface = TTF_RenderText_Blended(sDefaultFont.GetFont()->TTFFont(), text.c_str(), text_color);
 //    text_render = Assets::Get()->TextureFromSurface(TempSurface);
-//    SDL_FreeSurface(TempSurface);
+//    SDL_DestroySurface(TempSurface);
 
     for (auto line_render : text_lines)
         delete line_render;
@@ -110,9 +126,9 @@ void TextBox::UpdateRender() {
     auto lines = WrapText(text, font, 200);
 
     for (size_t i = 0; i < lines.size(); ++i) {
-        SDL_Surface* surface = TTF_RenderText_Blended(font, lines[i].c_str(), text_color);
+        SDL_Surface* surface = TTF_RenderText_Blended(font, lines[i].c_str(), lines[i].size(), text_color);
         Texture* line_render = Assets::Get()->TextureFromSurface(surface);
-        SDL_FreeSurface(surface);
+        SDL_DestroySurface(surface);
         text_lines.push_back(line_render);
     }
 }
@@ -120,16 +136,16 @@ void TextBox::UpdateRender() {
 // Ticking
 void TextBox::HandleEvent(SDL_Event& event, EventContext& event_summary) {
     switch (event.type) {
-        case SDL_MOUSEMOTION: {
+        case SDL_EVENT_MOUSE_MOTION: {
             if (event_summary.cursor_changed == CursorChange::NO_CHANGE &&
                 PointCollides(event.motion.x, event.motion.y)) {
                 event_summary.cursor_changed = CursorChange::TO_IBEAM;
-                SDL_SetCursor(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM));
+                SDL_SetCursor(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_TEXT));
             }
 
             break;
         }
-        case SDL_MOUSEBUTTONDOWN: {
+        case SDL_EVENT_MOUSE_BUTTON_DOWN: {
             if (PointCollides(event.button.x, event.button.y)) {
                 SetFocus(this);
                 break;
@@ -137,21 +153,21 @@ void TextBox::HandleEvent(SDL_Event& event, EventContext& event_summary) {
 
             break;
         }
-        case SDL_TEXTINPUT: {
+        case SDL_EVENT_TEXT_INPUT: {
             if (!has_focus) break;
 
             AppendText(event.text.text);
             update_render = true;
             break;
         }
-        case SDL_KEYDOWN: {
+        case SDL_EVENT_KEY_DOWN: {
             if (!has_focus) break;
 
-            if (event.key.keysym.sym == SDLK_BACKSPACE) {
+            if (event.key.key == SDLK_BACKSPACE) {
                 Backspace();
                 update_render = true;
             }
-            else if (event.key.keysym.sym == SDLK_RETURN) { enter_callback(text); }
+            else if (event.key.key == SDLK_RETURN) { enter_callback(text); }
 
             break;
         }
@@ -172,10 +188,11 @@ void TextBox::Render() const {
     drawing->SetColor(fill_color);
     drawing->FillRect(GetRect());
 
-    int line_height = TTF_FontHeight(sDefaultFont.GetFont()->TTFFont());
+    // Retrieve the font height
+    int line_height = TTF_GetFontHeight(sDefaultFont.GetFont()->TTFFont());
+
     auto render_rect = GetRect();
-    for (int i = 0; i < text_lines.size(); i++) {
-        auto line_render = text_lines[i];
+    for (const auto& line_render : text_lines) {
         render_rect.w = line_render->GetWidth();
         render_rect.h = line_render->GetHeight();
         drawing->RenderTexture(line_render->SDLTexture(), nullptr, render_rect);

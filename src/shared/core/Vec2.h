@@ -15,6 +15,10 @@ public:
     Vec2(T x, T y);
     Vec2(const Vec2& v);
 
+    template<class U>
+    explicit Vec2(const Vec2<U>& other);
+
+
     // Returned math operations
     [[nodiscard]] Vec2 operator+(const Vec2& v) const;
     [[nodiscard]] Vec2 operator-(const Vec2& v) const;
@@ -51,6 +55,7 @@ template<class T>
 [[nodiscard]] double DistanceVec2(const Vec2<T>& v);
 
 typedef Vec2<int> Vec2i;
+typedef Vec2<float> Vec2f;
 typedef Vec2<double> Vec2d;
 
 [[nodiscard]] Vec2<double> AngleVec2d(double radians);

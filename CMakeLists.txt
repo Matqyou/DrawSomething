@@ -3,8 +3,15 @@ project(DrawSomething)
 
 set(CMAKE_CXX_STANDARD 20)
 
-include_directories(deps/SDL3/include deps/SDL2_image/include deps/SDL2_mixer/include deps/SDL2_ttf/include)
-link_directories(deps/SDL3/lib/x64 deps/SDL2_image/lib/x64 deps/SDL2_mixer/lib/x64 deps/SDL2_ttf/lib/x64)
+include_directories(deps/SDL/include deps/SDL_image/include deps/SDL_mixer/include deps/SDL_ttf/include)
+#link_directories(deps/SDL/lib/x64 deps/SDL_image/lib/x64 deps/SDL_mixer/lib/x64 deps/SDL_ttf/lib/x64)
+
+link_directories(
+        ${CMAKE_SOURCE_DIR}/deps/SDL/cmake-build-debug
+        ${CMAKE_SOURCE_DIR}/deps/SDL_image/cmake-build-debug
+        ${CMAKE_SOURCE_DIR}/deps/SDL_mixer/cmake-build-debug
+        ${CMAKE_SOURCE_DIR}/deps/SDL_ttf/cmake-build-debug
+)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_NAME})
 
@@ -35,9 +42,11 @@ add_executable(DrawSomething src/main.cpp
         src/client/ui/menus/MainMenu.h
         src/client/ui/menus/GuessingMenu.cpp
         src/client/ui/menus/GuessingMenu.h
+        src/client/core/Rectangles.cpp
+        src/client/core/Rectangles.h
 )
 
-target_link_libraries(${PROJECT_NAME} SDL3 SDL2_image SDL2_mixer SDL2_ttf)
+target_link_libraries(${PROJECT_NAME} SDL3 SDL3_image SDL3_mixer SDL3_ttf)
 target_link_options(${PROJECT_NAME} PRIVATE "-static")
 
 file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/${PROJECT_NAME})

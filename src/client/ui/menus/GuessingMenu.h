@@ -20,10 +20,12 @@ public:
     static LoadedTexture game_letter_normal;
     static LoadedTexture game_letter_slot;
     static LoadedTexture game_letter_slot_background;
+    static LoadedTexture game_finger;
 
     static Texture game_letter_slot_;
 
     static LoadedFont sDefaultFont;
+    static LoadedFont sDefaultFontBiggest;
     static LoadedFont sDefaultFontBigger;
     static LoadedFont sDefaultFontSmaller;
 

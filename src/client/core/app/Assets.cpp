@@ -26,12 +26,7 @@ Texture::Texture(SDL_Texture* sdl_texture, std::string key, std::string load_ext
       m_LoadExtension(std::move(load_extension)) {
     m_SDLTexture = sdl_texture;
 
-    m_Information = { };
-    SDL_QueryTexture(m_SDLTexture,
-                     &m_Information.format,
-                     &m_Information.access,
-                     &m_Information.w,
-                     &m_Information.h);
+    SDL_GetTextureSize(m_SDLTexture, &m_Width, &m_Height);
 
     m_AutomaticDeletion = false;
 }
@@ -51,11 +46,7 @@ Texture* Texture::FlagForAutomaticDeletion() {
 
 void Texture::SetSDLTexture(SDL_Texture* sdl_texture) {
     m_SDLTexture = sdl_texture;
-    SDL_QueryTexture(m_SDLTexture,
-                     &m_Information.format,
-                     &m_Information.access,
-                     &m_Information.w,
-                     &m_Information.h);
+    SDL_GetTextureSize(m_SDLTexture, &m_Width, &m_Height);
 }
 
 void Texture::SetBlendMode(SDL_BlendMode blend_mode) {
@@ -190,7 +181,7 @@ void AssetsClass::LoadTextures(SDL_Renderer* renderer) {
         }
 
         SDL_Texture* NewSDLTexture = SDL_CreateTextureFromSurface(renderer, TempSurface);
-        SDL_FreeSurface(TempSurface);
+        SDL_DestroySurface(TempSurface);
 
         // Add it to all the textures
         auto new_texture = (new Texture(NewSDLTexture, key, extension))
@@ -412,7 +403,7 @@ Texture* AssetsClass::TextureFromSurface(SDL_Surface* sdl_surface) {
     return new Texture(NewSDLTexture, "FromSurface", "NaN");
 }
 
-Texture* AssetsClass::CreateTexture(Uint32 format, int access, int w, int h) {
+Texture* AssetsClass::CreateTexture(SDL_PixelFormat format, SDL_TextureAccess access, int w, int h) {
     SDL_Texture* NewSDLTexture = SDL_CreateTexture(m_Renderer, format, access, w, h);
 
     return new Texture(NewSDLTexture, "CreateTexture", "NaN");

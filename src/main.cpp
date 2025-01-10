@@ -1,9 +1,12 @@
 #define SDL_MAIN_HANDLED
+#define DRAWSOMETHING_VERSION "1.0.0"
 
 #include <iostream>
 #include <thread>
 #include <fcntl.h>
 
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
 #include "client/core/Application.h"
 #include "client/ui/components/Scribbles.h"
 #include "client/ui/components/event/EventContext.h"
@@ -27,17 +30,22 @@ void exit_application() {
 
 int main() {
     _setmode(_fileno(stdout), _O_U16TEXT);
-    Application::init(new App("DrawSomething", Vec2i(1024, 720), 60.0));
+    Application::init(new App("DrawSomething",
+                              DRAWSOMETHING_VERSION,
+                              "com.matq.draw_something",
+                              Vec2i(1024, 720),
+                              60.0));
     auto application = Application::Get();
     auto drawing = application->GetDrawing();
     auto clock = application->GetClock();
 
     Assets::Get()->GetTexture("header")->SetColorMod(100, 190, 255);
     Assets::Get()->GetTexture("game.guessing_bar")->SetColorMod(100, 190, 255);
-    Assets::Get()->GetTexture("game.guessing_bar")->SetAlphaMod(150);
+    Assets::Get()->GetTexture("game.guessing_bar")->SetAlphaMod(200);
     Assets::Get()->GetTexture("game.guessing_bar")->SetBlendMode(SDL_BLENDMODE_BLEND);
     Assets::Get()->GetTexture("game.letter.slot")->SetColorMod(100, 190, 255);
     Assets::Get()->GetTexture("game.letter.normal")->SetColorMod(100, 190, 255);
+    SDL_SetTextureScaleMode(Assets::Get()->GetTexture("game.finger")->SDLTexture(), SDL_SCALEMODE_NEAREST);
 
     auto slot = Assets::Get()->GetTexture("game.letter.slot");
     auto background = Assets::Get()->GetTexture("game.letter.slot_background");
@@ -82,22 +90,22 @@ int main() {
             current_menu->HandleEvent(sdl_event, event_context);
 
             switch (sdl_event.type) {
-                case SDL_QUIT: {
+                case SDL_EVENT_QUIT: {
                     exit_application();
                     break;
                 }
-                case SDL_MOUSEMOTION: {
+                case SDL_EVENT_MOUSE_MOTION: {
                     event_context.had_mouse_motion = true;
                     break;
                 }
-                case SDL_KEYDOWN: {
-                    if (sdl_event.key.keysym.scancode == SDL_SCANCODE_SPACE)
+                case SDL_EVENT_KEY_DOWN: {
+                    if (sdl_event.key.scancode == SDL_SCANCODE_SPACE)
                         for (auto scribb : scribbles)
                             scribb->GenerateZigZag();
-                    else if (sdl_event.key.keysym.scancode == SDL_SCANCODE_Q) render_debug = !render_debug;
-                    else if (sdl_event.key.keysym.scancode == SDL_SCANCODE_W) current_menu->DebugPrint();
-                    else if (sdl_event.key.keysym.scancode == SDL_SCANCODE_1) current_menu = &main_menu;
-                    else if (sdl_event.key.keysym.scancode == SDL_SCANCODE_2) current_menu = &guessing_menu;
+                    else if (sdl_event.key.scancode == SDL_SCANCODE_Q) render_debug = !render_debug;
+                    else if (sdl_event.key.scancode == SDL_SCANCODE_W) current_menu->DebugPrint();
+                    else if (sdl_event.key.scancode == SDL_SCANCODE_1) { current_menu = &main_menu; current_menu->SetSize({0, 0}, application->GetResolution(), application->GetResolution()); }
+                    else if (sdl_event.key.scancode == SDL_SCANCODE_2) { current_menu = &guessing_menu; current_menu->SetSize({0, 0}, application->GetResolution(), application->GetResolution()); }
 
                     break;
                 }
@@ -106,7 +114,7 @@ int main() {
         }
         if (event_context.had_mouse_motion &&
             event_context.cursor_changed == CursorChange::NO_CHANGE)
-            SDL_SetCursor(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW));
+            SDL_SetCursor(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_DEFAULT));
 
         if (clock->TimePassed()) {
             for (auto scribb : scribbles)
@@ -129,13 +137,13 @@ int main() {
             auto scribble1 = scribbles[0];
             if (scribble1->IsPlaying() || true) {
                 auto pen_position = scribble1->GetGlobalPen() - pencil_tip * 0.2;
-                SDL_Rect pencil_rect = {
-                    (int)pen_position.x,
-                    (int)pen_position.y,
-                    (int)(pencil.GetTexture()->GetWidth() * 0.2),
-                    (int)(pencil.GetTexture()->GetHeight() * 0.2),
+                SDL_FRect pencil_rect = {
+                    (float)pen_position.x,
+                    (float)pen_position.y,
+                    (float)(pencil.GetTexture()->GetWidth() * 0.2),
+                    (float)(pencil.GetTexture()->GetHeight() * 0.2),
                 };
-                SDL_Point center = { (int)(pencil_tip.x * 0.2), (int)(pencil_tip.y * 0.2) };
+                SDL_FPoint center = { (float)(pencil_tip.x * 0.2), (float)(pencil_tip.y * 0.2) };
                 drawing->RenderTextureEx(pencil.GetTexture()->SDLTexture(),
                                          nullptr,
                                          pencil_rect,
@@ -147,25 +155,26 @@ int main() {
             current_menu->Render();
             if (render_debug) {
                 current_menu->RenderDebug();
-                int mouse_x, mouse_y;
+                float mouse_x, mouse_y;
                 SDL_GetMouseState(&mouse_x, &mouse_y);
                 drawing->SetColor(255, 255, 0, 255);
                 drawing->DrawLine(Vec2i(mouse_x, 0), Vec2i(mouse_x, application->GetHeight()));
                 drawing->SetColor(255, 0, 255, 255);
                 drawing->DrawLine(Vec2i(0, mouse_y), Vec2i(application->GetWidth(), mouse_y));
 
-                auto coordinates = Strings::FString("%i, %i", mouse_x, mouse_y);
+                auto coordinates = Strings::FString("%i, %i", (int)mouse_x, (int)mouse_y);
                 SDL_Surface* surface =
                     TTF_RenderText_Blended(sDefaultFont.GetFont()->TTFFont(),
                                            coordinates.c_str(),
+                                           coordinates.size(),
                                            { 255, 255, 255, 255 });
                 Texture* line_render = Assets::Get()->TextureFromSurface(surface);
-                SDL_FreeSurface(surface);
-                SDL_Rect text_rect = {
-                    mouse_x - line_render->GetWidth(),
-                    mouse_y - line_render->GetHeight(),
-                    line_render->GetWidth(),
-                    line_render->GetHeight(),
+                SDL_DestroySurface(surface);
+                SDL_FRect text_rect = {
+                    (float)(mouse_x - line_render->GetWidth()),
+                    (float)(mouse_y - line_render->GetHeight()),
+                    (float)(line_render->GetWidth()),
+                    (float)(line_render->GetHeight()),
                 };
                 drawing->RenderTexture(line_render->SDLTexture(), nullptr, text_rect);
                 delete line_render;

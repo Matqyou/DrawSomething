@@ -25,7 +25,7 @@ protected:
     static void PrintDivider(const std::string& label = "");
 
 public:
-    App(const char* title, const Vec2i& resolution, double framerate);
+    App(const char* title, const char* version, const char* identifier, const Vec2i& resolution, double framerate);
     ~App();
 
     // Getting

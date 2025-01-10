@@ -6,7 +6,7 @@
 
 #include <functional>
 #include "base/Element.h"
-#include "SDL_ttf.h"
+#include "SDL3_ttf/SDL_ttf.h"
 #include "../../../core/app/Assets.h"
 
 class Screen;
