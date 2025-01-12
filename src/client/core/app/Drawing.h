@@ -14,7 +14,7 @@ private:
     SDL_Renderer* m_Renderer;
     double m_Zoom;
 
-    static LoadedFont sAngleFont;
+    static LinkFont sFontMath;
 
 public:
     explicit Drawing(SDL_Renderer* renderer);

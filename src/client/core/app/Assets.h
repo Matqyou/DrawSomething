@@ -107,10 +107,11 @@ public:
 
 };
 
-class LoadedTexture;
-class LoadedSound;
-class LoadedMusic;
-class LoadedFont;
+class PreloadTexture;
+class PreloadSound;
+class PreloadMusic;
+class PreloadFont;
+class LinkFont;
 class AssetsClass {
     SDL_Renderer* m_Renderer;
     bool m_SoundsEnabled;
@@ -119,14 +120,15 @@ class AssetsClass {
     std::unordered_map<std::string, Sound*> m_Sounds;
     std::unordered_map<std::string, Music*> m_Music;
     std::unordered_map<std::string, Font*> m_Fonts;
-    Texture* m_InvalidTexture;
+    Texture* m_InvalidTextureDefault;
 
     static std::vector<Texture*> m_AutomaticDeletionTextures;
 
-    static std::vector<LoadedTexture*> m_RegisterTextures;
-    static std::vector<LoadedSound*> m_RegisterSounds;
-    static std::vector<LoadedMusic*> m_RegisterMusic;
-    static std::vector<LoadedFont*> m_RegisterFonts;
+    static std::vector<PreloadTexture*> m_LinkTextures;
+    static std::vector<PreloadSound*> m_LinkSounds;
+    static std::vector<PreloadMusic*> m_LinkMusic;
+    static std::vector<PreloadFont*> m_PreloadFonts;
+    static std::vector<LinkFont*> m_LinkFonts;
 
     void LoadTextures(SDL_Renderer* renderer);
     void LoadSounds();
@@ -141,6 +143,7 @@ public:
     Texture* GetTexture(const std::string& texture_key);
     Sound* GetSound(const std::string& sound_key);
     Music* GetMusic(const std::string& music_key);
+    Font* GetFont(const std::string& font_key);
     bool SoundsEnabled() const { return m_SoundsEnabled; }
 
     // Generating
@@ -148,10 +151,11 @@ public:
     Texture* CreateTexture(SDL_PixelFormat format, SDL_TextureAccess access, int w, int h);
 
     // Manipulating
-    static void RequireTexture(LoadedTexture* register_texture);
-    static void RequireSound(LoadedSound* register_sound);
-    static void RequireMusic(LoadedMusic* register_music);
-    static void RequireFont(LoadedFont* register_font);
+    static void LinkPreloadedTexture(PreloadTexture* register_texture);
+    static void LinkPreloadedSound(PreloadSound* register_sound);
+    static void LinkPreloadedMusic(PreloadMusic* register_music);
+    static void PreloadFont_(PreloadFont* preload_font);
+    static void LinkPreloadedFont(LinkFont* register_font);
     static void SetMusicVolume(int volume);
     static void PauseMusic();
     static void AutomaticallyDeleteTexture(Texture* texture);
@@ -160,14 +164,14 @@ public:
 
 typedef Singleton<AssetsClass> Assets;
 
-class LoadedTexture {
+class PreloadTexture {
 private:
     friend class AssetsClass;
     std::string m_Key;
     Texture* m_Texture;
 
 public:
-    explicit LoadedTexture(std::string texture_key);
+    explicit PreloadTexture(std::string texture_key);
 
     // Getting
     [[nodiscard]] const std::string& Key() const { return m_Key; }
@@ -175,14 +179,14 @@ public:
 
 };
 
-class LoadedSound {
+class PreloadSound {
 private:
     friend class AssetsClass;
     std::string m_Key;
     Sound* m_Sound;
 
 public:
-    explicit LoadedSound(std::string sound_key);
+    explicit PreloadSound(std::string sound_key);
 
     // Getting
     [[nodiscard]] const std::string& Key() const { return m_Key; }
@@ -190,14 +194,14 @@ public:
 
 };
 
-class LoadedMusic {
+class PreloadMusic {
 private:
     friend class AssetsClass;
     std::string m_Key;
     Music* m_Music;
 
 public:
-    explicit LoadedMusic(std::string music_key);
+    explicit PreloadMusic(std::string music_key);
 
     // Getting
     [[nodiscard]] const std::string& Key() const { return m_Key; }
@@ -205,18 +209,39 @@ public:
 
 };
 
-class LoadedFont {
+class PreloadFont {
 private:
     friend class AssetsClass;
     std::string m_Key;
+    std::string m_FontID;
     int m_Size;
     Font* m_Font;
 
 public:
-    explicit LoadedFont(std::string font_key, int ptsize);
+    explicit PreloadFont(std::string font_key, std::string font_id, int ptsize);
 
     // Getting
     [[nodiscard]] const std::string& Key() const { return m_Key; }
+    [[nodiscard]] const std::string& FontID() const { return m_FontID; }
+    [[nodiscard]] int Size() const { return m_Size; }
+    [[nodiscard]] Font* GetFont() const;
+
+};
+
+class LinkFont {
+private:
+    friend class AssetsClass;
+    std::string m_Key;
+    std::string m_FontID;
+    int m_Size;
+    Font* m_Font;
+
+public:
+    explicit LinkFont(std::string font_key);
+
+    // Getting
+    [[nodiscard]] const std::string& Key() const { return m_Key; }
+    [[nodiscard]] const std::string& FontID() const { return m_FontID; }
     [[nodiscard]] int Size() const { return m_Size; }
     [[nodiscard]] Font* GetFont() const;
 

@@ -18,6 +18,7 @@ Element::Element(int type, const Vec2i& relative, const Vec2i& size, ElementDraw
     this->edge = pos + size;
 
     // Default
+    composition_pos = Vec2i(0, 0);
     visual_size = size;
     visual_offset = Vec2i(0, 0);
     visual_texture = nullptr;
@@ -65,22 +66,13 @@ bool Element::PointCollides(int x, int y) const {
         y < this->pos.y || y > this->edge.y);
 }
 
-Element* Element::SetChildren(std::initializer_list<Element*> children) {
-    if (!this->children.empty()) throw std::runtime_error("Attempted to set children with existing set of children");
-
-    this->children = children;
-    for (auto child : this->children)
-        child->SetParent(this);
-
-    return this;
-}
-
-Element* Element::SetChildren(const std::vector<Element*>& children) {
-    if (!this->children.empty()) throw std::runtime_error("Attempted to set children with existing set of children");
-
-    this->children = children;
-    for (auto child : this->children)
-        child->SetParent(this);
+Element* Element::AddChildren(const std::vector<Element*>& children) {
+    for (auto child : children) {
+        if (child) { // Ensure child is valid
+            child->SetParent(this);
+            this->children.push_back(child); // Add to the children vector
+        }
+    }
 
     return this;
 }
@@ -103,188 +95,350 @@ void Element::SetFocus(Element* focus_element) {
         focus_element->has_focus = true;
 }
 
-void Element::SetSize(const Vec2i& new_pos, const Vec2i& new_size, const Vec2i& new_visual) {
-    this->pos = new_pos;
-    this->size = new_size;
-    this->visual_size = new_visual;
-    this->edge = pos + size;
+void Element::UpdateElement(const Vec2i& new_pos, const Vec2i& new_size, const Vec2i& new_visual) {
+    // Only use case I know is for the menu element
 
-    // Updating all children
-    // Step 1. calculate the *dynamic area* and count *dynamic objects*
-    int flex_objects = 0;
-    int flex_volume = 0;
-    for (auto child : children) {
-        if (flex == FLEX_WIDTH && child->flex_involved_horizontal) {
-            if (child->occupy_width) flex_objects++;
-            else flex_volume += child->size.x;
-        } else if (flex == FLEX_HEIGHT && child->flex_involved_vertical) {
-            if (child->occupy_height) flex_objects++;
-            else flex_volume += child->size.y;
+    pos = new_pos;
+    size = new_size;
+    visual_size = new_visual;
+
+    Refresh();
+}
+
+void Element::Refresh(int child_generation) {
+    if (children.empty())
+        return;
+
+    { // All parents - adaptive resizing
+        int adaptive_w = 0;
+        int adaptive_h = 0;
+        int num_children = 0;
+        for (auto child : children) {
+            if (child->occupy_fully_width) {
+                child->size.x = size.x;
+                child->visual_size.x = size.x;
+            }
+            if (child->occupy_fully_height) {
+                child->size.y = size.y;
+                child->visual_size.y = size.y;
+            }
+            child->Refresh(child_generation + 1);
+
+            if (flex == FLEX_WIDTH) {
+                if (!child->occupy_width && child->flex_involved_horizontal) {
+                    num_children++;
+                    adaptive_w += child->size.x;
+                    if (child->size.y > adaptive_h)
+                        adaptive_h = child->size.y;
+                }
+            } else if (flex == FLEX_HEIGHT && child->flex_involved_vertical) {
+                num_children++;
+                if (!child->occupy_height) {
+                    adaptive_h += child->size.y;
+                    if (child->size.x > adaptive_w)
+                        adaptive_w = child->size.x;
+                }
+            } else {
+                if (child->size.x > adaptive_w && child->flex_involved_horizontal) { adaptive_w = child->size.x; }
+                if (child->size.y > adaptive_h && child->flex_involved_vertical) { adaptive_h = child->size.y; }
+            }
+        }
+
+        if (adaptive_width) {
+            adaptive_w += flex == FLEX_WIDTH ? (num_children - 1) * flex_gap : 0;
+            size.x = adaptive_w;
+            visual_size.x = adaptive_w;
+        }
+        if (adaptive_height) {
+            adaptive_h += flex == FLEX_HEIGHT ? (num_children - 1) * flex_gap : 0;
+            size.y = adaptive_h;
+            visual_size.y = adaptive_h;
         }
     }
-    flex_volume += (int)(children.size() - 1) * flex_gap;
-
-    // Step 2. determine the positions and sizes of each element
-    int flex_full = (flex == FLEX_WIDTH ? size.x : size.y) - flex_volume;
-    int flex_slice = flex_objects > 0 ? flex_full / flex_objects : 0; // division by zero
-
-    int flex_current = 0;
-    for (auto child : children) {
-        auto child_pos = pos;
-        auto child_size = child->size;
-        auto child_visual = child->visual_size; //
-
-        // Children that have occupy_width, will be resized to fit the parent
-        if (flex == FLEX_WIDTH) {
-            if (!child->occupy_width || !child->flex_involved_horizontal) {
-                child_pos.x = pos.x + flex_current;
-            } else {
-                child_pos.x = pos.x + flex_current;
-                child_size.x = flex_slice;
-                child_visual.x = flex_slice;
+    { // Parentless parents - flex and align
+        if (parent == nullptr) {
+            // Flex children
+            int flex_negative_space = 0;
+            int flex_num_children = 0;
+            int num_children = 0;
+            for (auto child : children) {
+                if (flex == FLEX_WIDTH && child->flex_involved_horizontal) {
+                    // The number of dynamic width children
+                    if (child->occupy_width) flex_num_children++;
+                        // Flex volume in static children's width, count adaptive width, take the largest for height
+                    else flex_negative_space += child->size.x;
+                    num_children++;
+                } else if (flex == FLEX_HEIGHT && child->flex_involved_vertical) {
+                    if (child->occupy_height) flex_num_children++;
+                    else flex_negative_space += child->size.y;
+                    num_children++;
+                }
             }
 
-            if (child->flex_involved_horizontal) { flex_current += child_size.x + flex_gap; }
-        } // Children that have occupy_height, will be resized to fit the parent
-        else if (flex == FLEX_HEIGHT) {
-            if (!child->occupy_height || !child->flex_involved_vertical) {
-                child_pos.y = pos.y + flex_current;
-            } else {
-                child_pos.y = pos.y + flex_current;
-                child_size.y = flex_slice;
-                child_visual.y = flex_slice;
-            }
+            int flex_space = (flex == FLEX_WIDTH ? size.x : size.y) - flex_negative_space;
+            int flex_slice = flex_num_children > 0 ? (flex_space - (num_children - 1) * flex_gap) / flex_num_children : 0;
 
-            if (child->flex_involved_vertical) { flex_current += child_size.y + flex_gap; }
-        }
+            int current_flex = 0;
+            for (auto child : children) {
+                // Incase we don't change some values, we can copy the previous ones
+                child->composition_pos = Vec2i(0, 0);
 
-        // If there is a flex direction, we can use adaptive resizing
-        if (child->flex != DONT_FLEX) {
-            // Child's width will be resized to fit all grandchildren and descendants
-            if (child->adaptive_width) {
-                auto recursive_width = [](auto self, Element* child_) -> int {
-                    int adaptive = 0;
-                    int largest = 0;
-                    for (auto grandchild : child_->children) {
-                        // Ignore flex objects, because their size is dynamic
-                        if (grandchild->occupy_width)
-                            continue;
-
-                        int child_width = 0;
-                        if (grandchild->adaptive_width) {
-                            child_width = self(self, grandchild);
-                        } else if (grandchild->flex_involved_horizontal) { child_width = grandchild->size.x; }
-
-                        adaptive += child_width;
-                        if (child_width > largest)
-                            largest = child_width;
+                if (flex != DONT_FLEX) {
+                    if (flex == FLEX_WIDTH && child->flex_involved_horizontal) {
+                        if (child->occupy_width) {
+                            child->composition_pos.x = current_flex;
+                            child->size.x = flex_slice;
+                            child->visual_size.x = flex_slice;
+                            current_flex += flex_slice;
+                        } else {
+                            child->composition_pos.x = current_flex;
+                            current_flex += child->size.x;
+                        }
+                        current_flex += flex_gap;
+                    } else if (flex == FLEX_HEIGHT && child->flex_involved_vertical) {
+                        if (child->occupy_height) {
+                            child->composition_pos.y = current_flex;
+                            child->size.y = flex_slice;
+                            child->visual_size.y = flex_slice;
+                            current_flex += flex_slice;
+                        } else {
+                            child->composition_pos.y = current_flex;
+                            current_flex += child->size.y;
+                        }
+                        current_flex += flex_gap;
                     }
-                    adaptive += (int)(child_->children.size() - 1) * child_->flex_gap;
-                    return child_->flex == FLEX_WIDTH ? adaptive : largest;
-                };
-                auto new_width = recursive_width(recursive_width, child);
-                child_size.x = new_width;
-                child_visual.x = new_width;
-            }
-            // Child's height will be resized to fit all grandchildren and descendants
-            if (child->adaptive_height) {
-                auto recursive_height = [](auto self, Element* child_) -> int {
-                    int adaptive = 0;
-                    int largest = 0;
-                    for (auto grandchild : child_->children) {
-                        // Ignore flex objects, because their size is dynamic
-                        if (grandchild->occupy_height)
-                            continue;
+                }
 
-                        int child_height = 0;
-                        if (grandchild->adaptive_height) {
-                            child_height = self(self, grandchild);
-                        } else if (grandchild->flex_involved_vertical) { child_height = grandchild->size.y; }
-
-                        adaptive += child_height;
-                        if (child_height > largest)
-                            largest = child_height;
+                // Align children
+                if (child->align_horizontal != DONT_ALIGN) {
+                    switch (child->align_horizontal) {
+                        case ALIGN_BEHIND_LEFT: {
+                            child->composition_pos.x = -child->size.x;
+                            break;
+                        }
+                        case ALIGN_LEFT: {
+                            child->composition_pos.x = 0;
+                            break;
+                        }
+                        case ALIGN_RIGHT: {
+                            child->composition_pos.x = size.x - child->size.x;
+                            break;
+                        }
+                        case ALIGN_BEHIND_RIGHT: {
+                            child->composition_pos.x = size.x + child->size.x;
+                            break;
+                        }
+                        case ALIGN_CENTER: {
+                            child->composition_pos.x = (size.x - child->size.x) / 2;
+                            break;
+                        }
+                        case DONT_ALIGN: break;
                     }
-                    adaptive += (int)(child_->children.size() - 1) * child_->flex_gap;
-                    return child_->flex == FLEX_HEIGHT ? adaptive : largest;
-                };
-                auto new_height = recursive_height(recursive_height, child);
-                child_size.y = new_height;
-                child_visual.y = new_height;
+                }
+                if (child->align_vertical != DONT_ALIGN) {
+                    switch (child->align_vertical) {
+                        case ALIGN_ABOVE_TOP: {
+                            child->composition_pos.y = -child->size.y;
+                            break;
+                        }
+                        case ALIGN_TOP: {
+                            child->composition_pos.y = 0;
+                            break;
+                        }
+                        case ALIGN_BOTTOM: {
+                            child->composition_pos.y = size.y - child->size.y;
+                            break;
+                        }
+                        case ALIGN_UNDER_BOTTOM: {
+                            child->composition_pos.y = size.y + child->size.y;
+                            break;
+                        }
+                        case ALIGN_CENTER: {
+                            child->composition_pos.y = (size.y - child->size.y) / 2;
+                            break;
+                        }
+                        case DONT_ALIGN: break;
+                    }
+                }
             }
         }
-
-        // Resize child if they want to inherit the entire width
-        if (child->occupy_fully_width) {
-            child_pos.x = pos.x;
-            child_size.x = size.x;
-            child_visual.x = size.x;
-        }
-        // Resize child if they want to inherit the entire height
-        if (child->occupy_fully_height) {
-            child_pos.y = pos.y;
-            child_size.y = size.y;
-            child_visual.y = size.y;
-        }
-
-        if (child->align_horizontal != DONT_ALIGN) {
-            switch (child->align_horizontal) {
-                case ALIGN_BEHIND_LEFT: {
-                    child_pos.x = pos.x - child->size.x;
-                    break;
-                }
-                case ALIGN_LEFT: {
-                    child_pos.x = pos.x;
-                    break;
-                }
-                case ALIGN_RIGHT: {
-                    child_pos.x = pos.x + size.x - child_size.x;
-                    break;
-                }
-                case ALIGN_BEHIND_RIGHT: {
-                    child_pos.x = pos.x + size.x + child->size.x;
-                    break;
-                }
-                case ALIGN_CENTER: {
-                    child_pos.x = pos.x + (size.x - child_size.x) / 2;
-                    break;
-                }
-                case DONT_ALIGN: break;
-            }
-        }
-        if (child->align_vertical != DONT_ALIGN) {
-            switch (child->align_vertical) {
-                case ALIGN_ABOVE_TOP: {
-                    child_pos.y = pos.y - child->size.y;
-                    break;
-                }
-                case ALIGN_TOP: {
-                    child_pos.y = pos.y;
-                    break;
-                }
-                case ALIGN_BOTTOM: {
-                    child_pos.y = pos.y + size.y - child_size.y;
-                    break;
-                }
-                case ALIGN_UNDER_BOTTOM: {
-                    child_pos.y = pos.y + size.y + child->size.y;
-                    break;
-                }
-                case ALIGN_CENTER: {
-                    child_pos.y = pos.y + (size.y - child_size.y) / 2;
-                    break;
-                }
-                case DONT_ALIGN: break;
-            }
-        }
-
-        // Update children
-        child->SetSize(
-            child_pos + child->relative,
-            child_size,
-            child_visual
-        );
     }
+
+    // Grandparents - flex and align
+    for (auto parent : children) {
+        if (parent->children.empty())
+            continue;
+
+        // Flex grandchildren
+        int flex_negative_space = 0;
+        int flex_num_children = 0;
+        int num_children = 0;
+        for (auto child : parent->children) {
+            if (parent->flex == FLEX_WIDTH && child->flex_involved_horizontal) {
+                // The number of dynamic width children
+                if (child->occupy_width) flex_num_children++;
+                    // Flex volume in static children's width, count adaptive width, take the largest for height
+                else flex_negative_space += child->size.x;
+                num_children++;
+            } else if (flex == FLEX_HEIGHT && child->flex_involved_vertical) {
+                if (child->occupy_height) flex_num_children++;
+                else flex_negative_space += child->size.y;
+                num_children++;
+            }
+        }
+
+        int flex_space = (parent->flex == FLEX_WIDTH ? parent->size.x : parent->size.y) - flex_negative_space;
+        int flex_slice = flex_num_children > 0 ? (flex_space - (num_children - 1) * parent->flex_gap) / flex_num_children : 0;
+
+        int current_flex = 0;
+        for (auto child : parent->children) {
+            child->composition_pos = Vec2i(0, 0);
+            if (parent->flex != DONT_FLEX) {
+                if (parent->flex == FLEX_WIDTH && child->flex_involved_horizontal) {
+                    if (child->occupy_width) {
+                        child->composition_pos.x = current_flex;
+                        child->size.x = flex_slice;
+                        child->visual_size.x = flex_slice;
+                        current_flex += flex_slice;
+                    } else {
+                        child->composition_pos.x = current_flex;
+                        current_flex += child->size.x;
+                    }
+                    current_flex += parent->flex_gap;
+                } else if (parent->flex == FLEX_HEIGHT && child->flex_involved_vertical) {
+                    if (child->occupy_height) {
+                        child->composition_pos.y = current_flex;
+                        child->size.y = flex_slice;
+                        child->visual_size.y = flex_slice;
+                        current_flex += flex_slice;
+                    } else {
+                        child->composition_pos.y = current_flex;
+                        current_flex += child->size.y;
+                    }
+                    current_flex += parent->flex_gap;
+                }
+            }
+
+            // Align grandchildren
+            if (!parent->occupy_width && child->align_horizontal != DONT_ALIGN) {
+                switch (child->align_horizontal) {
+                    case ALIGN_BEHIND_LEFT: {
+                        child->composition_pos.x = -child->size.x;
+                        break;
+                    }
+                    case ALIGN_LEFT: {
+                        child->composition_pos.x = 0;
+                        break;
+                    }
+                    case ALIGN_RIGHT: {
+                        child->composition_pos.x = parent->size.x - child->size.x;
+                        break;
+                    }
+                    case ALIGN_BEHIND_RIGHT: {
+                        child->composition_pos.x = parent->size.x + child->size.x;
+                        break;
+                    }
+                    case ALIGN_CENTER: {
+                        child->composition_pos.x = (parent->size.x - child->size.x) / 2;
+                        break;
+                    }
+                    case DONT_ALIGN: break;
+                }
+            }
+            if (!parent->occupy_height && child->align_vertical != DONT_ALIGN) {
+                switch (child->align_vertical) {
+                    case ALIGN_ABOVE_TOP: {
+                        child->composition_pos.y = -child->size.y;
+                        break;
+                    }
+                    case ALIGN_TOP: {
+                        child->composition_pos.y = 0;
+                        break;
+                    }
+                    case ALIGN_BOTTOM: {
+                        child->composition_pos.y = parent->size.y - child->size.y;
+                        break;
+                    }
+                    case ALIGN_UNDER_BOTTOM: {
+                        child->composition_pos.y = parent->size.y + child->size.y;
+                        break;
+                    }
+                    case ALIGN_CENTER: {
+                        child->composition_pos.y = (parent->size.y - child->size.y) / 2;
+                        break;
+                    }
+                    case DONT_ALIGN: break;
+                }
+            }
+
+            for (auto grandchild : child->children) {
+                if (child->occupy_width && grandchild->align_horizontal != DONT_ALIGN) {
+                    switch (grandchild->align_horizontal) {
+                        case ALIGN_BEHIND_LEFT: {
+                            grandchild->composition_pos.x = -grandchild->size.x;
+                            break;
+                        }
+                        case ALIGN_LEFT: {
+                            grandchild->composition_pos.x = 0;
+                            break;
+                        }
+                        case ALIGN_RIGHT: {
+                            grandchild->composition_pos.x = child->size.x - grandchild->size.x;
+                            break;
+                        }
+                        case ALIGN_BEHIND_RIGHT: {
+                            grandchild->composition_pos.x = child->size.x + grandchild->size.x;
+                            break;
+                        }
+                        case ALIGN_CENTER: {
+                            grandchild->composition_pos.x = (child->size.x - grandchild->size.x) / 2;
+                            break;
+                        }
+                        case DONT_ALIGN: break;
+                    }
+                }
+                if (child->occupy_height && grandchild->align_vertical != DONT_ALIGN) {
+                    switch (grandchild->align_vertical) {
+                        case ALIGN_ABOVE_TOP: {
+                            grandchild->composition_pos.y = -grandchild->size.y;
+                            break;
+                        }
+                        case ALIGN_TOP: {
+                            grandchild->composition_pos.y = 0;
+                            break;
+                        }
+                        case ALIGN_BOTTOM: {
+                            grandchild->composition_pos.y = child->size.y - grandchild->size.y;
+                            break;
+                        }
+                        case ALIGN_UNDER_BOTTOM: {
+                            grandchild->composition_pos.y = child->size.y + grandchild->size.y;
+                            break;
+                        }
+                        case ALIGN_CENTER: {
+                            grandchild->composition_pos.y = (child->size.y - grandchild->size.y) / 2;
+                            break;
+                        }
+                        case DONT_ALIGN: break;
+                    }
+                }
+            }
+        }
+    }
+
+    // Last Step - Update coordinates, since all we did was relative up to this point
+    if (child_generation == 0)
+        UpdateComposition();
+}
+
+void Element::UpdateComposition() {
+    if (parent != nullptr) {
+        pos = parent->pos + composition_pos + relative;
+        edge = pos + size;
+    }
+
+    for (auto child : children)
+        child->UpdateComposition();
 }
 
 void Element::DebugPrint(std::vector<bool> level, bool last_child) {
@@ -326,8 +480,10 @@ void Element::DebugPrint(std::vector<bool> level, bool last_child) {
     if (flex == FLEX_WIDTH) output_element += L"←→";
     else if (flex == FLEX_HEIGHT) output_element += L" ↕ ";
     else output_element += L" ";
-    std::wstring width_color = flex != DONT_FLEX && adaptive_width ? L"&5" : L"&6";
-    std::wstring height_color = flex != DONT_FLEX && adaptive_height ? L"&5" : L"&6";
+    std::wstring width_color =
+        flex != DONT_FLEX && adaptive_width ? L"&d" : occupy_width ? L"&5" : occupy_fully_width ? L"&c" : L"&6";
+    std::wstring height_color =
+        flex != DONT_FLEX && adaptive_height ? L"&d" : occupy_height ? L"&5" : occupy_fully_height ? L"&c" : L"&6";
     output_element +=
         Strings::FStringColorsW(L"(%ls%iw&r,%ls%ih&r)", width_color.c_str(), size.x, height_color.c_str(), size.y);
 

@@ -44,6 +44,8 @@ add_executable(DrawSomething src/main.cpp
         src/client/ui/menus/GuessingMenu.h
         src/client/core/Rectangles.cpp
         src/client/core/Rectangles.h
+        src/client/ui/components/Canvas.cpp
+        src/client/ui/components/Canvas.h
 )
 
 target_link_libraries(${PROJECT_NAME} SDL3 SDL3_image SDL3_mixer SDL3_ttf)
