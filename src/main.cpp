@@ -1,5 +1,5 @@
 #define SDL_MAIN_HANDLED
-#define DRAWSOMETHING_VERSION "1.0.0"
+#define DRAWSOMETHING_VERSION "1.1.0"
 
 #include <iostream>
 #include <thread>
