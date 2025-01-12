@@ -66,12 +66,23 @@ bool Element::PointCollides(int x, int y) const {
         y < this->pos.y || y > this->edge.y);
 }
 
+Element* Element::SetChildren(const std::vector<Element*>& children) {
+    for (auto oldChild : this->children)
+        oldChild->SetParent(nullptr);
+
+    this->children.clear();
+    for (auto newChild : children) {
+        newChild->SetParent(this);
+        this->children.push_back(newChild);
+    }
+
+    return this;
+}
+
 Element* Element::AddChildren(const std::vector<Element*>& children) {
     for (auto child : children) {
-        if (child) { // Ensure child is valid
-            child->SetParent(this);
-            this->children.push_back(child); // Add to the children vector
-        }
+        child->SetParent(this);
+        this->children.push_back(child);
     }
 
     return this;

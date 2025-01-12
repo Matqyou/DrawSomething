@@ -18,7 +18,7 @@ PreloadTexture MainMenu::texture_friends_header("main_menu.friends.header");
 PreloadTexture MainMenu::texture_friends_link("main_menu.friends.button");
 
 MainMenu::MainMenu()
-    : Frame(Vec2i(0, 0), Vec2i(0, 0), DONT_DRAW) {
+    : Frame(Vec2i(0, 0), Vec2i(0, 0), DRAW_RECT) {
     // Header
     auto header = (new Frame(Vec2i(0, 0),
                              Vec2i(0, 58),
@@ -106,6 +106,7 @@ MainMenu::MainMenu()
     std::initializer_list<Element*> game_elements = { header, games, profile, friends };
 
     AddChildren(game_elements)->SetName("MainMenu");
+    SetColor(94, 152, 224, 255);
     UpdateElement(Vec2i(0, 0),
                   Application::Get()->GetResolution(),
                   Application::Get()->GetResolution());

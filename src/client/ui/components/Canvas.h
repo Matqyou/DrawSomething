@@ -8,17 +8,30 @@
 #include <utility>
 #include "element/base/Element.h"
 
+enum CanvasIntro {
+    INTRO_GUESS,
+    INTRO_WATCH,
+    INTRO_DRAW,
+};
+
 class Canvas : public Element {
 private:
     bool instructions_intro;
+    CanvasIntro intro_type;
+    Vec2i resolution;
 
     Texture* text_tap_to_guess;
+    Texture* text_tap_to_watch;
+    Texture* text_tap_to_draw;
     Vec2i scale_texture_tap_to_guess;
-//    void (* after_intro_callback)();
+    Vec2i scale_texture_tap_to_watch;
+    Vec2i scale_texture_tap_to_draw;
     using Callback = std::function<void()>;
     Callback after_intro_callback;
 
     static PreloadTexture sTextureTapToGuess;
+    static PreloadTexture sTextureTapToWatch;
+    static PreloadTexture sTextureTapToDraw;
     static LinkFont sFontInstructions;
 
     void init_intro();
@@ -30,7 +43,12 @@ public:
     Canvas(const Vec2i& pos, const Vec2i& size, const Vec2i& visual, const Vec2i& offset, Texture* texture);
     Canvas(const Vec2i& pos, const Vec2i& size, Texture* texture);
 
-    // Manipulation
+    // Options
+    Canvas* SetIntro(CanvasIntro intro_type) {
+        this->intro_type = intro_type;
+        this->instructions_intro = true;
+        return this;
+    }
     Canvas* SetCallback(Callback callback) {
         this->after_intro_callback = std::move(callback);
         return this;

@@ -1,5 +1,5 @@
 #define SDL_MAIN_HANDLED
-#define DRAWSOMETHING_VERSION "1.1.0"
+#define DRAWSOMETHING_VERSION "1.1.1"
 
 #include <iostream>
 #include <thread>
@@ -11,7 +11,7 @@
 #include "client/ui/components/Scribbles.h"
 #include "client/ui/components/event/EventContext.h"
 #include "client/ui/menus/MainMenu.h"
-#include "client/ui/menus/GuessingMenu.h"
+#include "client/ui/menus/IngameMenu.h"
 
 std::vector<Scribbles*> scribbles;
 static PreloadTexture pencil("pencil2");
@@ -51,7 +51,8 @@ int main() {
     Assets::Get()->GetTexture("game.guessing_bar")->SetBlendMode(SDL_BLENDMODE_BLEND);
     Assets::Get()->GetTexture("game.letter.slot")->SetColorMod(100, 190, 255);
     Assets::Get()->GetTexture("game.letter.normal")->SetColorMod(100, 190, 255);
-    SDL_SetTextureScaleMode(Assets::Get()->GetTexture("game.finger")->SDLTexture(), SDL_SCALEMODE_NEAREST);
+    SDL_SetTextureScaleMode(Assets::Get()->GetTexture("game.guess")->SDLTexture(), SDL_SCALEMODE_NEAREST);
+    SDL_SetTextureScaleMode(Assets::Get()->GetTexture("game.draw")->SDLTexture(), SDL_SCALEMODE_NEAREST);
 
     auto slot = Assets::Get()->GetTexture("game.letter.slot");
     auto background = Assets::Get()->GetTexture("game.letter.slot_background");
@@ -65,7 +66,7 @@ int main() {
     drawing->RenderTextureFullscreen(background->SDLTexture(), nullptr);
     drawing->RenderTextureFullscreen(slot->SDLTexture(), nullptr);
     drawing->SetRenderTarget(nullptr);
-    GuessingMenu::game_letter_slot_.SetSDLTexture(letter_slot->SDLTexture());
+    Panel::game_letter_slot_.SetSDLTexture(letter_slot->SDLTexture());
 
 //    auto scribb = new Scribbles(Vec2d(0, 0), application->GetResolution() - 35, 35);
 //    scribb->GenerateZigZag();
@@ -84,7 +85,7 @@ int main() {
     scribbles.push_back(scribb3);
 
     MainMenu main_menu;
-    GuessingMenu guessing_menu;
+    IngameMenu guessing_menu;
     Frame* current_menu = &main_menu;
 
     Vec2i render_drag_from = Vec2i(0, 0);
@@ -122,6 +123,12 @@ int main() {
                         current_menu->UpdateElement({ 0, 0 },
                                                     application->GetResolution(),
                                                     application->GetResolution());
+                    } else if (sdl_event.key.scancode == SDL_SCANCODE_3) {
+                        ((IngameMenu*)current_menu)->PrepareGuess();
+                    } else if (sdl_event.key.scancode == SDL_SCANCODE_4) {
+                        ((IngameMenu*)current_menu)->PrepareWatch();
+                    } else if (sdl_event.key.scancode == SDL_SCANCODE_5) {
+                        ((IngameMenu*)current_menu)->PrepareDraw();
                     }
 
                     break;
@@ -146,8 +153,9 @@ int main() {
             for (auto scribb : scribbles)
                 scribb->Tick();
 
-            drawing->SetColor(94, 152, 224, 255);
-            drawing->Clear();
+//            drawing->SetColor(94, 152, 224, 255);
+//            drawing->SetColor(200, 200, 200, 255);
+//            drawing->Clear();
 
             for (auto scribb : scribbles)
                 scribb->Draw();

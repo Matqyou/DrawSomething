@@ -5,6 +5,7 @@
 #pragma once
 
 #include "../../shared/core/Vec2.h"
+#include "SDL3/SDL_rect.h"
 
 namespace Rectangles {
 template<typename T>
@@ -26,6 +27,14 @@ Vec2<T> ScaleToBounds(const Vec2<T>& original, const Vec2<T>& bounds) {
 
     if (original_ratio < bounds_ratio) { return ScaleByHeight(original, bounds.y); }
     else { return ScaleByWidth(original, bounds.x); }
+}
+
+template<typename T>
+SDL_FRect CenterRelative(const Vec2<T>& original, const Vec2<T>& container) {
+    return { static_cast<float>((container.x - original.x) / 2.0),
+             static_cast<float>((container.y - original.y) / 2.0),
+             static_cast<float>(original.x),
+             static_cast<float>(original.y) };
 }
 
 }

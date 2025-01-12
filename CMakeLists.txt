@@ -40,12 +40,16 @@ add_executable(DrawSomething src/main.cpp
         src/client/ui/components/element/Frame.h
         src/client/ui/menus/MainMenu.cpp
         src/client/ui/menus/MainMenu.h
-        src/client/ui/menus/GuessingMenu.cpp
-        src/client/ui/menus/GuessingMenu.h
         src/client/core/Rectangles.cpp
         src/client/core/Rectangles.h
         src/client/ui/components/Canvas.cpp
         src/client/ui/components/Canvas.h
+        src/client/ui/menus/IngameMenu.cpp
+        src/client/ui/menus/IngameMenu.h
+        src/client/ui/menus/base/FullscreenMenu.cpp
+        src/client/ui/menus/base/FullscreenMenu.h
+        src/client/ui/menus/components/Panel.cpp
+        src/client/ui/menus/components/Panel.h
 )
 
 target_link_libraries(${PROJECT_NAME} SDL3 SDL3_image SDL3_mixer SDL3_ttf)

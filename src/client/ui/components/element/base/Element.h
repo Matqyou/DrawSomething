@@ -102,6 +102,7 @@ public:
     [[nodiscard]] bool PointCollides(int x, int y) const;
 
     // Options
+    Element* SetChildren(const std::vector<Element*>& children);
     Element* AddChildren(const std::vector<Element*>& children);
     Element* SetFlexInvolved(bool horizontal, bool vertical) {
         this->flex_involved_horizontal = horizontal;
