@@ -8,16 +8,16 @@
 
 class MainMenu : public Frame {
 private:
-    static LoadedTexture texture_header;
+    static PreloadTexture texture_header;
 
-    static LoadedTexture texture_game_header;
-    static LoadedTexture texture_game_content;
-    static LoadedTexture texture_game_create;
+    static PreloadTexture texture_game_header;
+    static PreloadTexture texture_game_content;
+    static PreloadTexture texture_game_create;
 
-    static LoadedTexture texture_profile_base;
+    static PreloadTexture texture_profile_base;
 
-    static LoadedTexture texture_friends_header;
-    static LoadedTexture texture_friends_link;
+    static PreloadTexture texture_friends_header;
+    static PreloadTexture texture_friends_link;
 
 public:
     MainMenu();

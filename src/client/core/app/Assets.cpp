@@ -16,10 +16,11 @@ using namespace Strings;
 template<> AssetsClass* Singleton<AssetsClass>::instance_ = nullptr;
 template<> const char* Singleton<AssetsClass>::singleton_name_ = "Assets";
 std::vector<Texture*> AssetsClass::m_AutomaticDeletionTextures = { };
-std::vector<LoadedTexture*> AssetsClass::m_RegisterTextures = { };
-std::vector<LoadedSound*> AssetsClass::m_RegisterSounds = { };
-std::vector<LoadedMusic*> AssetsClass::m_RegisterMusic = { };
-std::vector<LoadedFont*> AssetsClass::m_RegisterFonts = { };
+std::vector<PreloadTexture*> AssetsClass::m_LinkTextures = { };
+std::vector<PreloadSound*> AssetsClass::m_LinkSounds = { };
+std::vector<PreloadMusic*> AssetsClass::m_LinkMusic = { };
+std::vector<PreloadFont*> AssetsClass::m_PreloadFonts = { };
+std::vector<LinkFont*> AssetsClass::m_LinkFonts = { };
 
 Texture::Texture(SDL_Texture* sdl_texture, std::string key, std::string load_extension)
     : m_Key(std::move(key)),
@@ -189,17 +190,17 @@ void AssetsClass::LoadTextures(SDL_Renderer* renderer) {
         m_Textures[key] = new_texture;
     }
     std::wcout << FStringColorsW(L"[Assets] &5Loaded %i textures", m_Textures.size()) << std::endl;
-    m_InvalidTexture = nullptr;
-    m_InvalidTexture = GetTexture("invalid");
+    m_InvalidTextureDefault = nullptr;
+    m_InvalidTextureDefault = GetTexture("invalid");
 
     // Link
-    for (auto required_texture : m_RegisterTextures) {
+    for (auto required_texture : m_LinkTextures) {
         const std::string& texture_key = required_texture->Key();
 
         required_texture->m_Texture = GetTexture(texture_key);
     }
-    std::wcout << FStringColorsW(L"[Assets] &5Linked %zu textures", m_RegisterTextures.size()) << std::endl;
-    m_RegisterTextures.clear();
+    std::wcout << FStringColorsW(L"[Assets] &5Linked %zu textures", m_LinkTextures.size()) << std::endl;
+    m_LinkTextures.clear();
 }
 
 void AssetsClass::LoadSounds() {
@@ -238,13 +239,13 @@ void AssetsClass::LoadSounds() {
     std::wcout << FStringColorsW(L"[Assets] &5Loaded %i sounds", m_Sounds.size()) << std::endl;
 
     // Link
-    for (auto required_sound : m_RegisterSounds) {
+    for (auto required_sound : m_LinkSounds) {
         const std::string& sound_key = required_sound->Key();
 
         required_sound->m_Sound = GetSound(sound_key);
     }
-    std::wcout << FStringColorsW(L"[Assets] &5Linked %zu sounds", m_RegisterSounds.size()) << std::endl;
-    m_RegisterSounds.clear();
+    std::wcout << FStringColorsW(L"[Assets] &5Linked %zu sounds", m_LinkSounds.size()) << std::endl;
+    m_LinkSounds.clear();
 }
 
 void AssetsClass::LoadMusic() {
@@ -283,13 +284,13 @@ void AssetsClass::LoadMusic() {
     std::wcout << FStringColorsW(L"[Assets] &5Loaded %i music", m_Music.size()) << std::endl;
 
     // Link
-    for (auto required_music : m_RegisterMusic) {
+    for (auto required_music : m_LinkMusic) {
         const std::string& music_key = required_music->Key();
 
         required_music->m_Music = GetMusic(music_key);
     }
-    std::wcout << FStringColorsW(L"[Assets] &5Linked %zu music", m_RegisterMusic.size()) << std::endl;
-    m_RegisterMusic.clear();
+    std::wcout << FStringColorsW(L"[Assets] &5Linked %zu music", m_LinkMusic.size()) << std::endl;
+    m_LinkMusic.clear();
 }
 
 void AssetsClass::LoadFonts() {
@@ -298,35 +299,50 @@ void AssetsClass::LoadFonts() {
         ".bdf", ".pcf", ".sfnt", ".ttc",
     };
     auto font_paths = GetResourceKeys(R"(.\assets\fonts\)", font_extensions);
-    for (auto required_font : m_RegisterFonts) {
+    for (auto required_font : m_PreloadFonts) {
         const std::string& font_key = required_font->Key();
+        const std::string& font_id = required_font->FontID();
         int font_size = required_font->Size();
 
         for (auto entry : font_paths) {
-            std::string& key = std::get<0>(entry);
+            std::string& id = std::get<0>(entry);
             std::string& file_path = std::get<1>(entry);
             std::string& extension = std::get<2>(entry);
 
-            if (font_key == key) {
+            if (font_id == id) {
                 auto ttf_font = TTF_OpenFont(file_path.c_str(), font_size);
                 if (!ttf_font)
                     throw std::runtime_error(FString("Failed to load font '%s' because (%s)",
                                                      file_path.c_str(),
                                                      SDL_GetError()));
 
-                auto new_font = new Font(ttf_font, key, extension);
+                auto new_font = new Font(ttf_font, font_key, extension);
                 required_font->m_Font = new_font;
+                m_Fonts[font_key] = new_font;
+
                 break;
             }
         }
     }
 
-    std::wcout << FStringColorsW(L"[Assets] &5Loaded and linked %zu fonts", m_RegisterFonts.size()) << std::endl;
-    m_RegisterFonts.clear();
+    // Link
+    for (auto required_font : m_LinkFonts) {
+        const std::string& font_key = required_font->Key();
+
+        required_font->m_Font = GetFont(font_key);
+    }
+
+    auto loaded_fonts_message = FStringW(L"[Assets] &5Loaded %zu fonts", m_PreloadFonts.size());
+    if (!m_LinkFonts.empty())
+        loaded_fonts_message += FStringW(L" &d(%zu linked)", m_LinkFonts.size());
+    std::wcout << FStringColorsW(L"%ls", loaded_fonts_message.c_str()) << std::endl;
+
+    m_PreloadFonts.clear();
+    m_LinkFonts.clear();
 }
 
 AssetsClass::AssetsClass(SDL_Renderer* renderer, bool sounds_enabled)
-    : m_InvalidTexture(nullptr) {
+    : m_InvalidTextureDefault(nullptr) {
     m_Renderer = renderer;
     m_SoundsEnabled = sounds_enabled;
 
@@ -363,7 +379,7 @@ AssetsClass::~AssetsClass() {
     auto other_destroyed_textures = destroyed_textures - preloaded_textures;
     auto unloaded_textures_message = FStringW(L"[Assets] &5Unloaded %zu textures", preloaded_textures);
     if (other_destroyed_textures > 0)
-        unloaded_textures_message += FStringW(L" &d(+%zu other)", other_destroyed_textures);
+        unloaded_textures_message += FStringW(L" &d(+%zu dynamic)", other_destroyed_textures);
     std::wcout << FStringColorsW(L"%ls", unloaded_textures_message.c_str()) << std::endl;
     std::wcout << FStringColorsW(L"[Assets] &5Unloaded %zu sounds", destroyed_sounds) << std::endl;
     std::wcout << FStringColorsW(L"[Assets] &5Unloaded %zu music", destroyed_music) << std::endl;
@@ -376,7 +392,7 @@ Texture* AssetsClass::GetTexture(const std::string& texture_key) {
         return it->second;
 
     std::wcout << FStringColorsW(L"[Assets] &8Texture '%s' not found", texture_key.c_str()) << std::endl;
-    return m_InvalidTexture;
+    return m_InvalidTextureDefault;
 }
 
 Sound* AssetsClass::GetSound(const std::string& sound_key) {
@@ -397,6 +413,15 @@ Music* AssetsClass::GetMusic(const std::string& music_key) {
     return nullptr;
 }
 
+Font* AssetsClass::GetFont(const std::string& font_key) {
+    auto it = m_Fonts.find(font_key);
+    if (it != m_Fonts.end())
+        return it->second;
+
+    std::wcout << FStringColorsW(L"[Assets] &8Font '%s' not found", font_key.c_str()) << std::endl;
+    return nullptr;
+}
+
 Texture* AssetsClass::TextureFromSurface(SDL_Surface* sdl_surface) {
     SDL_Texture* NewSDLTexture = SDL_CreateTextureFromSurface(m_Renderer, sdl_surface);
 
@@ -409,20 +434,24 @@ Texture* AssetsClass::CreateTexture(SDL_PixelFormat format, SDL_TextureAccess ac
     return new Texture(NewSDLTexture, "CreateTexture", "NaN");
 }
 
-void AssetsClass::RequireTexture(LoadedTexture* register_texture) {
-    m_RegisterTextures.push_back(register_texture);
+void AssetsClass::LinkPreloadedTexture(PreloadTexture* link_texture) {
+    m_LinkTextures.push_back(link_texture);
 }
 
-void AssetsClass::RequireSound(LoadedSound* register_sound) {
-    m_RegisterSounds.push_back(register_sound);
+void AssetsClass::LinkPreloadedSound(PreloadSound* link_sound) {
+    m_LinkSounds.push_back(link_sound);
 }
 
-void AssetsClass::RequireMusic(LoadedMusic* register_music) {
-    m_RegisterMusic.push_back(register_music);
+void AssetsClass::LinkPreloadedMusic(PreloadMusic* link_music) {
+    m_LinkMusic.push_back(link_music);
 }
 
-void AssetsClass::RequireFont(LoadedFont* register_font) {
-    m_RegisterFonts.push_back(register_font);
+void AssetsClass::PreloadFont_(PreloadFont* preload_font) {
+    m_PreloadFonts.push_back(preload_font);
+}
+
+void AssetsClass::LinkPreloadedFont(LinkFont* link_font) {
+    m_LinkFonts.push_back(link_font);
 }
 
 void AssetsClass::SetMusicVolume(int volume) {
@@ -437,50 +466,67 @@ void AssetsClass::AutomaticallyDeleteTexture(Texture* texture) {
     m_AutomaticDeletionTextures.push_back(texture);
 }
 
-LoadedTexture::LoadedTexture(std::string texture_key)
+PreloadTexture::PreloadTexture(std::string texture_key)
     : m_Key(std::move(texture_key)) {
     m_Texture = nullptr;
 
-    AssetsClass::RequireTexture(this);
+    AssetsClass::LinkPreloadedTexture(this);
 }
 
-LoadedSound::LoadedSound(std::string sound_key)
+PreloadSound::PreloadSound(std::string sound_key)
     : m_Key(std::move(sound_key)) {
     m_Sound = nullptr;
 
-    AssetsClass::RequireSound(this);
+    AssetsClass::LinkPreloadedSound(this);
 }
 
-Sound* LoadedSound::GetSound() const {
+Sound* PreloadSound::GetSound() const {
     if (m_Sound == nullptr)
         throw std::runtime_error(FString("[Sound] GetSound '%s' was nullptr", m_Key.c_str()));
 
     return m_Sound;
 }
 
-LoadedMusic::LoadedMusic(std::string music_key)
+PreloadMusic::PreloadMusic(std::string music_key)
     : m_Key(std::move(music_key)) {
     m_Music = nullptr;
 
-    AssetsClass::RequireMusic(this);
+    AssetsClass::LinkPreloadedMusic(this);
 }
 
-Music* LoadedMusic::GetMusic() const {
+Music* PreloadMusic::GetMusic() const {
     if (m_Music == nullptr)
         throw std::runtime_error(FString("[Music] GetMusic '%s' was nullptr", m_Key.c_str()));
 
     return m_Music;
 }
 
-LoadedFont::LoadedFont(std::string font_key, int ptsize)
-    : m_Key(std::move(font_key)) {
+PreloadFont::PreloadFont(std::string font_key, std::string font_id, int ptsize)
+    : m_Key(std::move(font_key)),
+      m_FontID(std::move(font_id)) {
     m_Font = nullptr;
     m_Size = ptsize;
 
-    AssetsClass::RequireFont(this);
+    AssetsClass::PreloadFont_(this);
 }
 
-Font* LoadedFont::GetFont() const {
+Font* PreloadFont::GetFont() const {
+    if (m_Font == nullptr)
+        throw std::runtime_error(FString("[Font] GetFont '%s' was nullptr", m_Key.c_str()));
+
+    return m_Font;
+}
+
+LinkFont::LinkFont(std::string font_key)
+    : m_Key(std::move(font_key)),
+      m_FontID("NaN") {
+    m_Font = nullptr;
+    m_Size = -1;
+
+    AssetsClass::LinkPreloadedFont(this);
+}
+
+Font* LinkFont::GetFont() const {
     if (m_Font == nullptr)
         throw std::runtime_error(FString("[Font] GetFont '%s' was nullptr", m_Key.c_str()));
 
