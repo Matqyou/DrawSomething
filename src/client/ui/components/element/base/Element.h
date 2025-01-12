@@ -27,6 +27,7 @@ enum ElementType {
     ELEMENT_FRAME,
     ELEMENT_BUTTON,
     ELEMENT_TEXTBOX,
+    ELEMENT_CUSTOM,
     NUM_ELEMENTTYPES,
 };
 
@@ -34,19 +35,13 @@ static const char* ELEMENTTYPE_NAMES[NUM_ELEMENTTYPES] = {
     "Frame",
     "Button",
     "Textbox",
+    "Custom"
 };
 
 enum ElementFlex {
     DONT_FLEX,
     FLEX_WIDTH,
     FLEX_HEIGHT,
-    NUM_ELEMENTFLEX,
-};
-
-static const char* ELEMENTFLEX_NAMES[NUM_ELEMENTFLEX] = {
-    "DONT",
-    "WIDTH",
-    "HEIGHT",
 };
 
 enum ElementDraw {
@@ -56,6 +51,12 @@ enum ElementDraw {
 };
 
 struct Element {
+protected:
+    Vec2i composition_pos;
+
+    void UpdateComposition();
+
+public:
     Element* parent;
     std::vector<Element*> children;
 
@@ -101,8 +102,7 @@ struct Element {
     [[nodiscard]] bool PointCollides(int x, int y) const;
 
     // Options
-    Element* SetChildren(std::initializer_list<Element*> children);
-    Element* SetChildren(const std::vector<Element*>& children);
+    Element* AddChildren(const std::vector<Element*>& children);
     Element* SetFlexInvolved(bool horizontal, bool vertical) {
         this->flex_involved_horizontal = horizontal;
         this->flex_involved_vertical = vertical;
@@ -164,7 +164,8 @@ struct Element {
     // Manipulating
     void UnfocusChildren();
     void SetFocus(Element* focus_element);
-    void SetSize(const Vec2i& new_pos, const Vec2i& new_size, const Vec2i& new_visual);
+    void UpdateElement(const Vec2i& new_pos, const Vec2i& new_size, const Vec2i& new_visual);
+    void Refresh(int child_generation = 0);
     void DebugPrint(std::vector<bool> level = { }, bool last_child = true);
 
     // Ticking

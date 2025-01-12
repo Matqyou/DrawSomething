@@ -5,12 +5,12 @@
 #include "TextBox.h"
 #include "../../../core/Application.h"
 
-LoadedFont TextBox::sDefaultFont("minecraft", 24);
-
 #include <vector>
 #include <string>
 #include <stdexcept>
 #include <SDL3_ttf/SDL_ttf.h>
+
+LinkFont TextBox::sFontDefault("default");
 
 std::vector<std::string> TextBox::WrapText(const std::string& text, TTF_Font* font, int max_width) {
     std::vector<std::string> lines;
@@ -122,7 +122,7 @@ void TextBox::UpdateRender() {
         delete line_render;
     text_lines.clear();
 
-    auto font = sDefaultFont.GetFont()->TTFFont();
+    auto font = sFontDefault.GetFont()->TTFFont();
     auto lines = WrapText(text, font, 200);
 
     for (size_t i = 0; i < lines.size(); ++i) {
@@ -189,7 +189,7 @@ void TextBox::Render() const {
     drawing->FillRect(GetRect());
 
     // Retrieve the font height
-    int line_height = TTF_GetFontHeight(sDefaultFont.GetFont()->TTFFont());
+    int line_height = TTF_GetFontHeight(sFontDefault.GetFont()->TTFFont());
 
     auto render_rect = GetRect();
     for (const auto& line_render : text_lines) {

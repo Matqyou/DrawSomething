@@ -6,16 +6,16 @@
 #include "../../core/Application.h"
 #include "../components/element/Button.h"
 
-LoadedTexture MainMenu::texture_header("header");
+PreloadTexture MainMenu::texture_header("header");
 
-LoadedTexture MainMenu::texture_game_header("main_menu.games.header");
-LoadedTexture MainMenu::texture_game_content("main_menu.games.game");
-LoadedTexture MainMenu::texture_game_create("main_menu.games.create");
+PreloadTexture MainMenu::texture_game_header("main_menu.games.header");
+PreloadTexture MainMenu::texture_game_content("main_menu.games.game");
+PreloadTexture MainMenu::texture_game_create("main_menu.games.create");
 
-LoadedTexture MainMenu::texture_profile_base("main_menu.profile.base");
+PreloadTexture MainMenu::texture_profile_base("main_menu.profile.base");
 
-LoadedTexture MainMenu::texture_friends_header("main_menu.friends.header");
-LoadedTexture MainMenu::texture_friends_link("main_menu.friends.button");
+PreloadTexture MainMenu::texture_friends_header("main_menu.friends.header");
+PreloadTexture MainMenu::texture_friends_link("main_menu.friends.button");
 
 MainMenu::MainMenu()
     : Frame(Vec2i(0, 0), Vec2i(0, 0), DONT_DRAW) {
@@ -65,7 +65,7 @@ MainMenu::MainMenu()
         ->SetFlex(FLEX_HEIGHT)
         ->SetAdaptive(true, true)
         ->SetName("Games")
-        ->SetChildren({ games_title, games_content, games_content2, games_create });
+        ->AddChildren({ games_title, games_content, games_content2, games_create });
 
     // Profile window
     auto profile = (new Frame(Vec2i(-25, 100),
@@ -100,23 +100,23 @@ MainMenu::MainMenu()
         ->SetFlex(FLEX_HEIGHT)
         ->SetAdaptive(true, true)
         ->SetName("Friends")
-        ->SetChildren({ friends_title, friends_link });
+        ->AddChildren({ friends_title, friends_link });
 
     // Compose into the main frame
     std::initializer_list<Element*> game_elements = { header, games, profile, friends };
 
-    SetChildren(game_elements)->SetName("MainMenu");
-    SetSize(Vec2i(0, 0),
-            Application::Get()->GetResolution(),
-            Application::Get()->GetResolution());
+    AddChildren(game_elements)->SetName("MainMenu");
+    UpdateElement(Vec2i(0, 0),
+                  Application::Get()->GetResolution(),
+                  Application::Get()->GetResolution());
 }
 
 void MainMenu::HandleEvent(SDL_Event& sdl_event, EventContext& event_summary) {
     switch (sdl_event.type) {
         case SDL_EVENT_WINDOW_RESIZED: {
-            SetSize(Vec2i(0, 0),
-                    Application::Get()->GetResolution(),
-                    Application::Get()->GetResolution());
+            UpdateElement(Vec2i(0, 0),
+                          Application::Get()->GetResolution(),
+                          Application::Get()->GetResolution());
 
             break;
         }

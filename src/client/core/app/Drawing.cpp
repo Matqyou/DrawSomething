@@ -4,7 +4,7 @@
 
 #include "Drawing.h"
 
-LoadedFont Drawing::sAngleFont("computer_modern.cmunrm", 16);
+LinkFont Drawing::sFontMath("math");
 
 Drawing::Drawing(SDL_Renderer* renderer) {
     m_Renderer = renderer;
@@ -97,7 +97,7 @@ void Drawing::DrawDegrees(const Vec2d& point_a, const Vec2d& point_b, SDL_Color 
     double radians = (point_b - point_a).Atan2();
 
     auto angle_text = Strings::FString("%.1f°", round(radians / M_PI * 1800.0) / 10.0);
-    auto text_surface = TTF_RenderText_Blended(sAngleFont.GetFont()->TTFFont(),
+    auto text_surface = TTF_RenderText_Blended(sFontMath.GetFont()->TTFFont(),
                                                angle_text.c_str(),
                                                angle_text.size(),
                                                text_color);
@@ -142,7 +142,7 @@ void Drawing::DrawAnglemark(const Vec2d& point_a,
     }
 
     auto angle_text = Strings::FString("%.1f°", round(radians / M_PI * 1800.0) / 10.0);
-    auto text_surface = TTF_RenderText_Blended(sAngleFont.GetFont()->TTFFont(),
+    auto text_surface = TTF_RenderText_Blended(sFontMath.GetFont()->TTFFont(),
                                                angle_text.c_str(),
                                                angle_text.size(),
                                                text_color);

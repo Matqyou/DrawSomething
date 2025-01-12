@@ -19,7 +19,7 @@ private:
     bool update_render;
     SDL_Color text_color;
 
-    static LoadedFont sDefaultFont;
+    static LinkFont sFontDefault;
 
     static std::vector<std::string> WrapText(const std::string& text, TTF_Font* font, int max_width);
     void UpdateRender();
