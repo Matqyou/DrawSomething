@@ -52,7 +52,7 @@ public:
     void SetSDLTexture(SDL_Texture* sdl_texture);
     void SetBlendMode(SDL_BlendMode blend_mode);
     void SetColorMod(Uint8 r, Uint8 g, Uint8 b);
-    void SetColorMod(SDL_Color color);
+    void SetColorMod(SDL_FColor color);
     void SetAlphaMod(int alpha);
 };
 

@@ -1,5 +1,5 @@
 #define SDL_MAIN_HANDLED
-#define DRAWSOMETHING_VERSION "1.1.3"
+#define DRAWSOMETHING_VERSION "1.1.4"
 
 #include <iostream>
 #include <thread>
@@ -40,7 +40,7 @@ int main() {
                               DRAWSOMETHING_VERSION,
                               "com.matq.draw_something",
                               Vec2i(1024, 720),
-                              60.0));
+                              75.0));
     auto application = Application::Get();
     auto drawing = application->GetDrawing();
     auto clock = application->GetClock();
@@ -145,13 +145,12 @@ int main() {
             SDL_SetCursor(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_DEFAULT));
 
         if (clock->TimePassed()) {
+            // Ticking
+            current_menu->Tick();
             for (auto scribb : scribbles)
                 scribb->Tick();
 
-//            drawing->SetColor(94, 152, 224, 255);
-//            drawing->SetColor(200, 200, 200, 255);
-//            drawing->Clear();
-
+            // Drawing
             for (auto scribb : scribbles)
                 scribb->Draw();
             if (render_debug) {

@@ -181,7 +181,7 @@ void TextBox::PostEvent() {
     }
 }
 
-void TextBox::Render() const {
+void TextBox::Render() {
     auto drawing = Application::Get()->GetDrawing();
     auto& fill_color = has_focus ? focus_color : color;
 

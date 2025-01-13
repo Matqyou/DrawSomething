@@ -26,8 +26,11 @@ IngameMenu::IngameMenu()
 
     // Buttons and stuff
     panel = new IngamePanel();
-    color_selector = new IngameColorSelector();
+    color_selector = new IngameColorSelector(canvas);
     tool_selector = new IngameToolSelector();
+    tool_selector->trash_button->SetCallback([this]() { canvas->ClearCanvas(); });
+    tool_selector->pencil_tool->SetCallback([this]() { tool_selector->SetFocus(tool_selector->pencil_tool); canvas->SetTool(TOOL_PENCIL); });
+    tool_selector->eraser_tool->SetCallback([this]() { tool_selector->SetFocus(tool_selector->eraser_tool); canvas->SetTool(TOOL_ERASER); });
 
     SetColor(230, 230, 230, 255);
     SetFlex(FLEX_HEIGHT);

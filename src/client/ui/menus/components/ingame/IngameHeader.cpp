@@ -20,7 +20,7 @@ IngameHeader::IngameHeader()
     picture = nullptr;
 
     auto assets = Assets::Get();
-    texture_profile_picture = assets->GetTexture(Strings::FString("profile_pictures.cat%d", 1 + rand() % 6));
+    texture_profile_picture = assets->GetTexture(Strings::FString("profile_pictures.cat%d", 1 + rand() % 10));
     texture_turn = nullptr;
     texture_turn_number = nullptr;
     texture_title = nullptr;

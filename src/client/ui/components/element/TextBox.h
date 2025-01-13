@@ -35,6 +35,6 @@ public:
     // Ticking
     void HandleEvent(SDL_Event& event, EventContext& event_summary) override;
     void PostEvent() override;
-    void Render() const override;
+    void Render() override;
 
 };

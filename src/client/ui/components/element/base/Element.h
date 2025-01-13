@@ -170,11 +170,14 @@ public:
     void DebugPrint(std::vector<bool> level = { }, bool last_child = true);
 
     // Ticking
+    virtual void Tick();
     virtual void HandleEvent(SDL_Event& event, EventContext& event_summary);
-    virtual void Render() const;
+    virtual void Render();
     virtual void RenderDebug() const;
     virtual void PostEvent() { };
+    virtual void PostRefresh() { };
 
+    void TickChildren() const;
     void HandleEventChildren(SDL_Event& event, EventContext& event_summary);
     void RenderChildren() const;
     void RenderDebugChildren() const;

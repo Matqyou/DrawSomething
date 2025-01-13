@@ -56,6 +56,8 @@ add_executable(DrawSomething src/main.cpp
         src/client/ui/menus/components/ingame/IngameColorSelector.h
         src/client/ui/menus/components/ingame/IngameToolSelector.cpp
         src/client/ui/menus/components/ingame/IngameToolSelector.h
+        src/client/ui/components/element/OverlayButton.cpp
+        src/client/ui/components/element/OverlayButton.h
 )
 
 target_link_libraries(${PROJECT_NAME} SDL3 SDL3_image SDL3_mixer SDL3_ttf)

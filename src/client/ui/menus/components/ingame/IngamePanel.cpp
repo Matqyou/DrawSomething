@@ -8,7 +8,7 @@
 
 auto static sCallbackGuessingBar = [](Texture* texture) {
     texture->SetColorMod(100, 190, 255);
-    texture->SetAlphaMod(200);
+    texture->SetAlphaMod(170);
     texture->SetBlendMode(SDL_BLENDMODE_BLEND);
 };
 auto static sCallbackLetterColor = [](Texture* texture) {
@@ -68,7 +68,7 @@ IngamePanel::IngamePanel()
 
     // Guessing bar
     auto guessing_bar = (new Frame(Vec2i(0, 0),
-                                   Vec2i(0, 77),
+                                   Vec2i(0, 90),
                                    game_guessing_bar.GetTexture()))
         ->SetFullyOccupy(true, false)
         ->SetFlexInvolved(true, false)
