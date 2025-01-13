@@ -16,4 +16,8 @@ std::string EraseSuffix(std::string string, const std::string& suffix);
 std::string RepeatString(const std::string& str, int times);
 std::wstring RepeatStringW(const std::wstring& str, int times);
 const char* RandomUppercaseLetter();
+
+// Cout
+void PrintDivider(const std::string& label = "", bool wide = true);
+
 }

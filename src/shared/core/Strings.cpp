@@ -254,4 +254,26 @@ const char* RandomUppercaseLetter() {
     return letter;
 }
 
+// Cout
+void PrintDivider(const std::string& label, bool wide) {
+    const int LENGTH = 72;
+
+    std::string output;
+    auto label_length = label.size();
+    if (label_length == 0) {
+        output = Strings::FStringColors("&8%s", Strings::RepeatString("-", LENGTH).c_str());
+
+    } else {
+        auto new_length = LENGTH - label_length;
+        auto half = new_length / 2;
+        auto remaining = new_length - half;
+        output = Strings::FStringColors("&8%s", Strings::RepeatString("-", (int)half).c_str());
+        output += Strings::FStringColors("&f%s", label.c_str());
+        output += Strings::FStringColors("&8%s", Strings::RepeatString("-", (int)remaining).c_str());
+    }
+
+    if (wide) std::wcout << std::wstring(output.begin(), output.end()) << std::endl;
+    else std::cout << output << std::endl;
+}
+
 }

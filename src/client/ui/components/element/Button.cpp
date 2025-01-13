@@ -58,8 +58,3 @@ void Button::HandleEvent(SDL_Event& event, EventContext& event_summary) {
         }
     }
 }
-
-//void Button::Render(Drawing* drawing) const {
-//    drawing->SetColor(color);
-//    drawing->FillRect(GetRect());
-//}

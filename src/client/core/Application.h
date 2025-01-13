@@ -22,7 +22,6 @@ protected:
     Vec2i resolution;
 
     static void PrintVersions();
-    static void PrintDivider(const std::string& label = "");
 
 public:
     App(const char* title,

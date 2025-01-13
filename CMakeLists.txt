@@ -4,7 +4,6 @@ project(DrawSomething)
 set(CMAKE_CXX_STANDARD 20)
 
 include_directories(deps/SDL/include deps/SDL_image/include deps/SDL_mixer/include deps/SDL_ttf/include)
-#link_directories(deps/SDL/lib/x64 deps/SDL_image/lib/x64 deps/SDL_mixer/lib/x64 deps/SDL_ttf/lib/x64)
 
 link_directories(
         ${CMAKE_SOURCE_DIR}/deps/SDL/cmake-build-debug
@@ -15,8 +14,9 @@ link_directories(
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_NAME})
 
-add_executable(DrawSomething src/main.cpp
+add_executable(DrawSomething src/client/main.cpp
         deps/icon_resource.rc
+        src/shared/core/Strings.cpp
         src/client/core/app/Assets.cpp
         src/client/core/app/Assets.h
         src/client/core/app/Clock.cpp
@@ -25,7 +25,6 @@ add_executable(DrawSomething src/main.cpp
         src/client/core/app/Drawing.h
         src/client/core/Application.cpp
         src/client/core/Application.h
-        src/shared/core/Strings.cpp
         src/client/ui/components/Scribbles.cpp
         src/client/ui/components/Scribbles.h
         src/client/ui/components/element/Button.h
@@ -56,6 +55,13 @@ add_executable(DrawSomething src/main.cpp
         src/client/ui/menus/components/ingame/IngameColorSelector.h
         src/client/ui/menus/components/ingame/IngameToolSelector.cpp
         src/client/ui/menus/components/ingame/IngameToolSelector.h
+        src/client/ui/components/element/OverlayButton.cpp
+        src/client/ui/components/element/OverlayButton.h
+)
+
+add_executable(DrawSomethingServer src/server/main.cpp
+        deps/icon_resource.rc
+        src/shared/core/Strings.cpp
 )
 
 target_link_libraries(${PROJECT_NAME} SDL3 SDL3_image SDL3_mixer SDL3_ttf)

@@ -26,27 +26,10 @@ void App::PrintVersions() {
                                           SDL_TTF_MICRO_VERSION) << std::endl;
 }
 
-void App::PrintDivider(const std::string& label) {
-    const int LENGTH = 72;
-
-    auto label_length = label.size();
-    if (label_length == 0) {
-        std::wcout << Strings::FStringColorsW(L"&8%s", Strings::RepeatString("-", LENGTH).c_str()) << std::endl;
-    } else {
-        auto new_length = LENGTH - label_length;
-        auto half = new_length / 2;
-        auto remaining = new_length - half;
-        std::wcout << Strings::FStringColorsW(L"&8%s", Strings::RepeatString("-", (int)half).c_str());
-        std::wcout << Strings::FStringColorsW(L"&f%s", label.c_str());
-        std::wcout << Strings::FStringColorsW(L"&8%s", Strings::RepeatString("-", (int)remaining).c_str());
-        std::wcout << std::endl;
-    }
-}
-
 App::App(const char* title, const char* version, const char* identifier, const Vec2i& resolution, double framerate, const char* renderer_backend)
     : clock(framerate) {
     system("");
-    PrintDivider("Initializing");
+    Strings::PrintDivider(title);
 
     std::wcout << Strings::FStringColorsW(L"&3%s %s", title, version) << std::endl;
 
@@ -112,11 +95,11 @@ App::App(const char* title, const char* version, const char* identifier, const V
     drawing = new Drawing(renderer);
     Assets::init(new AssetsClass(drawing, init_audio));
 
-    PrintDivider();
+    Strings::PrintDivider();
 }
 
 App::~App() {
-    PrintDivider("Destroying");
+    Strings::PrintDivider("Destroying");
 
     // Application objects
     Assets::destroy();
@@ -133,7 +116,7 @@ App::~App() {
     Mix_Quit();
     SDL_Quit();
 
-    PrintDivider();
+    Strings::PrintDivider();
 }
 
 void App::Event(const SDL_Event& sdl_event) {

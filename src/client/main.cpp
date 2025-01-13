@@ -1,5 +1,6 @@
 #define SDL_MAIN_HANDLED
-#define DRAWSOMETHING_VERSION "1.1.3"
+#define DRAWSOMETHING_VERSION "1.1.4"
+#define DRAWSOMETHING_NAME "DrawSomething"
 
 #include <iostream>
 #include <thread>
@@ -7,11 +8,11 @@
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
-#include "client/core/Application.h"
-#include "client/ui/components/Scribbles.h"
-#include "client/ui/components/event/EventContext.h"
-#include "client/ui/menus/MainMenu.h"
-#include "client/ui/menus/IngameMenu.h"
+#include "core/Application.h"
+#include "ui/components/Scribbles.h"
+#include "ui/components/event/EventContext.h"
+#include "ui/menus/MainMenu.h"
+#include "ui/menus/IngameMenu.h"
 
 std::vector<Scribbles*> scribbles;
 static PreloadTexture pencil("pencil2");
@@ -36,11 +37,11 @@ void exit_application() {
 
 int main() {
     _setmode(_fileno(stdout), _O_U16TEXT);
-    Application::init(new App("DrawSomething",
+    Application::init(new App(DRAWSOMETHING_NAME,
                               DRAWSOMETHING_VERSION,
                               "com.matq.draw_something",
                               Vec2i(1024, 720),
-                              60.0));
+                              75.0));
     auto application = Application::Get();
     auto drawing = application->GetDrawing();
     auto clock = application->GetClock();
@@ -145,13 +146,12 @@ int main() {
             SDL_SetCursor(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_DEFAULT));
 
         if (clock->TimePassed()) {
+            // Ticking
+            current_menu->Tick();
             for (auto scribb : scribbles)
                 scribb->Tick();
 
-//            drawing->SetColor(94, 152, 224, 255);
-//            drawing->SetColor(200, 200, 200, 255);
-//            drawing->Clear();
-
+            // Drawing
             for (auto scribb : scribbles)
                 scribb->Draw();
             if (render_debug) {

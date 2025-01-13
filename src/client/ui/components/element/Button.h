@@ -4,11 +4,14 @@
 
 #pragma once
 
+#include <utility>
+
 #include "base/Element.h"
 
 class Button : public Element {
-private:
-    void (* callback)();
+protected:
+    using Callback = std::function<void()>;
+    Callback callback;
 
 public:
     Button(const Vec2i& pos, const Vec2i& size);
@@ -18,8 +21,8 @@ public:
     Button(const Vec2i& pos, const Vec2i& size, Texture* texture);
 
     // Options
-    Element* SetCallback(void (* callback)()) {
-        this->callback = callback;
+    Element* SetCallback(Callback callback) {
+        this->callback = std::move(callback);
         return this;
     }
 

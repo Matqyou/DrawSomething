@@ -14,11 +14,18 @@ enum CanvasIntro {
     INTRO_DRAW,
 };
 
+enum DrawTool {
+    TOOL_NONE,
+    TOOL_PENCIL,
+    TOOL_ERASER,
+};
+
 class Canvas : public Element {
 private:
     bool instructions_intro;
     CanvasIntro intro_type;
     Vec2i resolution;
+    SDL_FRect canvas_source, canvas_rect;
     Texture* canvas;
 
     Texture* text_guess;
@@ -29,6 +36,11 @@ private:
     Vec2i scale_draw;
     using Callback = std::function<void()>;
     Callback after_intro_callback;
+
+    Vec2f drag, last_drag;
+    bool dragging;
+    DrawTool tool;
+    SDL_FColor draw_color;
 
     static PreloadTexture sTextureGuess;
     static PreloadTexture sTextureWatch;
@@ -49,7 +61,15 @@ public:
         return this;
     }
 
+    // Manipulation
+    void ClearCanvas();
+    void SetTool(DrawTool tool);
+    void SetDrawColor(SDL_FColor color);
+
     // Ticking
+    void Tick() override;
     void HandleEvent(SDL_Event& event, EventContext& event_summary) override;
-    void Render() const override;
+    void Render() override;
+    void PostRefresh() override;
+
 };

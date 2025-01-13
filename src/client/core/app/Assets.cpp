@@ -61,8 +61,8 @@ void Texture::SetColorMod(Uint8 r, Uint8 g, Uint8 b) {
     SDL_SetTextureColorMod(m_SDLTexture, r, g, b);
 }
 
-void Texture::SetColorMod(SDL_Color color) {
-    SDL_SetTextureColorMod(m_SDLTexture, color.r, color.g, color.b);
+void Texture::SetColorMod(SDL_FColor color) {
+    SDL_SetTextureColorMod(m_SDLTexture, (int)color.r, (int)color.g, (int)color.b);
 }
 
 void Texture::SetAlphaMod(int alpha) {
@@ -209,19 +209,6 @@ void AssetsClass::LoadTextures(SDL_Renderer* renderer) {
     }
     std::wcout << FStringColorsW(L"[Assets] &5Linked %zu textures", m_LinkTextures.size()) << std::endl;
     m_LinkTextures.clear();
-
-    // Pre-generate
-    for (auto generate_texture : m_PregenerateTextures) {
-        const std::string& texture_key = generate_texture->Key();
-        auto new_texture = generate_texture->m_GenerateCallback(this);
-        if (new_texture != nullptr) {
-            new_texture->FlagForAutomaticDeletion();
-            generate_texture->m_Texture = new_texture;
-            m_Textures[texture_key] = new_texture;
-        }
-    }
-    std::wcout << FStringColorsW(L"[Assets] &5Generated %zu textures", m_LinkTextures.size()) << std::endl;
-    m_PregenerateTextures.clear();
 }
 
 void AssetsClass::LoadSounds() {
@@ -340,6 +327,7 @@ void AssetsClass::LoadFonts() {
                 auto new_font = new Font(ttf_font, font_key, extension);
                 required_font->m_Font = new_font;
                 m_Fonts[font_key] = new_font;
+                std::wcout << Strings::FStringColorsW(L"[Assets] &9Loaded font %s", font_key.c_str()) << std::endl;
 
                 break;
             }
@@ -372,6 +360,19 @@ AssetsClass::AssetsClass(Drawing* drawing, bool sounds_enabled)
     LoadSounds();
     LoadMusic();
     LoadFonts();
+
+    // Pre-generate
+    for (auto generate_texture : m_PregenerateTextures) {
+        const std::string& texture_key = generate_texture->Key();
+        auto new_texture = generate_texture->m_GenerateCallback(this);
+        if (new_texture != nullptr) {
+            new_texture->FlagForAutomaticDeletion();
+            generate_texture->m_Texture = new_texture;
+            m_Textures[texture_key] = new_texture;
+        }
+    }
+    std::wcout << FStringColorsW(L"[Assets] &5Generated %zu textures", m_LinkTextures.size()) << std::endl;
+    m_PregenerateTextures.clear();
 }
 
 AssetsClass::~AssetsClass() {

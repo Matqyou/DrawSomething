@@ -96,12 +96,15 @@ void Element::UnfocusChildren() {
 }
 
 void Element::SetFocus(Element* focus_element) {
-    if (parent) {
-        parent->SetFocus(focus_element);
-        return;
-    }
+//    if (parent) {
+//        parent->SetFocus(focus_element);
+//        return;
+//    }
 
-    UnfocusChildren();
+//    UnfocusChildren();
+    for (auto child : children)
+        child->has_focus = false;
+
     if (focus_element != nullptr)
         focus_element->has_focus = true;
 }
@@ -448,8 +451,10 @@ void Element::UpdateComposition() {
         edge = pos + size;
     }
 
-    for (auto child : children)
+    for (auto child : children) {
         child->UpdateComposition();
+        child->PostRefresh();
+    }
 }
 
 void Element::DebugPrint(std::vector<bool> level, bool last_child) {
@@ -513,11 +518,15 @@ void Element::DebugPrint(std::vector<bool> level, bool last_child) {
     }
 }
 
+void Element::Tick() {
+    TickChildren();
+}
+
 void Element::HandleEvent(SDL_Event& event, EventContext& event_summary) {
     HandleEventChildren(event, event_summary);
 }
 
-void Element::Render() const {
+void Element::Render() {
     if (draw != ElementDraw::DONT_DRAW) {
         auto drawing = Application::Get()->GetDrawing();
         auto& fill_color = has_focus ? focus_color : color;
@@ -550,6 +559,11 @@ void Element::RenderDebug() const {
     drawing->DrawRect(GetRect());
 
     RenderDebugChildren();
+}
+
+void Element::TickChildren() const {
+    for (auto child : children)
+        child->Tick();
 }
 
 void Element::HandleEventChildren(SDL_Event& event, EventContext& event_summary) {

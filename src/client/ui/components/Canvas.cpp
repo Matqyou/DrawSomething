@@ -40,6 +40,8 @@ Canvas::Canvas(const Vec2i& pos, const Vec2i& size)
 
     after_intro_callback = [] { };
     resolution = Vec2i(950, 550);
+    canvas_source = { 0, 0, (float)resolution.x, (float)resolution.y };
+    canvas_rect = { (float)pos.x, (float)pos.y, (float)resolution.x, (float)resolution.y };
     canvas = new Texture(SDL_CreateTexture(drawing->Renderer(),
                                            SDL_PIXELFORMAT_RGBA8888,
                                            SDL_TEXTUREACCESS_TARGET,
@@ -49,35 +51,73 @@ Canvas::Canvas(const Vec2i& pos, const Vec2i& size)
     drawing->SetColor(255, 255, 255, 255);
     drawing->Clear();
     drawing->SetRenderTarget(nullptr);
+
+    this->dragging = false;
+    this->last_drag = Vec2f(0, 0);
+    this->tool = TOOL_PENCIL;
+    this->draw_color = { 0, 0, 0, 255 };
+}
+
+void Canvas::ClearCanvas() {
+    auto drawing = Application::Get()->GetDrawing();
+    drawing->SetRenderTarget(canvas);
+    drawing->SetColor(255, 255, 255, 255);
+    drawing->Clear();
+    drawing->SetRenderTarget(nullptr);
+}
+
+void Canvas::SetTool(DrawTool tool) {
+    this->tool = tool;
+}
+
+void Canvas::SetDrawColor(SDL_FColor color) {
+    draw_color = color;
+}
+
+void Canvas::Tick() {
+    last_drag = drag;
+
+    float mouse_x, mouse_y;
+    SDL_GetMouseState(&mouse_x, &mouse_y);
+    drag = Vec2f(mouse_x, mouse_y);
 }
 
 void Canvas::HandleEvent(SDL_Event& event, EventContext& event_summary) {
     switch (event.type) {
         case SDL_EVENT_MOUSE_BUTTON_DOWN: {
-            if (instructions_intro && event.button.button == SDL_BUTTON_LEFT
+            if (event.button.button == SDL_BUTTON_LEFT
                 && PointCollides(event.button.x, event.button.y)) {
-                instructions_intro = false;
-                after_intro_callback();
+                if (instructions_intro) {
+                    instructions_intro = false;
+                    after_intro_callback();
+                } else {
+                    dragging = true;
+                    drag = Vec2f(event.button.x, event.button.y);
+                    last_drag = drag;
+                }
             }
+            break;
+        }
+        case SDL_EVENT_MOUSE_BUTTON_UP: {
+            if (event.button.button == SDL_BUTTON_LEFT)
+                dragging = false;
+            break;
         }
     }
 }
 
-void Canvas::Render() const {
+void Canvas::Render() {
     auto drawing = Application::Get()->GetDrawing();
 
-    // Draw canvas background
-    auto visible_area = ClampMax(size, resolution);
-    auto centered = Rectangles::CenterRelative(visible_area, size);
-    auto source = Rectangles::CenterRelative(visible_area, resolution);
+    drawing->RenderTexture(canvas->SDLTexture(), &canvas_source, canvas_rect);
 
-    SDL_FRect draw_rect = {
-        (float)pos.x + centered.x,
-        (float)pos.y + centered.y,
-        (float)visible_area.x,
-        (float)visible_area.y,
-    };
-    drawing->RenderTexture(canvas->SDLTexture(), &source, draw_rect);
+    if (dragging && tool != TOOL_NONE) {
+        drawing->SetRenderTarget(canvas);
+        auto draw_offset = Vec2f(canvas_rect.x - canvas_source.x, canvas_rect.y - canvas_source.y);
+        SDL_FColor draw_color = tool == TOOL_PENCIL ? this->draw_color : SDL_FColor(255, 255, 255, 255);
+        drawing->DrawLine(drag - draw_offset, last_drag - draw_offset, 10.0, draw_color);
+        drawing->SetRenderTarget(nullptr);
+    }
 
     // Draw instructions
     if (!instructions_intro)
@@ -134,3 +174,16 @@ void Canvas::Render() const {
     };
     drawing->RenderTexture(intro_texture->SDLTexture(), nullptr, instructions_rect);
 }
+
+void Canvas::PostRefresh() {
+    auto visible_area = ClampMax(size, resolution);
+    auto centered = Rectangles::CenterRelative(visible_area, size);
+    canvas_source = Rectangles::CenterRelative(visible_area, resolution);
+
+    canvas_rect = {
+        (float)pos.x + centered.x,
+        (float)pos.y + centered.y,
+        (float)visible_area.x,
+        (float)visible_area.y,
+    };
+};

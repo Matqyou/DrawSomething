@@ -5,6 +5,7 @@
 #pragma once
 
 #include "../../../components/element/Frame.h"
+#include "../../../components/Canvas.h"
 
 class IngameColorSelector : public Frame {
 private:
@@ -20,6 +21,6 @@ public:
     static LinkFont sFontDefaultSmaller;
 
 public:
-    IngameColorSelector();
+    IngameColorSelector(Canvas* canvas);
 
 };
