@@ -14,21 +14,17 @@ IngameMenu::IngameMenu()
     : FullscreenMenu() {
     auto drawing = Application::Get()->GetDrawing();
 
+    // Header
     header = new IngameHeader();
 
     // Canvas
-    canvas = (Canvas*)(new Canvas(Vec2i(0, 0),
-                                  Vec2i(0, 0),
-                                  DRAW_RECT))
-//        ->SetCallback([this]() {
-//            this->AddChildren({ });
-//            this->Refresh();
-//        })
+    canvas = (Canvas*)(new Canvas(Vec2i(0, 0), Vec2i(0, 0)))
         ->SetFullyOccupy(true, false)
         ->SetOccupy(false, true)
         ->SetColor(255, 255, 255, 255)
         ->SetName("Canvas", false);
 
+    // Buttons and stuff
     panel = new IngamePanel();
     color_selector = new IngameColorSelector();
     tool_selector = new IngameToolSelector();
@@ -42,6 +38,9 @@ IngameMenu::IngameMenu()
 }
 
 void IngameMenu::PrepareGuess() {
+    header->SetTitle("You are guessing");
+    header->SetDescription("Matiss B.'s drawing.");
+    header->SetTurnNumber(3);
     SetChildren({ header, canvas });
     Refresh();
     canvas->SetIntro(INTRO_GUESS);
@@ -52,6 +51,9 @@ void IngameMenu::PrepareGuess() {
 }
 
 void IngameMenu::PrepareWatch() {
+    header->SetTitle("You are watching Matiss B.");
+    header->SetDescription("guess the word CAVE.");
+    header->SetTurnNumber(4);
     SetChildren({ header, canvas });
     Refresh();
     canvas->SetIntro(INTRO_WATCH);
@@ -62,6 +64,9 @@ void IngameMenu::PrepareWatch() {
 }
 
 void IngameMenu::PrepareDraw() {
+    header->SetTitle("You are drawing SUNRISE");
+    header->SetDescription("for Matiss B.");
+    header->SetTurnNumber(5);
     SetChildren({ header, canvas });
     Refresh();
     canvas->SetIntro(INTRO_DRAW);

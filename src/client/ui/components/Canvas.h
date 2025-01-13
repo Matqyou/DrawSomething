@@ -21,28 +21,22 @@ private:
     Vec2i resolution;
     Texture* canvas;
 
-    Texture* text_tap_to_guess;
-    Texture* text_tap_to_watch;
-    Texture* text_tap_to_draw;
-    Vec2i scale_texture_tap_to_guess;
-    Vec2i scale_texture_tap_to_watch;
-    Vec2i scale_texture_tap_to_draw;
+    Texture* text_guess;
+    Texture* text_watch;
+    Texture* text_draw;
+    Vec2i scale_guess;
+    Vec2i scale_watch;
+    Vec2i scale_draw;
     using Callback = std::function<void()>;
     Callback after_intro_callback;
 
-    static PreloadTexture sTextureTapToGuess;
-    static PreloadTexture sTextureTapToWatch;
-    static PreloadTexture sTextureTapToDraw;
+    static PreloadTexture sTextureGuess;
+    static PreloadTexture sTextureWatch;
+    static PreloadTexture sTextureDraw;
     static LinkFont sFontInstructions;
-
-    void init_intro();
 
 public:
     Canvas(const Vec2i& pos, const Vec2i& size);
-    Canvas(const Vec2i& pos, const Vec2i& size, ElementDraw draw);
-    Canvas(const Vec2i& pos, const Vec2i& size, const Vec2i& visual, const Vec2i& offset);
-    Canvas(const Vec2i& pos, const Vec2i& size, const Vec2i& visual, const Vec2i& offset, Texture* texture);
-    Canvas(const Vec2i& pos, const Vec2i& size, Texture* texture);
 
     // Options
     Canvas* SetIntro(CanvasIntro intro_type) {

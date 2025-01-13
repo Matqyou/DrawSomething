@@ -1,5 +1,5 @@
 #define SDL_MAIN_HANDLED
-#define DRAWSOMETHING_VERSION "1.1.2"
+#define DRAWSOMETHING_VERSION "1.1.3"
 
 #include <iostream>
 #include <thread>
@@ -45,31 +45,19 @@ int main() {
     auto drawing = application->GetDrawing();
     auto clock = application->GetClock();
 
-    Assets::Get()->GetTexture("header")->SetColorMod(100, 190, 255);
-    Assets::Get()->GetTexture("game.ingame_panel.guessing_bar")->SetColorMod(100, 190, 255);
-    Assets::Get()->GetTexture("game.ingame_panel.guessing_bar")->SetAlphaMod(200);
-    Assets::Get()->GetTexture("game.ingame_panel.guessing_bar")->SetBlendMode(SDL_BLENDMODE_BLEND);
-    Assets::Get()->GetTexture("game.ingame_panel.letter.slot")->SetColorMod(100, 190, 255);
-    Assets::Get()->GetTexture("game.ingame_panel.letter.normal")->SetColorMod(100, 190, 255);
-    SDL_SetTextureScaleMode(Assets::Get()->GetTexture("game.canvas.guess")->SDLTexture(), SDL_SCALEMODE_NEAREST);
-    SDL_SetTextureScaleMode(Assets::Get()->GetTexture("game.canvas.draw")->SDLTexture(), SDL_SCALEMODE_NEAREST);
-    SDL_SetTextureScaleMode(Assets::Get()->GetTexture("game.color_selector.color")->SDLTexture(), SDL_SCALEMODE_NEAREST);
-    SDL_SetTextureScaleMode(Assets::Get()->GetTexture("game.tool_selector.outline")->SDLTexture(), SDL_SCALEMODE_NEAREST);
-    SDL_SetTextureScaleMode(Assets::Get()->GetTexture("game.tool_selector.outline_selected")->SDLTexture(), SDL_SCALEMODE_NEAREST);
-
-    auto slot = Assets::Get()->GetTexture("game.ingame_panel.letter.slot");
-    auto background = Assets::Get()->GetTexture("game.ingame_panel.letter.slot_background");
-    auto letter_slot = new Texture(SDL_CreateTexture(drawing->Renderer(),
-                                                     SDL_PIXELFORMAT_RGBA8888,
-                                                     SDL_TEXTUREACCESS_TARGET,
-                                                     slot->GetWidth(),
-                                                     slot->GetHeight()));
-    letter_slot->SetBlendMode(SDL_BLENDMODE_BLEND);
-    drawing->SetRenderTarget(letter_slot);
-    drawing->RenderTextureFullscreen(background->SDLTexture(), nullptr);
-    drawing->RenderTextureFullscreen(slot->SDLTexture(), nullptr);
-    drawing->SetRenderTarget(nullptr);
-    IngamePanel::game_letter_slot_.SetSDLTexture(letter_slot->SDLTexture());
+//    auto slot = Assets::Get()->GetTexture("game.ingame_panel.letter.slot");
+//    auto background = Assets::Get()->GetTexture("game.ingame_panel.letter.slot_background");
+//    auto letter_slot = new Texture(SDL_CreateTexture(drawing->Renderer(),
+//                                                     SDL_PIXELFORMAT_RGBA8888,
+//                                                     SDL_TEXTUREACCESS_TARGET,
+//                                                     slot->GetWidth(),
+//                                                     slot->GetHeight()));
+//    letter_slot->SetBlendMode(SDL_BLENDMODE_BLEND);
+//    drawing->SetRenderTarget(letter_slot);
+//    drawing->RenderTextureFullscreen(background->SDLTexture(), nullptr);
+//    drawing->RenderTextureFullscreen(slot->SDLTexture(), nullptr);
+//    drawing->SetRenderTarget(nullptr);
+//    IngamePanel::game_letter_slot_.SetSDLTexture(letter_slot->SDLTexture());
 
 //    auto scribb = new Scribbles(Vec2d(0, 0), application->GetResolution() - 35, 35);
 //    scribb->GenerateZigZag();
@@ -89,7 +77,7 @@ int main() {
 
     MainMenu main_menu;
     IngameMenu guessing_menu;
-    Frame* current_menu = &main_menu;
+    auto current_menu = (FullscreenMenu*)(&main_menu);
 
     Vec2i render_drag_from = Vec2i(0, 0);
     bool render_dragging = false;
@@ -126,25 +114,29 @@ int main() {
                         current_menu->UpdateElement({ 0, 0 },
                                                     application->GetResolution(),
                                                     application->GetResolution());
-                    } else if (sdl_event.key.scancode == SDL_SCANCODE_3) {
+                    } else if (sdl_event.key.scancode == SDL_SCANCODE_3 && current_menu == (FullscreenMenu*)(&guessing_menu)) {
                         ((IngameMenu*)current_menu)->PrepareGuess();
-                    } else if (sdl_event.key.scancode == SDL_SCANCODE_4) {
+                    } else if (sdl_event.key.scancode == SDL_SCANCODE_4 && current_menu == (FullscreenMenu*)(&guessing_menu)) {
                         ((IngameMenu*)current_menu)->PrepareWatch();
-                    } else if (sdl_event.key.scancode == SDL_SCANCODE_5) {
+                    } else if (sdl_event.key.scancode == SDL_SCANCODE_5 && current_menu == (FullscreenMenu*)(&guessing_menu)) {
                         ((IngameMenu*)current_menu)->PrepareDraw();
                     }
 
                     break;
                 }
                 case SDL_EVENT_MOUSE_BUTTON_DOWN: {
-                    float mouse_x, mouse_y;
-                    SDL_GetMouseState(&mouse_x, &mouse_y);
-                    render_drag_from = { (int)mouse_x, (int)mouse_y };
-                    render_dragging = true;
+                    if (sdl_event.button.button == SDL_BUTTON_RIGHT) {
+                        float mouse_x, mouse_y;
+                        SDL_GetMouseState(&mouse_x, &mouse_y);
+                        render_drag_from = { (int)mouse_x, (int)mouse_y };
+                        render_dragging = true;
+                    }
                     break;
                 }
                 case SDL_EVENT_MOUSE_BUTTON_UP: {
-                    render_dragging = false;
+                    if (sdl_event.button.button == SDL_BUTTON_RIGHT)
+                        render_dragging = false;
+                    break;
                 }
             }
         }
@@ -209,20 +201,17 @@ int main() {
                     drawing->DrawLine(Vec2i(0, render_drag_from.y), Vec2i(application->GetWidth(), render_drag_from.y));
 
                     auto debug_size = Strings::FString("%i, %i", abs(debug_width), abs(debug_height));
-                    SDL_Surface* surface =
-                        TTF_RenderText_Blended(sFontDefaultSmaller.GetFont()->TTFFont(),
-                                               debug_size.c_str(),
-                                               debug_size.size(),
-                                               { 255, 255, 255, 255 });
-                    Texture* line_render = Assets::Get()->TextureFromSurface(surface);
-                    SDL_DestroySurface(surface);
+                    Texture* debug_render = Assets::Get()->RenderTextBlended(sFontDefaultSmaller.GetFont()->TTFFont(),
+                                                                             debug_size,
+                                                                             { 255, 255, 255, 255 });
                     SDL_FRect text_rect = {
-                        (float)(render_drag_from.x + (debug_width - line_render->GetWidth()) / 2.0f),
-                        (float)(render_drag_from.y + (debug_height - line_render->GetHeight()) / 2.0f),
-                        (float)(line_render->GetWidth()),
-                        (float)(line_render->GetHeight()),
+                        (float)(render_drag_from.x + (debug_width - debug_render->GetWidth()) / 2.0f),
+                        (float)(render_drag_from.y + (debug_height - debug_render->GetHeight()) / 2.0f),
+                        (float)(debug_render->GetWidth()),
+                        (float)(debug_render->GetHeight()),
                     };
-                    drawing->RenderTexture(line_render->SDLTexture(), nullptr, text_rect);
+                    drawing->RenderTexture(debug_render->SDLTexture(), nullptr, text_rect);
+                    delete debug_render;
                 }
 
                 drawing->SetColor(255, 0, 255, 255);
@@ -230,21 +219,17 @@ int main() {
                 drawing->DrawLine(Vec2i(0, mouse_y), Vec2i(application->GetWidth(), mouse_y));
 
                 auto coordinates = Strings::FString("%i, %i", (int)mouse_x, (int)mouse_y);
-                SDL_Surface* surface =
-                    TTF_RenderText_Blended(sFontDefaultSmaller.GetFont()->TTFFont(),
-                                           coordinates.c_str(),
-                                           coordinates.size(),
-                                           { 255, 255, 255, 255 });
-                Texture* line_render = Assets::Get()->TextureFromSurface(surface);
-                SDL_DestroySurface(surface);
+                Texture* debug_render = Assets::Get()->RenderTextBlended(sFontDefaultSmaller.GetFont()->TTFFont(),
+                                                                         coordinates,
+                                                                         { 255, 255, 255, 255 });
                 SDL_FRect text_rect = {
-                    (float)(mouse_x - line_render->GetWidth()),
-                    (float)(mouse_y - line_render->GetHeight()),
-                    (float)(line_render->GetWidth()),
-                    (float)(line_render->GetHeight()),
+                    (float)(mouse_x - debug_render->GetWidth()),
+                    (float)(mouse_y - debug_render->GetHeight()),
+                    (float)(debug_render->GetWidth()),
+                    (float)(debug_render->GetHeight()),
                 };
-                drawing->RenderTexture(line_render->SDLTexture(), nullptr, text_rect);
-                delete line_render;
+                drawing->RenderTexture(debug_render->SDLTexture(), nullptr, text_rect);
+                delete debug_render;
             }
 
             drawing->UpdateWindow();

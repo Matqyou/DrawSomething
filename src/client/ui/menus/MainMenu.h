@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "../components/element/Frame.h"
+#include "base/FullscreenMenu.h"
 
-class MainMenu : public Frame {
+class MainMenu : public FullscreenMenu {
 private:
     static PreloadTexture texture_header;
 
@@ -21,8 +21,5 @@ private:
 
 public:
     MainMenu();
-
-    // Ticking
-    void HandleEvent(SDL_Event& sdl_event, EventContext& event_summary) override;
 
 };

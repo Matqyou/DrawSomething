@@ -43,7 +43,7 @@ void App::PrintDivider(const std::string& label) {
     }
 }
 
-App::App(const char* title, const char* version, const char* identifier, const Vec2i& resolution, double framerate)
+App::App(const char* title, const char* version, const char* identifier, const Vec2i& resolution, double framerate, const char* renderer_backend)
     : clock(framerate) {
     system("");
     PrintDivider("Initializing");
@@ -98,7 +98,7 @@ App::App(const char* title, const char* version, const char* identifier, const V
 //        }
 //    }
 
-    renderer = SDL_CreateRenderer(window, "direct3d11");
+    renderer = SDL_CreateRenderer(window, renderer_backend != nullptr ? renderer_backend : "direct3d11");
 //    renderer = SDL_CreateRenderer(window, -1, 0);
     if (!renderer)
         throw std::runtime_error(Strings::FString("Error while creating the renderer %s\n", SDL_GetError()));
@@ -110,7 +110,7 @@ App::App(const char* title, const char* version, const char* identifier, const V
 
     bool init_audio = true;
     drawing = new Drawing(renderer);
-    Assets::init(new AssetsClass(renderer, init_audio));
+    Assets::init(new AssetsClass(drawing, init_audio));
 
     PrintDivider();
 }

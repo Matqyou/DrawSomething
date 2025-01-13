@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <cstring>
 #include <utility>
-#include "../../../shared/core/Strings.h"
+#include "Drawing.h"
 
 using namespace Strings;
 
@@ -17,6 +17,7 @@ template<> AssetsClass* Singleton<AssetsClass>::instance_ = nullptr;
 template<> const char* Singleton<AssetsClass>::singleton_name_ = "Assets";
 std::vector<Texture*> AssetsClass::m_AutomaticDeletionTextures = { };
 std::vector<PreloadTexture*> AssetsClass::m_LinkTextures = { };
+std::vector<PregenerateTexture*> AssetsClass::m_PregenerateTextures = { };
 std::vector<PreloadSound*> AssetsClass::m_LinkSounds = { };
 std::vector<PreloadMusic*> AssetsClass::m_LinkMusic = { };
 std::vector<PreloadFont*> AssetsClass::m_PreloadFonts = { };
@@ -25,9 +26,9 @@ std::vector<LinkFont*> AssetsClass::m_LinkFonts = { };
 Texture::Texture(SDL_Texture* sdl_texture, std::string key, std::string load_extension)
     : m_Key(std::move(key)),
       m_LoadExtension(std::move(load_extension)) {
-    m_SDLTexture = sdl_texture;
+    m_SDLTexture = nullptr;
 
-    SDL_GetTextureSize(m_SDLTexture, &m_Width, &m_Height);
+    SetSDLTexture(sdl_texture);
 
     m_AutomaticDeletion = false;
 }
@@ -48,6 +49,8 @@ Texture* Texture::FlagForAutomaticDeletion() {
 void Texture::SetSDLTexture(SDL_Texture* sdl_texture) {
     m_SDLTexture = sdl_texture;
     SDL_GetTextureSize(m_SDLTexture, &m_Width, &m_Height);
+    m_WidthHalf = m_Width / 2.0f;
+    m_HeightHalf = m_Height / 2.0f;
 }
 
 void Texture::SetBlendMode(SDL_BlendMode blend_mode) {
@@ -56,6 +59,10 @@ void Texture::SetBlendMode(SDL_BlendMode blend_mode) {
 
 void Texture::SetColorMod(Uint8 r, Uint8 g, Uint8 b) {
     SDL_SetTextureColorMod(m_SDLTexture, r, g, b);
+}
+
+void Texture::SetColorMod(SDL_Color color) {
+    SDL_SetTextureColorMod(m_SDLTexture, color.r, color.g, color.b);
 }
 
 void Texture::SetAlphaMod(int alpha) {
@@ -196,11 +203,25 @@ void AssetsClass::LoadTextures(SDL_Renderer* renderer) {
     // Link
     for (auto required_texture : m_LinkTextures) {
         const std::string& texture_key = required_texture->Key();
-
-        required_texture->m_Texture = GetTexture(texture_key);
+        auto link_texture = GetTexture(texture_key);
+        required_texture->m_LoadCallback(link_texture);
+        required_texture->m_Texture = link_texture;
     }
     std::wcout << FStringColorsW(L"[Assets] &5Linked %zu textures", m_LinkTextures.size()) << std::endl;
     m_LinkTextures.clear();
+
+    // Pre-generate
+    for (auto generate_texture : m_PregenerateTextures) {
+        const std::string& texture_key = generate_texture->Key();
+        auto new_texture = generate_texture->m_GenerateCallback(this);
+        if (new_texture != nullptr) {
+            new_texture->FlagForAutomaticDeletion();
+            generate_texture->m_Texture = new_texture;
+            m_Textures[texture_key] = new_texture;
+        }
+    }
+    std::wcout << FStringColorsW(L"[Assets] &5Generated %zu textures", m_LinkTextures.size()) << std::endl;
+    m_PregenerateTextures.clear();
 }
 
 void AssetsClass::LoadSounds() {
@@ -341,13 +362,13 @@ void AssetsClass::LoadFonts() {
     m_LinkFonts.clear();
 }
 
-AssetsClass::AssetsClass(SDL_Renderer* renderer, bool sounds_enabled)
+AssetsClass::AssetsClass(Drawing* drawing, bool sounds_enabled)
     : m_InvalidTextureDefault(nullptr) {
-    m_Renderer = renderer;
+    m_Drawing = drawing;
     m_SoundsEnabled = sounds_enabled;
 
     // Todo: Loading assets in realtime (adding/removing files?)
-    LoadTextures(renderer);
+    LoadTextures(drawing->Renderer());
     LoadSounds();
     LoadMusic();
     LoadFonts();
@@ -423,19 +444,37 @@ Font* AssetsClass::GetFont(const std::string& font_key) {
 }
 
 Texture* AssetsClass::TextureFromSurface(SDL_Surface* sdl_surface) {
-    SDL_Texture* NewSDLTexture = SDL_CreateTextureFromSurface(m_Renderer, sdl_surface);
+    SDL_Texture* NewSDLTexture = SDL_CreateTextureFromSurface(m_Drawing->Renderer(), sdl_surface);
 
     return new Texture(NewSDLTexture, "FromSurface", "NaN");
 }
 
 Texture* AssetsClass::CreateTexture(SDL_PixelFormat format, SDL_TextureAccess access, int w, int h) {
-    SDL_Texture* NewSDLTexture = SDL_CreateTexture(m_Renderer, format, access, w, h);
+    SDL_Texture* NewSDLTexture = SDL_CreateTexture(m_Drawing->Renderer(), format, access, w, h);
 
     return new Texture(NewSDLTexture, "CreateTexture", "NaN");
 }
 
+Texture* AssetsClass::RenderTextBlended(TTF_Font* font, const std::string& text, SDL_Color color) {
+    SDL_Surface* surface = TTF_RenderText_Blended(font, text.c_str(), text.size(), color);
+    Texture* text_render = TextureFromSurface(surface);
+    SDL_DestroySurface(surface);
+    return text_render;
+}
+
+Texture* AssetsClass::RenderTextBlended(TTF_Font* font, const char* text, SDL_Color color) {
+    SDL_Surface* surface = TTF_RenderText_Blended(font, text, strlen(text), color);
+    Texture* text_render = TextureFromSurface(surface);
+    SDL_DestroySurface(surface);
+    return text_render;
+}
+
 void AssetsClass::LinkPreloadedTexture(PreloadTexture* link_texture) {
     m_LinkTextures.push_back(link_texture);
+}
+
+void AssetsClass::LinkPregeneratedTexture(PregenerateTexture* pregenerate_texture) {
+    m_PregenerateTextures.push_back(pregenerate_texture);
 }
 
 void AssetsClass::LinkPreloadedSound(PreloadSound* link_sound) {
@@ -469,8 +508,24 @@ void AssetsClass::AutomaticallyDeleteTexture(Texture* texture) {
 PreloadTexture::PreloadTexture(std::string texture_key)
     : m_Key(std::move(texture_key)) {
     m_Texture = nullptr;
+    m_LoadCallback = [](Texture*) {};
 
     AssetsClass::LinkPreloadedTexture(this);
+}
+
+PreloadTexture::PreloadTexture(std::string texture_key, TextureCallback load_callback)
+    : m_Key(std::move(texture_key)) {
+    m_Texture = nullptr;
+    m_LoadCallback = std::move(load_callback);
+
+    AssetsClass::LinkPreloadedTexture(this);
+}
+
+PregenerateTexture::PregenerateTexture(std::string texture_key, TextureCallback generate_callback)
+    : m_Key(std::move(texture_key)) {
+    m_Texture = nullptr;
+    m_GenerateCallback = std::move(generate_callback);
+    AssetsClass::LinkPregeneratedTexture(this);
 }
 
 PreloadSound::PreloadSound(std::string sound_key)

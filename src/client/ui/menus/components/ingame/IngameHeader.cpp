@@ -6,7 +6,6 @@
 #include "../../../../core/Application.h"
 
 PreloadTexture IngameHeader::game_header_turn("game.header.turn");
-PreloadTexture IngameHeader::game_header_picture("game.header.picture");
 PreloadTexture IngameHeader::game_header_background("game.header.background");
 
 LinkFont IngameHeader::sFontDefaultBigger("fredoka.big");
@@ -14,37 +13,39 @@ LinkFont IngameHeader::sFontDefaultSmaller("fredoka.small");
 
 IngameHeader::IngameHeader()
     : Frame(Vec2i(0, 0), Vec2i(0, 73), DONT_DRAW) {
-    auto drawing = Application::Get()->GetDrawing();
+    text_turn = nullptr;
+    text_turn_number = nullptr;
+    text_title = nullptr;
+    text_description = nullptr;
+    picture = nullptr;
+
+    auto assets = Assets::Get();
+    texture_profile_picture = assets->GetTexture(Strings::FString("profile_pictures.cat%d", 1 + rand() % 6));
+    texture_turn = nullptr;
+    texture_turn_number = nullptr;
+    texture_title = nullptr;
+    texture_description = nullptr;
+
+    // Texts
+    TTF_Font* font_smaller = sFontDefaultSmaller.GetFont()->TTFFont();
+    const char* turn_text = "turn";
+    const char* title_text = "This is the title!";
+    const char* description_text = "This is the description.";
+    texture_turn = assets->RenderTextBlended(font_smaller, turn_text, { 255, 255, 255, 255 });
+    SetTitle(title_text);
+    SetDescription(description_text);
+    SetTurnNumber(-1);
 
     // Turn title text
-    Texture* turn_title_render;
-    {
-        SDL_Surface* sdl_surface =
-            TTF_RenderText_Blended(sFontDefaultSmaller.GetFont()->TTFFont(),
-                                   "turn",
-                                   strlen("turn"),
-                                   { 255, 255, 255, 255 });
-        turn_title_render = Assets::Get()->TextureFromSurface(sdl_surface)
-            ->FlagForAutomaticDeletion();
-        SDL_DestroySurface(sdl_surface);
-    }
-    auto turn_title = (new Frame(Vec2i(0, 4),
-                                 Vec2i(turn_title_render->GetWidth(), turn_title_render->GetHeight()),
-                                 turn_title_render))
+    text_turn = (Frame*)(new Frame(Vec2i(0, 4),
+                                   Vec2i(texture_turn->GetSize()),
+                                   texture_turn))
         ->SetName("TurnTitle", false);
 
     // Turn number text
-    Texture* turn_number_render;
-    {
-        SDL_Surface* sdl_surface =
-            TTF_RenderText_Blended(sFontDefaultBigger.GetFont()->TTFFont(), "6", strlen("6"), { 255, 255, 255, 255 });
-        turn_number_render = Assets::Get()->TextureFromSurface(sdl_surface)
-            ->FlagForAutomaticDeletion();
-        SDL_DestroySurface(sdl_surface);
-    }
-    auto turn_number = (new Frame(Vec2i(0, -4),
-                                  Vec2i(turn_number_render->GetWidth(), turn_number_render->GetHeight()),
-                                  turn_number_render))
+    text_turn_number = (Frame*)(new Frame(Vec2i(0, -4),
+                                          Vec2i(texture_turn_number->GetSize()),
+                                          texture_turn_number))
         ->SetAlign(ALIGN_CENTER, DONT_ALIGN)
         ->SetName("TurnNumber", false);
 
@@ -54,7 +55,7 @@ IngameHeader::IngameHeader()
         ->SetAlign(ALIGN_CENTER, ALIGN_CENTER)
         ->SetAdaptive(true, true)
         ->SetName("TurnInfo", false)
-        ->AddChildren({ turn_title, turn_number });
+        ->AddChildren({ text_turn, text_turn_number });
 
     // Turn display
     auto turn_display = (new Frame(Vec2i(0, 0), Vec2i(73, 73), game_header_turn.GetTexture()))
@@ -62,39 +63,16 @@ IngameHeader::IngameHeader()
         ->AddChildren({ turn_info_frame });
 
     // Profile picutre
-    auto picture = (new Frame(Vec2i(3, 3), Vec2i(60, 60), game_header_picture.GetTexture()))
+    picture = (Frame*)(new Frame(Vec2i(3, 3), Vec2i(60, 60), texture_profile_picture))
         ->SetName("Picture");
 
     // Game info text1
-    Texture* game_info_text1;
-    {
-        SDL_Surface* sdl_surface =
-            TTF_RenderText_Blended(sFontDefaultSmaller.GetFont()->TTFFont(),
-                                   "You are guessing",
-                                   strlen("You are guessing"),
-                                   { 0, 0, 0, 255 });
-        game_info_text1 = Assets::Get()->TextureFromSurface(sdl_surface)
-            ->FlagForAutomaticDeletion();
-        SDL_DestroySurface(sdl_surface);
-    }
-    auto text1 =
-        (new Frame(Vec2i(0, 0), Vec2i(game_info_text1->GetWidth(), game_info_text1->GetHeight()), game_info_text1))
-            ->SetName("GuessingText", false);
+    text_title = (Frame*)(new Frame(Vec2i(0, 0), Vec2i(texture_title->GetSize()), texture_title))
+        ->SetName("GuessingText", false);
 
     // Game info text2
-    Texture* game_info_text2;
-    {
-        SDL_Surface* sdl_surface =
-            TTF_RenderText_Blended(sFontDefaultSmaller.GetFont()->TTFFont(),
-                                   "Name S.'s drawing.",
-                                   strlen("Name S.'s drawing."),
-                                   { 0, 0, 0, 255 });
-        game_info_text2 = Assets::Get()->TextureFromSurface(sdl_surface);
-        SDL_DestroySurface(sdl_surface);
-    }
-    auto text2 =
-        (new Frame(Vec2i(0, 0), Vec2i(game_info_text2->GetWidth(), game_info_text2->GetHeight()), game_info_text2))
-            ->SetName("DrawingText", false);
+    text_description = (Frame*)(new Frame(Vec2i(0, 0), Vec2i(texture_description->GetSize()), texture_description))
+        ->SetName("DrawingText", false);
 
     // Game info text frame
     auto round_info_frame = (new Frame(Vec2i(3, 0), Vec2i(50, 30), DONT_DRAW))
@@ -102,7 +80,7 @@ IngameHeader::IngameHeader()
         ->SetAlign(DONT_ALIGN, ALIGN_CENTER)
         ->SetAdaptive(true, true)
         ->SetName("RoundInfoText")
-        ->AddChildren({ text1, text2 });
+        ->AddChildren({ text_title, text_description });
 
     // Game info
     auto round_info = (new Frame(Vec2i(0, 0), Vec2i(0, 73), game_header_background.GetTexture()))
@@ -116,4 +94,54 @@ IngameHeader::IngameHeader()
     SetFlex(FLEX_WIDTH);
     SetName("Header", false);
     AddChildren({ turn_display, round_info });
+}
+
+IngameHeader::~IngameHeader() {
+    delete texture_title;
+    delete texture_description;
+    delete texture_turn;
+    delete texture_turn_number;
+}
+
+void IngameHeader::SetTitle(const std::string& new_title) {
+    auto assets = Assets::Get();
+    delete texture_title;
+    texture_title = assets->RenderTextBlended(sFontDefaultSmaller.GetFont()->TTFFont(),
+                                              new_title,
+                                              { 0, 0, 0, 255 });
+    if (text_title) {
+        text_title->visual_texture = texture_title;
+        text_title->size = Vec2i(texture_title->GetSize());
+        text_title->visual_size = Vec2i(texture_title->GetSize());
+    }
+}
+
+void IngameHeader::SetDescription(const std::string& new_description) {
+    auto assets = Assets::Get();
+    delete texture_description;
+    texture_description = assets->RenderTextBlended(sFontDefaultSmaller.GetFont()->TTFFont(),
+                                                    new_description,
+                                                    { 0, 0, 0, 255 });
+    if (text_description) {
+        text_description->visual_texture = texture_description;
+        text_description->size = Vec2i(texture_description->GetSize());
+        text_description->visual_size = Vec2i(texture_description->GetSize());
+    }
+}
+
+void IngameHeader::SetTurnNumber(int turn_number) {
+    auto assets = Assets::Get();
+    delete texture_turn_number;
+    texture_turn_number = assets->RenderTextBlended(sFontDefaultBigger.GetFont()->TTFFont(),
+                                                    Strings::FString("%d", turn_number),
+                                                    { 255, 255, 255, 255 });
+    if (text_turn_number) {
+        text_turn_number->visual_texture = texture_turn_number;
+        text_turn_number->size = Vec2i(texture_turn_number->GetSize());
+        text_turn_number->visual_size = Vec2i(texture_turn_number->GetSize());
+    }
+}
+
+void IngameHeader::SetProfilePicture(Texture* profile_picture) {
+    texture_profile_picture = profile_picture;
 }

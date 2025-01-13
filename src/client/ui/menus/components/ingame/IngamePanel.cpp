@@ -6,17 +6,43 @@
 #include "../../../../core/Application.h"
 #include "../../../components/element/Button.h"
 
-PreloadTexture IngamePanel::game_guessing_bar("game.ingame_panel.guessing_bar");
-PreloadTexture IngamePanel::game_letter_normal("game.ingame_panel.letter.normal");
+auto static sCallbackGuessingBar = [](Texture* texture) {
+    texture->SetColorMod(100, 190, 255);
+    texture->SetAlphaMod(200);
+    texture->SetBlendMode(SDL_BLENDMODE_BLEND);
+};
+auto static sCallbackLetterColor = [](Texture* texture) {
+    texture->SetColorMod(100, 190, 255);
+};
+
+PreloadTexture IngamePanel::game_guessing_bar("game.ingame_panel.guessing_bar", sCallbackGuessingBar);
+PreloadTexture IngamePanel::game_letter_normal("game.ingame_panel.letter.normal", sCallbackLetterColor);
+PreloadTexture IngamePanel::game_letter_slot("game.ingame_panel.letter.slot", sCallbackLetterColor);
+PreloadTexture IngamePanel::game_letter_slot_background("game.ingame_panel.letter.slot_background");
 PreloadTexture IngamePanel::game_palette_background("game.ingame_panel.letter_palette.background");
 PreloadTexture IngamePanel::game_palette_bomba("game.ingame_panel.letter_palette.bomba");
 
-Texture IngamePanel::game_letter_slot_ = Texture(nullptr, "Letter Slot Composition");
+auto static sGenerateLetterSlot = [](AssetsClass* assets) -> Texture* {
+    auto drawing = assets->GetDrawing();
+    auto letter_slot_alone = IngamePanel::game_letter_slot.GetTexture();
+    auto letter_slot_background = IngamePanel::game_letter_slot_background.GetTexture();
+    Texture* letter_slot = assets->CreateTexture(SDL_PIXELFORMAT_RGBA8888,
+                                                 SDL_TEXTUREACCESS_TARGET,
+                                                 (int)letter_slot_alone->GetWidth(),
+                                                 (int)letter_slot_alone->GetHeight());
+    letter_slot->SetBlendMode(SDL_BLENDMODE_BLEND);
+    drawing->SetRenderTarget(letter_slot);
+    drawing->RenderTextureFullscreen(letter_slot_background->SDLTexture(), nullptr);
+    drawing->RenderTextureFullscreen(letter_slot_alone->SDLTexture(), nullptr);
+    return letter_slot;
+};
+
+PregenerateTexture IngamePanel::game_letter_slot_("game.ingame_panel.letter.slot_", sGenerateLetterSlot);
 
 LinkFont IngamePanel::sFontDefaultBiggest("fredoka.biggest");
 
 IngamePanel::IngamePanel()
- : Frame(Vec2i(0, 0), Vec2i(0, 0), DONT_DRAW) {
+    : Frame(Vec2i(0, 0), Vec2i(0, 0), DONT_DRAW) {
     auto drawing = Application::Get()->GetDrawing();
 
     // Guessing letters
@@ -24,7 +50,7 @@ IngamePanel::IngamePanel()
     for (int i = 0; i < 4; i++) {
         auto new_letter = (new Frame(Vec2i(0, 0),
                                      Vec2i(66, 66),
-                                     &game_letter_slot_))
+                                     game_letter_slot_.GetTexture()))
             ->SetAlign(DONT_ALIGN, ALIGN_CENTER)
             ->SetName("Letter");
 

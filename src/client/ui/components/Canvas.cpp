@@ -5,54 +5,39 @@
 #include "Canvas.h"
 #include "../../core/Application.h"
 
-PreloadTexture Canvas::sTextureTapToGuess("game.canvas.guess");
-PreloadTexture Canvas::sTextureTapToWatch("game.canvas.watch");
-PreloadTexture Canvas::sTextureTapToDraw("game.canvas.draw");
+auto static sCallbackScaleNearest = [](Texture* texture) {
+    SDL_SetTextureScaleMode(texture->SDLTexture(), SDL_SCALEMODE_NEAREST);
+};
+
+PreloadTexture Canvas::sTextureGuess("game.canvas.guess", sCallbackScaleNearest);
+PreloadTexture Canvas::sTextureWatch("game.canvas.watch", sCallbackScaleNearest);
+PreloadTexture Canvas::sTextureDraw("game.canvas.draw", sCallbackScaleNearest);
 LinkFont Canvas::sFontInstructions("fredoka.biggest");
 
-void Canvas::init_intro() {
+Canvas::Canvas(const Vec2i& pos, const Vec2i& size)
+    : Element(ELEMENT_CUSTOM, pos, size, DONT_DRAW) {
+    instructions_intro = true;
+    intro_type = INTRO_GUESS;
+    canvas = nullptr;
+
+    auto assets = Assets::Get();
     auto drawing = Application::Get()->GetDrawing();
 
-    // Finger text
-    {
-        SDL_Surface* sdl_surface =
-            TTF_RenderText_Blended(sFontInstructions.GetFont()->TTFFont(),
-                                   "TAP TO GUESS.",
-                                   strlen("TAP TO GUESS."),
-                                   { 136, 136, 136, 255 });
-        this->text_tap_to_guess = Assets::Get()->TextureFromSurface(sdl_surface);
-        SDL_DestroySurface(sdl_surface);
-    }
-
-    // Watch text
-    {
-        SDL_Surface* sdl_surface =
-            TTF_RenderText_Blended(sFontInstructions.GetFont()->TTFFont(),
-                                   "TAP TO WATCH!",
-                                   strlen("TAP TO WATCH!"),
-                                   { 136, 136, 136, 255 });
-        this->text_tap_to_watch = Assets::Get()->TextureFromSurface(sdl_surface);
-        SDL_DestroySurface(sdl_surface);
-    }
-
-    // Draw text
-    {
-        SDL_Surface* sdl_surface =
-            TTF_RenderText_Blended(sFontInstructions.GetFont()->TTFFont(),
-                                   "TAP TO DRAW!",
-                                   strlen("TAP TO DRAW!"),
-                                   { 136, 136, 136, 255 });
-        this->text_tap_to_draw = Assets::Get()->TextureFromSurface(sdl_surface);
-        SDL_DestroySurface(sdl_surface);
-    }
+    // Instruction texts
+    auto instructions_font = sFontInstructions.GetFont()->TTFFont();
+    SDL_Color instructions_font_color = { 136, 136, 136, 255 };
+    const char* guess_text_ = "TAP TO GUESS.";
+    const char* watch_text_ = "TAP TO WATCH!";
+    const char* draw_text_ = "TAP TO DRAW!";
+    text_guess = assets->RenderTextBlended(instructions_font, guess_text_, instructions_font_color);
+    text_watch = assets->RenderTextBlended(instructions_font, watch_text_, instructions_font_color);
+    text_draw = assets->RenderTextBlended(instructions_font, draw_text_, instructions_font_color);
 
     // Instructions image scale
-    scale_texture_tap_to_guess =
-        Vec2i(Rectangles::ScaleToBounds(sTextureTapToGuess.GetTexture()->GetSize(), Vec2f(400.0f, 400.0f)));
-    scale_texture_tap_to_watch =
-        Vec2i(Rectangles::ScaleToBounds(sTextureTapToWatch.GetTexture()->GetSize(), Vec2f(300.0f, 300.0f)));
-    scale_texture_tap_to_draw =
-        Vec2i(Rectangles::ScaleToBounds(sTextureTapToDraw.GetTexture()->GetSize(), Vec2f(400.0f, 400.0f)));
+    scale_guess = Vec2i(Rectangles::ScaleToBounds(sTextureGuess.GetTexture()->GetSize(), Vec2f(400.0f, 400.0f)));
+    scale_watch = Vec2i(Rectangles::ScaleToBounds(sTextureWatch.GetTexture()->GetSize(), Vec2f(300.0f, 300.0f)));
+    scale_draw = Vec2i(Rectangles::ScaleToBounds(sTextureDraw.GetTexture()->GetSize(), Vec2f(400.0f, 400.0f)));
+
     after_intro_callback = [] { };
     resolution = Vec2i(950, 550);
     canvas = new Texture(SDL_CreateTexture(drawing->Renderer(),
@@ -64,46 +49,6 @@ void Canvas::init_intro() {
     drawing->SetColor(255, 255, 255, 255);
     drawing->Clear();
     drawing->SetRenderTarget(nullptr);
-}
-
-Canvas::Canvas(const Vec2i& pos, const Vec2i& size)
-    : Element(ELEMENT_CUSTOM, pos, size, DRAW_RECT) {
-    instructions_intro = true;
-    intro_type = INTRO_GUESS;
-    canvas = nullptr;
-    init_intro();
-}
-
-Canvas::Canvas(const Vec2i& pos, const Vec2i& size, ElementDraw draw)
-    : Element(ELEMENT_CUSTOM, pos, size, draw) {
-    instructions_intro = true;
-    intro_type = INTRO_GUESS;
-    canvas = nullptr;
-    init_intro();
-}
-
-Canvas::Canvas(const Vec2i& pos, const Vec2i& size, const Vec2i& visual, const Vec2i& offset)
-    : Element(ELEMENT_CUSTOM, pos, size, visual, offset) {
-    instructions_intro = true;
-    intro_type = INTRO_GUESS;
-    canvas = nullptr;
-    init_intro();
-}
-
-Canvas::Canvas(const Vec2i& pos, const Vec2i& size, const Vec2i& visual, const Vec2i& offset, Texture* texture)
-    : Element(ELEMENT_CUSTOM, pos, size, visual, offset, texture) {
-    instructions_intro = true;
-    intro_type = INTRO_GUESS;
-    canvas = nullptr;
-    init_intro();
-}
-
-Canvas::Canvas(const Vec2i& pos, const Vec2i& size, Texture* texture)
-    : Element(ELEMENT_CUSTOM, pos, size, size, Vec2i(0, 0), texture) {
-    instructions_intro = true;
-    intro_type = INTRO_GUESS;
-    canvas = nullptr;
-    init_intro();
 }
 
 void Canvas::HandleEvent(SDL_Event& event, EventContext& event_summary) {
@@ -143,21 +88,21 @@ void Canvas::Render() const {
     Texture* text_texture = nullptr;
     switch (intro_type) {
         case INTRO_GUESS: {
-            intro_texture_scale = scale_texture_tap_to_guess;
-            intro_texture = sTextureTapToGuess.GetTexture();
-            text_texture = text_tap_to_guess;
+            intro_texture_scale = scale_guess;
+            intro_texture = sTextureGuess.GetTexture();
+            text_texture = text_guess;
             break;
         }
         case INTRO_WATCH: {
-            intro_texture_scale = scale_texture_tap_to_watch;
-            intro_texture = sTextureTapToWatch.GetTexture();
-            text_texture = text_tap_to_watch;
+            intro_texture_scale = scale_watch;
+            intro_texture = sTextureWatch.GetTexture();
+            text_texture = text_watch;
             break;
         }
         case INTRO_DRAW: {
-            intro_texture_scale = scale_texture_tap_to_draw;
-            intro_texture = sTextureTapToDraw.GetTexture();
-            text_texture = text_tap_to_draw;
+            intro_texture_scale = scale_draw;
+            intro_texture = sTextureDraw.GetTexture();
+            text_texture = text_draw;
             break;
         }
         default:throw std::runtime_error("Canvas.cpp Render()");

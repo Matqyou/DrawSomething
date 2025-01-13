@@ -6,7 +6,11 @@
 #include "../../core/Application.h"
 #include "../components/element/Button.h"
 
-PreloadTexture MainMenu::texture_header("header");
+static auto sCallbackHeader = [](Texture* texture) {
+    texture->SetColorMod(100, 190, 255);
+};
+
+PreloadTexture MainMenu::texture_header("header", sCallbackHeader);
 
 PreloadTexture MainMenu::texture_game_header("main_menu.games.header");
 PreloadTexture MainMenu::texture_game_content("main_menu.games.game");
@@ -18,7 +22,7 @@ PreloadTexture MainMenu::texture_friends_header("main_menu.friends.header");
 PreloadTexture MainMenu::texture_friends_link("main_menu.friends.button");
 
 MainMenu::MainMenu()
-    : Frame(Vec2i(0, 0), Vec2i(0, 0), DRAW_RECT) {
+    : FullscreenMenu() {
     // Header
     auto header = (new Frame(Vec2i(0, 0),
                              Vec2i(0, 58),
@@ -110,18 +114,4 @@ MainMenu::MainMenu()
     UpdateElement(Vec2i(0, 0),
                   Application::Get()->GetResolution(),
                   Application::Get()->GetResolution());
-}
-
-void MainMenu::HandleEvent(SDL_Event& sdl_event, EventContext& event_summary) {
-    switch (sdl_event.type) {
-        case SDL_EVENT_WINDOW_RESIZED: {
-            UpdateElement(Vec2i(0, 0),
-                          Application::Get()->GetResolution(),
-                          Application::Get()->GetResolution());
-
-            break;
-        }
-    }
-
-    HandleEventChildren(sdl_event, event_summary);
 }

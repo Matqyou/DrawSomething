@@ -9,6 +9,7 @@
 #include <mutex>
 #include <vector>
 #include <unordered_map>
+#include <functional>
 #include "SDL3_image/SDL_image.h"
 #include "SDL3_mixer/SDL_mixer.h"
 #include "SDL3_ttf/SDL_ttf.h"
@@ -26,8 +27,8 @@ private:
     friend class AssetsClass;
     const std::string m_Key;
     SDL_Texture* m_SDLTexture;
-    float m_Width;
-    float m_Height;
+    float m_Width, m_Height;
+    float m_WidthHalf, m_HeightHalf;
     std::string m_LoadExtension;
 
     bool m_AutomaticDeletion;
@@ -41,6 +42,7 @@ public:
     [[nodiscard]] float GetWidth() const { return m_Width; }
     [[nodiscard]] float GetHeight() const { return m_Height; }
     [[nodiscard]] Vec2f GetSize() const { return { m_Width, m_Height }; }
+    [[nodiscard]] Vec2f GetHalfSize() const { return { m_WidthHalf, m_HeightHalf }; }
     [[nodiscard]] const std::string& Key() const { return m_Key; }
 
     // Options
@@ -50,6 +52,7 @@ public:
     void SetSDLTexture(SDL_Texture* sdl_texture);
     void SetBlendMode(SDL_BlendMode blend_mode);
     void SetColorMod(Uint8 r, Uint8 g, Uint8 b);
+    void SetColorMod(SDL_Color color);
     void SetAlphaMod(int alpha);
 };
 
@@ -107,13 +110,15 @@ public:
 
 };
 
+class Drawing;
 class PreloadTexture;
+class PregenerateTexture;
 class PreloadSound;
 class PreloadMusic;
 class PreloadFont;
 class LinkFont;
 class AssetsClass {
-    SDL_Renderer* m_Renderer;
+    Drawing* m_Drawing;
     bool m_SoundsEnabled;
 
     std::unordered_map<std::string, Texture*> m_Textures;
@@ -125,6 +130,7 @@ class AssetsClass {
     static std::vector<Texture*> m_AutomaticDeletionTextures;
 
     static std::vector<PreloadTexture*> m_LinkTextures;
+    static std::vector<PregenerateTexture*> m_PregenerateTextures;
     static std::vector<PreloadSound*> m_LinkSounds;
     static std::vector<PreloadMusic*> m_LinkMusic;
     static std::vector<PreloadFont*> m_PreloadFonts;
@@ -136,22 +142,26 @@ class AssetsClass {
     void LoadFonts();
 
 public:
-    AssetsClass(SDL_Renderer* renderer, bool sounds_enabled);
+    AssetsClass(Drawing* drawing, bool sounds_enabled);
     ~AssetsClass();
 
     // Getting
-    Texture* GetTexture(const std::string& texture_key);
-    Sound* GetSound(const std::string& sound_key);
-    Music* GetMusic(const std::string& music_key);
-    Font* GetFont(const std::string& font_key);
-    bool SoundsEnabled() const { return m_SoundsEnabled; }
+    [[nodiscard]] Drawing* GetDrawing() const { return m_Drawing; }
+    [[nodiscard]] Texture* GetTexture(const std::string& texture_key);
+    [[nodiscard]] Sound* GetSound(const std::string& sound_key);
+    [[nodiscard]] Music* GetMusic(const std::string& music_key);
+    [[nodiscard]] Font* GetFont(const std::string& font_key);
+    [[nodiscard]] bool SoundsEnabled() const { return m_SoundsEnabled; }
 
     // Generating
     Texture* TextureFromSurface(SDL_Surface* sdl_surface);
     Texture* CreateTexture(SDL_PixelFormat format, SDL_TextureAccess access, int w, int h);
+    Texture* RenderTextBlended(TTF_Font* font, const std::string& text, SDL_Color color);
+    Texture* RenderTextBlended(TTF_Font* font, const char* text, SDL_Color color);
 
     // Manipulating
     static void LinkPreloadedTexture(PreloadTexture* register_texture);
+    static void LinkPregeneratedTexture(PregenerateTexture* pregenerate_texture);
     static void LinkPreloadedSound(PreloadSound* register_sound);
     static void LinkPreloadedMusic(PreloadMusic* register_music);
     static void PreloadFont_(PreloadFont* preload_font);
@@ -170,8 +180,30 @@ private:
     std::string m_Key;
     Texture* m_Texture;
 
+    using TextureCallback = std::function<void(Texture*)>;
+    TextureCallback m_LoadCallback;
+
 public:
     explicit PreloadTexture(std::string texture_key);
+    explicit PreloadTexture(std::string texture_key, TextureCallback load_callback);
+
+    // Getting
+    [[nodiscard]] const std::string& Key() const { return m_Key; }
+    [[nodiscard]] Texture* GetTexture() const { return m_Texture; }
+
+};
+
+class PregenerateTexture {
+private:
+    friend class AssetsClass;
+    std::string m_Key;
+    Texture* m_Texture;
+
+    using TextureCallback = std::function<Texture*(AssetsClass*)>;
+    TextureCallback m_GenerateCallback;
+
+public:
+    explicit PregenerateTexture(std::string texture_key, TextureCallback generate_callback);
 
     // Getting
     [[nodiscard]] const std::string& Key() const { return m_Key; }
