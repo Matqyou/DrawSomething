@@ -1,5 +1,5 @@
 #define SDL_MAIN_HANDLED
-#define DRAWSOMETHING_VERSION "1.1.1"
+#define DRAWSOMETHING_VERSION "1.1.2"
 
 #include <iostream>
 #include <thread>
@@ -46,16 +46,19 @@ int main() {
     auto clock = application->GetClock();
 
     Assets::Get()->GetTexture("header")->SetColorMod(100, 190, 255);
-    Assets::Get()->GetTexture("game.guessing_bar")->SetColorMod(100, 190, 255);
-    Assets::Get()->GetTexture("game.guessing_bar")->SetAlphaMod(200);
-    Assets::Get()->GetTexture("game.guessing_bar")->SetBlendMode(SDL_BLENDMODE_BLEND);
-    Assets::Get()->GetTexture("game.letter.slot")->SetColorMod(100, 190, 255);
-    Assets::Get()->GetTexture("game.letter.normal")->SetColorMod(100, 190, 255);
-    SDL_SetTextureScaleMode(Assets::Get()->GetTexture("game.guess")->SDLTexture(), SDL_SCALEMODE_NEAREST);
-    SDL_SetTextureScaleMode(Assets::Get()->GetTexture("game.draw")->SDLTexture(), SDL_SCALEMODE_NEAREST);
+    Assets::Get()->GetTexture("game.ingame_panel.guessing_bar")->SetColorMod(100, 190, 255);
+    Assets::Get()->GetTexture("game.ingame_panel.guessing_bar")->SetAlphaMod(200);
+    Assets::Get()->GetTexture("game.ingame_panel.guessing_bar")->SetBlendMode(SDL_BLENDMODE_BLEND);
+    Assets::Get()->GetTexture("game.ingame_panel.letter.slot")->SetColorMod(100, 190, 255);
+    Assets::Get()->GetTexture("game.ingame_panel.letter.normal")->SetColorMod(100, 190, 255);
+    SDL_SetTextureScaleMode(Assets::Get()->GetTexture("game.canvas.guess")->SDLTexture(), SDL_SCALEMODE_NEAREST);
+    SDL_SetTextureScaleMode(Assets::Get()->GetTexture("game.canvas.draw")->SDLTexture(), SDL_SCALEMODE_NEAREST);
+    SDL_SetTextureScaleMode(Assets::Get()->GetTexture("game.color_selector.color")->SDLTexture(), SDL_SCALEMODE_NEAREST);
+    SDL_SetTextureScaleMode(Assets::Get()->GetTexture("game.tool_selector.outline")->SDLTexture(), SDL_SCALEMODE_NEAREST);
+    SDL_SetTextureScaleMode(Assets::Get()->GetTexture("game.tool_selector.outline_selected")->SDLTexture(), SDL_SCALEMODE_NEAREST);
 
-    auto slot = Assets::Get()->GetTexture("game.letter.slot");
-    auto background = Assets::Get()->GetTexture("game.letter.slot_background");
+    auto slot = Assets::Get()->GetTexture("game.ingame_panel.letter.slot");
+    auto background = Assets::Get()->GetTexture("game.ingame_panel.letter.slot_background");
     auto letter_slot = new Texture(SDL_CreateTexture(drawing->Renderer(),
                                                      SDL_PIXELFORMAT_RGBA8888,
                                                      SDL_TEXTUREACCESS_TARGET,
@@ -66,7 +69,7 @@ int main() {
     drawing->RenderTextureFullscreen(background->SDLTexture(), nullptr);
     drawing->RenderTextureFullscreen(slot->SDLTexture(), nullptr);
     drawing->SetRenderTarget(nullptr);
-    Panel::game_letter_slot_.SetSDLTexture(letter_slot->SDLTexture());
+    IngamePanel::game_letter_slot_.SetSDLTexture(letter_slot->SDLTexture());
 
 //    auto scribb = new Scribbles(Vec2d(0, 0), application->GetResolution() - 35, 35);
 //    scribb->GenerateZigZag();

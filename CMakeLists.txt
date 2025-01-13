@@ -48,8 +48,14 @@ add_executable(DrawSomething src/main.cpp
         src/client/ui/menus/IngameMenu.h
         src/client/ui/menus/base/FullscreenMenu.cpp
         src/client/ui/menus/base/FullscreenMenu.h
-        src/client/ui/menus/components/Panel.cpp
-        src/client/ui/menus/components/Panel.h
+        src/client/ui/menus/components/ingame/IngamePanel.cpp
+        src/client/ui/menus/components/ingame/IngamePanel.h
+        src/client/ui/menus/components/ingame/IngameHeader.cpp
+        src/client/ui/menus/components/ingame/IngameHeader.h
+        src/client/ui/menus/components/ingame/IngameColorSelector.cpp
+        src/client/ui/menus/components/ingame/IngameColorSelector.h
+        src/client/ui/menus/components/ingame/IngameToolSelector.cpp
+        src/client/ui/menus/components/ingame/IngameToolSelector.h
 )
 
 target_link_libraries(${PROJECT_NAME} SDL3 SDL3_image SDL3_mixer SDL3_ttf)

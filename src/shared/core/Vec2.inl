@@ -180,6 +180,14 @@ double DistanceVec2(const Vec2<T>& v1, const Vec2<T>& v2) {
     return std::sqrt(dx * dx + dy * dy);
 }
 
+template<class T>
+Vec2<T> ClampMax(const Vec2<T>& v, const Vec2<T>& max) {
+    Vec2 result = v;
+    if (v.x > max.x) result.x = max.x;
+    if (v.y > max.y) result.y = max.y;
+    return result;
+}
+
 inline Vec2<double> AngleVec2d(double radians) {
     return { std::cos(radians), std::sin(radians) };
 }

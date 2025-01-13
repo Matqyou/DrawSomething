@@ -5,12 +5,14 @@
 #include "Canvas.h"
 #include "../../core/Application.h"
 
-PreloadTexture Canvas::sTextureTapToGuess("game.guess");
-PreloadTexture Canvas::sTextureTapToWatch("game.watch");
-PreloadTexture Canvas::sTextureTapToDraw("game.draw");
+PreloadTexture Canvas::sTextureTapToGuess("game.canvas.guess");
+PreloadTexture Canvas::sTextureTapToWatch("game.canvas.watch");
+PreloadTexture Canvas::sTextureTapToDraw("game.canvas.draw");
 LinkFont Canvas::sFontInstructions("fredoka.biggest");
 
 void Canvas::init_intro() {
+    auto drawing = Application::Get()->GetDrawing();
+
     // Finger text
     {
         SDL_Surface* sdl_surface =
@@ -45,17 +47,30 @@ void Canvas::init_intro() {
     }
 
     // Instructions image scale
-    scale_texture_tap_to_guess = Vec2i(Rectangles::ScaleToBounds(sTextureTapToGuess.GetTexture()->GetSize(), Vec2f(400.0f, 400.0f)));
-    scale_texture_tap_to_watch = Vec2i(Rectangles::ScaleToBounds(sTextureTapToWatch.GetTexture()->GetSize(), Vec2f(300.0f, 300.0f)));
-    scale_texture_tap_to_draw = Vec2i(Rectangles::ScaleToBounds(sTextureTapToDraw.GetTexture()->GetSize(), Vec2f(400.0f, 400.0f)));
-    after_intro_callback = []{};
+    scale_texture_tap_to_guess =
+        Vec2i(Rectangles::ScaleToBounds(sTextureTapToGuess.GetTexture()->GetSize(), Vec2f(400.0f, 400.0f)));
+    scale_texture_tap_to_watch =
+        Vec2i(Rectangles::ScaleToBounds(sTextureTapToWatch.GetTexture()->GetSize(), Vec2f(300.0f, 300.0f)));
+    scale_texture_tap_to_draw =
+        Vec2i(Rectangles::ScaleToBounds(sTextureTapToDraw.GetTexture()->GetSize(), Vec2f(400.0f, 400.0f)));
+    after_intro_callback = [] { };
     resolution = Vec2i(950, 550);
+    canvas = new Texture(SDL_CreateTexture(drawing->Renderer(),
+                                           SDL_PIXELFORMAT_RGBA8888,
+                                           SDL_TEXTUREACCESS_TARGET,
+                                           resolution.x,
+                                           resolution.y));
+    drawing->SetRenderTarget(canvas);
+    drawing->SetColor(255, 255, 255, 255);
+    drawing->Clear();
+    drawing->SetRenderTarget(nullptr);
 }
 
 Canvas::Canvas(const Vec2i& pos, const Vec2i& size)
     : Element(ELEMENT_CUSTOM, pos, size, DRAW_RECT) {
     instructions_intro = true;
     intro_type = INTRO_GUESS;
+    canvas = nullptr;
     init_intro();
 }
 
@@ -63,6 +78,7 @@ Canvas::Canvas(const Vec2i& pos, const Vec2i& size, ElementDraw draw)
     : Element(ELEMENT_CUSTOM, pos, size, draw) {
     instructions_intro = true;
     intro_type = INTRO_GUESS;
+    canvas = nullptr;
     init_intro();
 }
 
@@ -70,6 +86,7 @@ Canvas::Canvas(const Vec2i& pos, const Vec2i& size, const Vec2i& visual, const V
     : Element(ELEMENT_CUSTOM, pos, size, visual, offset) {
     instructions_intro = true;
     intro_type = INTRO_GUESS;
+    canvas = nullptr;
     init_intro();
 }
 
@@ -77,6 +94,7 @@ Canvas::Canvas(const Vec2i& pos, const Vec2i& size, const Vec2i& visual, const V
     : Element(ELEMENT_CUSTOM, pos, size, visual, offset, texture) {
     instructions_intro = true;
     intro_type = INTRO_GUESS;
+    canvas = nullptr;
     init_intro();
 }
 
@@ -84,6 +102,7 @@ Canvas::Canvas(const Vec2i& pos, const Vec2i& size, Texture* texture)
     : Element(ELEMENT_CUSTOM, pos, size, size, Vec2i(0, 0), texture) {
     instructions_intro = true;
     intro_type = INTRO_GUESS;
+    canvas = nullptr;
     init_intro();
 }
 
@@ -103,11 +122,17 @@ void Canvas::Render() const {
     auto drawing = Application::Get()->GetDrawing();
 
     // Draw canvas background
-    SDL_FRect centered = Rectangles::CenterRelative(resolution, size);
-    centered.x += (float)pos.x;
-    centered.y += (float)pos.y;
-    drawing->SetColor(color);
-    drawing->FillRect(centered);
+    auto visible_area = ClampMax(size, resolution);
+    auto centered = Rectangles::CenterRelative(visible_area, size);
+    auto source = Rectangles::CenterRelative(visible_area, resolution);
+
+    SDL_FRect draw_rect = {
+        (float)pos.x + centered.x,
+        (float)pos.y + centered.y,
+        (float)visible_area.x,
+        (float)visible_area.y,
+    };
+    drawing->RenderTexture(canvas->SDLTexture(), &source, draw_rect);
 
     // Draw instructions
     if (!instructions_intro)
@@ -135,8 +160,7 @@ void Canvas::Render() const {
             text_texture = text_tap_to_draw;
             break;
         }
-        default:
-            throw std::runtime_error("Canvas.cpp Render()");
+        default:throw std::runtime_error("Canvas.cpp Render()");
     }
 
     const float gap = 5.0f;

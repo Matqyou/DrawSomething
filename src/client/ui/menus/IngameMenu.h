@@ -6,21 +6,20 @@
 
 #include "base/FullscreenMenu.h"
 #include "../components/Canvas.h"
-#include "components/Panel.h"
+#include "components/ingame/IngamePanel.h"
+#include "components/ingame/IngameHeader.h"
+#include "components/ingame/IngameColorSelector.h"
+#include "components/ingame/IngameToolSelector.h"
 
 class IngameMenu : public FullscreenMenu {
 private:
-    Frame* header;
+    IngameHeader* header;
     Canvas* canvas;
-    Panel* panel;
-    Frame* color_selector;
-    Frame* brush_selector;
+    IngamePanel* panel;
+    IngameColorSelector* color_selector;
+    IngameToolSelector* tool_selector;
 
 public:
-    static PreloadTexture game_header_turn;
-    static PreloadTexture game_header_picture;
-    static PreloadTexture game_header_background;
-
     static LinkFont sFontDefault;
     static LinkFont sFontDefaultBiggest;
     static LinkFont sFontDefaultBigger;

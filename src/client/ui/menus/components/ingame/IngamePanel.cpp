@@ -2,20 +2,20 @@
 // Created by Matq on 12/01/2025.
 //
 
-#include "Panel.h"
-#include "../../../core/Application.h"
-#include "../../components/element/Button.h"
+#include "IngamePanel.h"
+#include "../../../../core/Application.h"
+#include "../../../components/element/Button.h"
 
-PreloadTexture Panel::game_guessing_bar("game.guessing_bar");
-PreloadTexture Panel::game_letter_normal("game.letter.normal");
-PreloadTexture Panel::game_palette_background("game.letter_palette.background");
-PreloadTexture Panel::game_palette_bomba("game.letter_palette.bomba");
+PreloadTexture IngamePanel::game_guessing_bar("game.ingame_panel.guessing_bar");
+PreloadTexture IngamePanel::game_letter_normal("game.ingame_panel.letter.normal");
+PreloadTexture IngamePanel::game_palette_background("game.ingame_panel.letter_palette.background");
+PreloadTexture IngamePanel::game_palette_bomba("game.ingame_panel.letter_palette.bomba");
 
-Texture Panel::game_letter_slot_ = Texture(nullptr, "Letter Slot Composition");
+Texture IngamePanel::game_letter_slot_ = Texture(nullptr, "Letter Slot Composition");
 
-LinkFont Panel::sFontDefaultBiggest("fredoka.biggest");
+LinkFont IngamePanel::sFontDefaultBiggest("fredoka.biggest");
 
-Panel::Panel()
+IngamePanel::IngamePanel()
  : Frame(Vec2i(0, 0), Vec2i(0, 0), DONT_DRAW) {
     auto drawing = Application::Get()->GetDrawing();
 

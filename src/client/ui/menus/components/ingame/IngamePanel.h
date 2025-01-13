@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "../../components/element/Frame.h"
+#include "../../../components/element/Frame.h"
 
-class Panel : public Frame {
+class IngamePanel : public Frame {
 private:
 
 public:
@@ -20,6 +20,6 @@ public:
     static LinkFont sFontDefaultBiggest;
 
 public:
-    Panel();
+    IngamePanel();
 
 };

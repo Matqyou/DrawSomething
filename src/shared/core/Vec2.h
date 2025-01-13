@@ -49,10 +49,14 @@ public:
     void Rotate(double radians);
     Vec2& Normalize();
     Vec2& SetLength(double length);
+
 };
 
 template<class T>
 [[nodiscard]] double DistanceVec2(const Vec2<T>& v);
+
+template<class T>
+[[nodiscard]] Vec2<T> ClampMax(const Vec2<T>& v, const Vec2<T>& max);
 
 typedef Vec2<int> Vec2i;
 typedef Vec2<float> Vec2f;

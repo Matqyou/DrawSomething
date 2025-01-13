@@ -19,6 +19,7 @@ private:
     bool instructions_intro;
     CanvasIntro intro_type;
     Vec2i resolution;
+    Texture* canvas;
 
     Texture* text_tap_to_guess;
     Texture* text_tap_to_watch;
