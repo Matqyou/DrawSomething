@@ -4,7 +4,6 @@ project(DrawSomething)
 set(CMAKE_CXX_STANDARD 20)
 
 include_directories(deps/SDL/include deps/SDL_image/include deps/SDL_mixer/include deps/SDL_ttf/include)
-#link_directories(deps/SDL/lib/x64 deps/SDL_image/lib/x64 deps/SDL_mixer/lib/x64 deps/SDL_ttf/lib/x64)
 
 link_directories(
         ${CMAKE_SOURCE_DIR}/deps/SDL/cmake-build-debug
