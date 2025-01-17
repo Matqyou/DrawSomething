@@ -47,16 +47,28 @@ add_executable(DrawSomething src/client/main.cpp
         src/client/ui/menus/IngameMenu.h
         src/client/ui/menus/base/FullscreenMenu.cpp
         src/client/ui/menus/base/FullscreenMenu.h
-        src/client/ui/menus/components/ingame/IngamePanel.cpp
-        src/client/ui/menus/components/ingame/IngamePanel.h
-        src/client/ui/menus/components/ingame/IngameHeader.cpp
-        src/client/ui/menus/components/ingame/IngameHeader.h
-        src/client/ui/menus/components/ingame/IngameColorSelector.cpp
-        src/client/ui/menus/components/ingame/IngameColorSelector.h
-        src/client/ui/menus/components/ingame/IngameToolSelector.cpp
-        src/client/ui/menus/components/ingame/IngameToolSelector.h
+        src/client/ui/menus/components/ingame/Panel.cpp
+        src/client/ui/menus/components/ingame/Panel.h
+        src/client/ui/menus/components/ingame/Header.cpp
+        src/client/ui/menus/components/ingame/Header.h
+        src/client/ui/menus/components/ingame/ColorSelector.cpp
+        src/client/ui/menus/components/ingame/ColorSelector.h
+        src/client/ui/menus/components/ingame/ToolSelector.cpp
+        src/client/ui/menus/components/ingame/ToolSelector.h
         src/client/ui/components/element/OverlayButton.cpp
         src/client/ui/components/element/OverlayButton.h
+        src/client/words/Words.cpp
+        src/client/words/Words.h
+        src/client/ui/menus/components/ingame/components/BrushSizeButton.cpp
+        src/client/ui/menus/components/ingame/components/BrushSizeButton.h
+        src/shared/core/Numbers.h
+        src/shared/core/Numbers.cpp
+        src/client/ui/menus/AuthMenu.cpp
+        src/client/ui/menus/AuthMenu.h
+        src/client/ui/cursors/Circular.cpp
+        src/client/ui/cursors/Circular.h
+        src/client/ui/cursors/Cursors.h
+        src/client/ui/cursors/Cursors.cpp
 )
 
 add_executable(DrawSomethingServer src/server/main.cpp

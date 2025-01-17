@@ -2,7 +2,7 @@
 // Created by Matq on 12/01/2025.
 //
 
-#include "IngamePanel.h"
+#include "Panel.h"
 #include "../../../../core/Application.h"
 #include "../../../components/element/Button.h"
 
@@ -15,17 +15,10 @@ auto static sCallbackLetterColor = [](Texture* texture) {
     texture->SetColorMod(100, 190, 255);
 };
 
-PreloadTexture IngamePanel::game_guessing_bar("game.ingame_panel.guessing_bar", sCallbackGuessingBar);
-PreloadTexture IngamePanel::game_letter_normal("game.ingame_panel.letter.normal", sCallbackLetterColor);
-PreloadTexture IngamePanel::game_letter_slot("game.ingame_panel.letter.slot", sCallbackLetterColor);
-PreloadTexture IngamePanel::game_letter_slot_background("game.ingame_panel.letter.slot_background");
-PreloadTexture IngamePanel::game_palette_background("game.ingame_panel.letter_palette.background");
-PreloadTexture IngamePanel::game_palette_bomba("game.ingame_panel.letter_palette.bomba");
-
 auto static sGenerateLetterSlot = [](AssetsClass* assets) -> Texture* {
     auto drawing = assets->GetDrawing();
-    auto letter_slot_alone = IngamePanel::game_letter_slot.GetTexture();
-    auto letter_slot_background = IngamePanel::game_letter_slot_background.GetTexture();
+    auto letter_slot_alone = Ingame::Panel::game_letter_slot.GetTexture();
+    auto letter_slot_background = Ingame::Panel::game_letter_slot_background.GetTexture();
     Texture* letter_slot = assets->CreateTexture(SDL_PIXELFORMAT_RGBA8888,
                                                  SDL_TEXTUREACCESS_TARGET,
                                                  (int)letter_slot_alone->GetWidth(),
@@ -37,11 +30,19 @@ auto static sGenerateLetterSlot = [](AssetsClass* assets) -> Texture* {
     return letter_slot;
 };
 
-PregenerateTexture IngamePanel::game_letter_slot_("game.ingame_panel.letter.slot_", sGenerateLetterSlot);
+namespace Ingame {
+PreloadTexture Panel::game_guessing_bar("game.ingame_panel.guessing_bar", sCallbackGuessingBar);
+PreloadTexture Panel::game_letter_normal("game.ingame_panel.letter.normal", sCallbackLetterColor);
+PreloadTexture Panel::game_letter_slot("game.ingame_panel.letter.slot", sCallbackLetterColor);
+PreloadTexture Panel::game_letter_slot_background("game.ingame_panel.letter.slot_background");
+PreloadTexture Panel::game_palette_background("game.ingame_panel.letter_palette.background");
+PreloadTexture Panel::game_palette_bomba("game.ingame_panel.letter_palette.bomba");
 
-LinkFont IngamePanel::sFontDefaultBiggest("fredoka.biggest");
+PregenerateTexture Panel::game_letter_slot_("game.ingame_panel.letter.slot_", sGenerateLetterSlot);
 
-IngamePanel::IngamePanel()
+LinkFont Panel::sFontDefaultBiggest("fredoka.biggest");
+
+Panel::Panel()
     : Frame(Vec2i(0, 0), Vec2i(0, 0), DONT_DRAW) {
     auto drawing = Application::Get()->GetDrawing();
 
@@ -242,4 +243,5 @@ IngamePanel::IngamePanel()
     SetFlex(FLEX_HEIGHT);
     SetName("Panel");
     AddChildren({ guessing_bar, letters_bar });
+}
 }

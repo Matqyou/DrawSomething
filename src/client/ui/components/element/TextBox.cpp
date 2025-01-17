@@ -4,13 +4,12 @@
 
 #include "TextBox.h"
 #include "../../../core/Application.h"
+#include "../../cursors/Cursors.h"
 
 #include <vector>
 #include <string>
 #include <stdexcept>
 #include <SDL3_ttf/SDL_ttf.h>
-
-LinkFont TextBox::sFontDefault("default");
 
 std::vector<std::string> TextBox::WrapText(const std::string& text, TTF_Font* font, int max_width) {
     std::vector<std::string> lines;
@@ -88,13 +87,13 @@ std::vector<std::string> TextBox::WrapText(const std::string& text, TTF_Font* fo
     return lines;
 }
 
-TextBox::TextBox(const Vec2i& pos, const Vec2i& size, void (* enter_callback)(const std::string&))
-    : Element(ELEMENT_TEXTBOX, pos, size, DRAW_RECT),
-      enter_callback(enter_callback) {
-
+TextBox::TextBox(const Vec2i& pos, const Vec2i& size)
+    : Element(ELEMENT_TEXTBOX, pos, size, DRAW_RECT) {
+    font = nullptr;
     text_lines = {};
     update_render = true;
     text_color = { 0, 0, 0, 255 };
+    callback = [](std::string&) {  };
 }
 
 TextBox::~TextBox() {
@@ -122,7 +121,6 @@ void TextBox::UpdateRender() {
         delete line_render;
     text_lines.clear();
 
-    auto font = sFontDefault.GetFont()->TTFFont();
     auto lines = WrapText(text, font, 200);
 
     for (size_t i = 0; i < lines.size(); ++i) {
@@ -140,16 +138,15 @@ void TextBox::HandleEvent(SDL_Event& event, EventContext& event_summary) {
             if (event_summary.cursor_changed == CursorChange::NO_CHANGE &&
                 PointCollides(event.motion.x, event.motion.y)) {
                 event_summary.cursor_changed = CursorChange::TO_IBEAM;
-                SDL_SetCursor(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_TEXT));
+                SDL_SetCursor(Cursors::sCursorSystemText);
+//                SDL_SetCursor(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_TEXT));
             }
 
             break;
         }
         case SDL_EVENT_MOUSE_BUTTON_DOWN: {
-            if (PointCollides(event.button.x, event.button.y)) {
-                SetFocus(this);
-                break;
-            }
+            if (PointCollides(event.button.x, event.button.y))
+                parent->SetFocus(this);
 
             break;
         }
@@ -167,7 +164,7 @@ void TextBox::HandleEvent(SDL_Event& event, EventContext& event_summary) {
                 Backspace();
                 update_render = true;
             }
-            else if (event.key.key == SDLK_RETURN) { enter_callback(text); }
+            else if (event.key.key == SDLK_RETURN) { callback(text); }
 
             break;
         }
@@ -189,7 +186,7 @@ void TextBox::Render() {
     drawing->FillRect(GetRect());
 
     // Retrieve the font height
-    int line_height = TTF_GetFontHeight(sFontDefault.GetFont()->TTFFont());
+    int line_height = TTF_GetFontHeight(font);
 
     auto render_rect = GetRect();
     for (const auto& line_render : text_lines) {

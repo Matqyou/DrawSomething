@@ -3,6 +3,7 @@
 //
 
 #include "Button.h"
+#include "../../cursors/Cursors.h"
 
 Button::Button(const Vec2i& pos, const Vec2i& size)
     : Element(ELEMENT_BUTTON, pos, size, DRAW_RECT) {
@@ -40,7 +41,8 @@ void Button::HandleEvent(SDL_Event& event, EventContext& event_summary) {
             if (event_summary.cursor_changed == CursorChange::NO_CHANGE &&
                 PointCollides(event.motion.x, event.motion.y)) {
                 event_summary.cursor_changed = CursorChange::TO_POINTER;
-                SDL_SetCursor(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_POINTER));
+                SDL_SetCursor(Cursors::sCursorSystemPointer);
+//                SDL_SetCursor(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_POINTER));
                 break;
             }
 
@@ -49,7 +51,7 @@ void Button::HandleEvent(SDL_Event& event, EventContext& event_summary) {
         case SDL_EVENT_MOUSE_BUTTON_DOWN: {
             if (
                 PointCollides(event.button.x, event.button.y)) {
-                SetFocus(this);
+//                SetFocus(this);
                 RunCallback();
                 break;
             }
@@ -57,4 +59,6 @@ void Button::HandleEvent(SDL_Event& event, EventContext& event_summary) {
             break;
         }
     }
+
+    HandleEventChildren(event, event_summary);
 }

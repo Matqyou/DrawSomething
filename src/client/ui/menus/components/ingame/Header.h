@@ -6,7 +6,8 @@
 
 #include "../../../components/element/Frame.h"
 
-class IngameHeader : public Frame {
+namespace Ingame {
+class Header : public Frame {
 private:
     Frame* text_turn;
     Frame* text_turn_number;
@@ -28,8 +29,8 @@ public:
     static LinkFont sFontDefaultSmaller;
 
 public:
-    IngameHeader();
-    ~IngameHeader() override;
+    Header();
+    ~Header() override;
 
     // Manipulation
     void SetTitle(const std::string& new_title);
@@ -38,3 +39,4 @@ public:
     void SetProfilePicture(Texture* profile_picture);
 
 };
+}

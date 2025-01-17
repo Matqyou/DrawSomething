@@ -4,6 +4,7 @@
 
 #include "Canvas.h"
 #include "../../core/Application.h"
+#include "../cursors/Cursors.h"
 
 auto static sCallbackScaleNearest = [](Texture* texture) {
     SDL_SetTextureScaleMode(texture->SDLTexture(), SDL_SCALEMODE_NEAREST);
@@ -12,12 +13,14 @@ auto static sCallbackScaleNearest = [](Texture* texture) {
 PreloadTexture Canvas::sTextureGuess("game.canvas.guess", sCallbackScaleNearest);
 PreloadTexture Canvas::sTextureWatch("game.canvas.watch", sCallbackScaleNearest);
 PreloadTexture Canvas::sTextureDraw("game.canvas.draw", sCallbackScaleNearest);
+PreloadTexture sTextureDrawing("drawings.example", sCallbackScaleNearest);
+
 LinkFont Canvas::sFontInstructions("fredoka.biggest");
 
 Canvas::Canvas(const Vec2i& pos, const Vec2i& size)
     : Element(ELEMENT_CUSTOM, pos, size, DONT_DRAW) {
     instructions_intro = true;
-    intro_type = INTRO_GUESS;
+    canvas_mode = CANVAS_GUESS;
     canvas = nullptr;
 
     auto assets = Assets::Get();
@@ -47,15 +50,26 @@ Canvas::Canvas(const Vec2i& pos, const Vec2i& size)
                                            SDL_TEXTUREACCESS_TARGET,
                                            resolution.x,
                                            resolution.y));
+    canvas->SetScaleMode(SDL_SCALEMODE_NEAREST);
     drawing->SetRenderTarget(canvas);
     drawing->SetColor(255, 255, 255, 255);
     drawing->Clear();
     drawing->SetRenderTarget(nullptr);
 
-    this->dragging = false;
-    this->last_drag = Vec2f(0, 0);
+    this->painting = false;
+    this->last_paint_position = Vec2f(0, 0);
     this->tool = TOOL_PENCIL;
     this->draw_color = { 0, 0, 0, 255 };
+    this->brush_size = 5.0f;
+    this->eraser_size = 5.0f;
+    this->custom_cursor = nullptr;
+}
+
+void Canvas::LoadExample() {
+    auto drawing = Application::Get()->GetDrawing();
+    drawing->SetRenderTarget(canvas);
+    drawing->RenderTextureFullscreen(sTextureDrawing.GetTexture()->SDLTexture(), nullptr);
+    drawing->SetRenderTarget(nullptr);
 }
 
 void Canvas::ClearCanvas() {
@@ -64,6 +78,8 @@ void Canvas::ClearCanvas() {
     drawing->SetColor(255, 255, 255, 255);
     drawing->Clear();
     drawing->SetRenderTarget(nullptr);
+
+    paint_segments.clear();
 }
 
 void Canvas::SetTool(DrawTool tool) {
@@ -71,15 +87,21 @@ void Canvas::SetTool(DrawTool tool) {
 }
 
 void Canvas::SetDrawColor(SDL_FColor color) {
-    draw_color = color;
+    this->draw_color = color;
+}
+
+void Canvas::SetBrushSize(float brush_size) {
+    this->brush_size = brush_size;
+}
+
+void Canvas::SetEraserSize(float eraser_size) {
+    this->eraser_size = eraser_size;
 }
 
 void Canvas::Tick() {
-    last_drag = drag;
+    if (canvas_mode != CANVAS_DRAW)
+        return;
 
-    float mouse_x, mouse_y;
-    SDL_GetMouseState(&mouse_x, &mouse_y);
-    drag = Vec2f(mouse_x, mouse_y);
 }
 
 void Canvas::HandleEvent(SDL_Event& event, EventContext& event_summary) {
@@ -91,16 +113,35 @@ void Canvas::HandleEvent(SDL_Event& event, EventContext& event_summary) {
                     instructions_intro = false;
                     after_intro_callback();
                 } else {
-                    dragging = true;
-                    drag = Vec2f(event.button.x, event.button.y);
-                    last_drag = drag;
+                    painting = true;
+                    last_paint_position = Vec2f(event.button.x, event.button.y);
+                    paint_segments.emplace_back(last_paint_position, last_paint_position);
                 }
+            }
+            break;
+        }
+        case SDL_EVENT_MOUSE_MOTION: {
+            if (custom_cursor != nullptr && event_summary.cursor_changed == CursorChange::NO_CHANGE &&
+                Rectangles::PointCollides(event.motion.x, event.motion.y,
+                                          canvas_rect.x, canvas_rect.y,
+                                          canvas_rect.x + canvas_rect.w,
+                                          canvas_rect.y + canvas_rect.h)) {
+                if (canvas_mode == CANVAS_DRAW && !instructions_intro) {
+                    event_summary.cursor_changed = CursorChange::TO_CUSTOM;
+                    SDL_SetCursor(custom_cursor);
+                }
+            }
+
+            if (painting) {
+                auto mouse_position = Vec2f(event.motion.x, event.motion.y);
+                paint_segments.emplace_back(last_paint_position, mouse_position);
+                last_paint_position = mouse_position;
             }
             break;
         }
         case SDL_EVENT_MOUSE_BUTTON_UP: {
             if (event.button.button == SDL_BUTTON_LEFT)
-                dragging = false;
+                painting = false;
             break;
         }
     }
@@ -111,11 +152,19 @@ void Canvas::Render() {
 
     drawing->RenderTexture(canvas->SDLTexture(), &canvas_source, canvas_rect);
 
-    if (dragging && tool != TOOL_NONE) {
+    if (canvas_mode == CANVAS_DRAW && tool != TOOL_NONE) {
         drawing->SetRenderTarget(canvas);
         auto draw_offset = Vec2f(canvas_rect.x - canvas_source.x, canvas_rect.y - canvas_source.y);
-        SDL_FColor draw_color = tool == TOOL_PENCIL ? this->draw_color : SDL_FColor(255, 255, 255, 255);
-        drawing->DrawLine(drag - draw_offset, last_drag - draw_offset, 10.0, draw_color);
+        SDL_FColor paint_color = tool == TOOL_PENCIL ? this->draw_color : SDL_FColor(255, 255, 255, 255);
+
+        for (const auto& segment : paint_segments) {
+            auto [start, end] = segment;
+            drawing->DrawLine(start - draw_offset,
+                              end - draw_offset,
+                              tool == TOOL_PENCIL ? brush_size : eraser_size,
+                              paint_color);
+        }
+        paint_segments.clear();
         drawing->SetRenderTarget(nullptr);
     }
 
@@ -126,26 +175,26 @@ void Canvas::Render() {
     Vec2i intro_texture_scale;
     Texture* intro_texture = nullptr;
     Texture* text_texture = nullptr;
-    switch (intro_type) {
-        case INTRO_GUESS: {
+    switch (canvas_mode) {
+        case CANVAS_GUESS: {
             intro_texture_scale = scale_guess;
             intro_texture = sTextureGuess.GetTexture();
             text_texture = text_guess;
             break;
         }
-        case INTRO_WATCH: {
+        case CANVAS_WATCH: {
             intro_texture_scale = scale_watch;
             intro_texture = sTextureWatch.GetTexture();
             text_texture = text_watch;
             break;
         }
-        case INTRO_DRAW: {
+        case CANVAS_DRAW: {
             intro_texture_scale = scale_draw;
             intro_texture = sTextureDraw.GetTexture();
             text_texture = text_draw;
             break;
         }
-        default:throw std::runtime_error("Canvas.cpp Render()");
+        default: throw std::runtime_error("Canvas.cpp Render()");
     }
 
     const float gap = 5.0f;
@@ -186,4 +235,4 @@ void Canvas::PostRefresh() {
         (float)visible_area.x,
         (float)visible_area.y,
     };
-};
+}

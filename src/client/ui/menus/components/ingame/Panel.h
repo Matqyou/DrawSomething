@@ -6,7 +6,8 @@
 
 #include "../../../components/element/Frame.h"
 
-class IngamePanel : public Frame {
+namespace Ingame {
+class Panel : public Frame {
 private:
 
 public:
@@ -22,6 +23,7 @@ public:
     static LinkFont sFontDefaultBiggest;
 
 public:
-    IngamePanel();
+    Panel();
 
 };
+}

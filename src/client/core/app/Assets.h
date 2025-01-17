@@ -54,6 +54,7 @@ public:
     void SetColorMod(Uint8 r, Uint8 g, Uint8 b);
     void SetColorMod(SDL_FColor color);
     void SetAlphaMod(int alpha);
+    void SetScaleMode(SDL_ScaleMode scale_mode);
 };
 
 class Sound {
@@ -136,6 +137,8 @@ class AssetsClass {
     static std::vector<PreloadFont*> m_PreloadFonts;
     static std::vector<LinkFont*> m_LinkFonts;
 
+    static bool m_PreloadStage;
+
     void LoadTextures(SDL_Renderer* renderer);
     void LoadSounds();
     void LoadMusic();
@@ -155,9 +158,11 @@ public:
 
     // Generating
     Texture* TextureFromSurface(SDL_Surface* sdl_surface);
+    SDL_Surface* CreateSDLSurface(int width, int height, SDL_PixelFormat format);
     Texture* CreateTexture(SDL_PixelFormat format, SDL_TextureAccess access, int w, int h);
     Texture* RenderTextBlended(TTF_Font* font, const std::string& text, SDL_Color color);
     Texture* RenderTextBlended(TTF_Font* font, const char* text, SDL_Color color);
+    bool SaveTextureToDisk(Texture* texture, const std::string& filename);
 
     // Manipulating
     static void LinkPreloadedTexture(PreloadTexture* register_texture);
@@ -246,7 +251,7 @@ private:
     friend class AssetsClass;
     std::string m_Key;
     std::string m_FontID;
-    int m_Size;
+    float m_Size;
     Font* m_Font;
 
 public:
@@ -255,7 +260,7 @@ public:
     // Getting
     [[nodiscard]] const std::string& Key() const { return m_Key; }
     [[nodiscard]] const std::string& FontID() const { return m_FontID; }
-    [[nodiscard]] int Size() const { return m_Size; }
+    [[nodiscard]] float Size() const { return m_Size; }
     [[nodiscard]] Font* GetFont() const;
 
 };

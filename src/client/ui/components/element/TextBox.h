@@ -9,24 +9,37 @@
 #include "SDL3_ttf/SDL_ttf.h"
 #include "../../../core/app/Assets.h"
 
-class Screen;
 class TextBox : public Element {
 private:
+    TTF_Font* font;
     std::string text;
-    void (* enter_callback)(const std::string&);
+    using Callback = std::function<void(std::string&)>;
+    Callback callback;
 
     std::vector<Texture*> text_lines;
     bool update_render;
     SDL_Color text_color;
 
-    static LinkFont sFontDefault;
-
     static std::vector<std::string> WrapText(const std::string& text, TTF_Font* font, int max_width);
     void UpdateRender();
 
 public:
-    TextBox(const Vec2i& pos, const Vec2i& size, void (* enter_callback)(const std::string&));
-    ~TextBox();
+    TextBox(const Vec2i& pos, const Vec2i& size);
+    ~TextBox() override;
+
+    // Options
+    TextBox* SetCallback(Callback callback) {
+        this->callback = callback;
+        return this;
+    }
+    TextBox* SetFont(TTF_Font* font) {
+        this->font = font;
+        return this;
+    }
+    TextBox* SetTextColor(SDL_Color sdl_color) {
+        this->text_color = sdl_color;
+        return this;
+    }
 
     // Manipulating
     void AppendText(const char* input);
