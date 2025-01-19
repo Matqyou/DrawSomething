@@ -8,10 +8,10 @@
 #include <utility>
 #include "element/base/Element.h"
 
-enum CanvasIntro {
-    INTRO_GUESS,
-    INTRO_WATCH,
-    INTRO_DRAW,
+enum CanvasMode {
+    CANVAS_GUESS,
+    CANVAS_WATCH,
+    CANVAS_DRAW,
 };
 
 enum DrawTool {
@@ -23,7 +23,7 @@ enum DrawTool {
 class Canvas : public Element {
 private:
     bool instructions_intro;
-    CanvasIntro intro_type;
+    CanvasMode canvas_mode;
     Vec2i resolution;
     SDL_FRect canvas_source, canvas_rect;
     Texture* canvas;
@@ -37,10 +37,14 @@ private:
     using Callback = std::function<void()>;
     Callback after_intro_callback;
 
-    Vec2f drag, last_drag;
-    bool dragging;
+    std::vector<std::pair<Vec2f, Vec2f>> paint_segments;
+    Vec2f last_paint_position;
+    bool painting;
     DrawTool tool;
     SDL_FColor draw_color;
+    float brush_size;
+    float eraser_size;
+    SDL_Cursor* custom_cursor;
 
     static PreloadTexture sTextureGuess;
     static PreloadTexture sTextureWatch;
@@ -50,9 +54,16 @@ private:
 public:
     Canvas(const Vec2i& pos, const Vec2i& size);
 
+    // Getting
+    [[nodiscard]] Texture* GetCanvasTexture() const { return canvas; }
+
     // Options
-    Canvas* SetIntro(CanvasIntro intro_type) {
-        this->intro_type = intro_type;
+    Canvas* SetCustomCursor(SDL_Cursor* custom_cursor) {
+        this->custom_cursor = custom_cursor;
+        return this;
+    }
+    Canvas* SetMode(CanvasMode canvas_mode) {
+        this->canvas_mode = canvas_mode;
         this->instructions_intro = true;
         return this;
     }
@@ -62,9 +73,12 @@ public:
     }
 
     // Manipulation
+    void LoadExample();
     void ClearCanvas();
     void SetTool(DrawTool tool);
     void SetDrawColor(SDL_FColor color);
+    void SetBrushSize(float brush_size);
+    void SetEraserSize(float eraser_size);
 
     // Ticking
     void Tick() override;

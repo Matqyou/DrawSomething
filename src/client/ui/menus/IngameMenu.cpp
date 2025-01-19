@@ -10,12 +10,12 @@ LinkFont IngameMenu::sFontDefaultBiggest("fredoka.biggest");
 LinkFont IngameMenu::sFontDefaultBigger("fredoka.big");
 LinkFont IngameMenu::sFontDefaultSmaller("fredoka.small");
 
-IngameMenu::IngameMenu()
+IngameMenu::IngameMenu(Words* words_list)
     : FullscreenMenu() {
-    auto drawing = Application::Get()->GetDrawing();
+    this->words_list = words_list;
 
     // Header
-    header = new IngameHeader();
+    header = new Ingame::Header();
 
     // Canvas
     canvas = (Canvas*)(new Canvas(Vec2i(0, 0), Vec2i(0, 0)))
@@ -25,12 +25,9 @@ IngameMenu::IngameMenu()
         ->SetName("Canvas", false);
 
     // Buttons and stuff
-    panel = new IngamePanel();
-    color_selector = new IngameColorSelector(canvas);
-    tool_selector = new IngameToolSelector();
-    tool_selector->trash_button->SetCallback([this]() { canvas->ClearCanvas(); });
-    tool_selector->pencil_tool->SetCallback([this]() { tool_selector->SetFocus(tool_selector->pencil_tool); canvas->SetTool(TOOL_PENCIL); });
-    tool_selector->eraser_tool->SetCallback([this]() { tool_selector->SetFocus(tool_selector->eraser_tool); canvas->SetTool(TOOL_ERASER); });
+    panel = new Ingame::Panel();
+    tool_selector = new Ingame::ToolSelector(canvas);
+    color_selector = new Ingame::ColorSelector(canvas, tool_selector);
 
     SetColor(230, 230, 230, 255);
     SetFlex(FLEX_HEIGHT);
@@ -44,35 +41,47 @@ void IngameMenu::PrepareGuess() {
     header->SetTitle("You are guessing");
     header->SetDescription("Matiss B.'s drawing.");
     header->SetTurnNumber(3);
+    canvas->ClearCanvas();
+
     SetChildren({ header, canvas });
     Refresh();
-    canvas->SetIntro(INTRO_GUESS);
+    canvas->SetMode(CANVAS_GUESS);
     canvas->SetCallback([this]() {
+        canvas->LoadExample();
         this->SetChildren({ header, canvas, panel });
         this->Refresh();
     });
 }
 
 void IngameMenu::PrepareWatch() {
+    auto random_word = Strings::ToUpperCase(words_list->GetRandomWord());
+
     header->SetTitle("You are watching Matiss B.");
-    header->SetDescription("guess the word CAVE.");
+    header->SetDescription(Strings::FString("guess the word %s.", random_word.c_str()));
     header->SetTurnNumber(4);
+    canvas->ClearCanvas();
+
     SetChildren({ header, canvas });
     Refresh();
-    canvas->SetIntro(INTRO_WATCH);
+    canvas->SetMode(CANVAS_WATCH);
     canvas->SetCallback([this]() {
+        canvas->LoadExample();
         this->SetChildren({ header, canvas, panel });
         this->Refresh();
     });
 }
 
 void IngameMenu::PrepareDraw() {
-    header->SetTitle("You are drawing SUNRISE");
+    auto random_word = Strings::ToUpperCase(words_list->GetRandomWord());
+
+    header->SetTitle(Strings::FString("You are drawing %s", random_word.c_str()));
     header->SetDescription("for Matiss B.");
     header->SetTurnNumber(5);
+    canvas->ClearCanvas();
+
     SetChildren({ header, canvas });
     Refresh();
-    canvas->SetIntro(INTRO_DRAW);
+    canvas->SetMode(CANVAS_DRAW);
     canvas->SetCallback([this]() {
         this->SetChildren({ header, color_selector, canvas, tool_selector });
         this->Refresh();

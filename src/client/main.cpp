@@ -12,6 +12,9 @@
 #include "ui/components/event/EventContext.h"
 #include "ui/menus/MainMenu.h"
 #include "ui/menus/IngameMenu.h"
+#include "words/Words.h"
+#include "ui/menus/AuthMenu.h"
+#include "ui/cursors/Cursors.h"
 
 std::vector<Scribbles*> scribbles;
 static PreloadTexture pencil("pencil2");
@@ -45,24 +48,6 @@ int main() {
     auto drawing = application->GetDrawing();
     auto clock = application->GetClock();
 
-//    auto slot = Assets::Get()->GetTexture("game.ingame_panel.letter.slot");
-//    auto background = Assets::Get()->GetTexture("game.ingame_panel.letter.slot_background");
-//    auto letter_slot = new Texture(SDL_CreateTexture(drawing->Renderer(),
-//                                                     SDL_PIXELFORMAT_RGBA8888,
-//                                                     SDL_TEXTUREACCESS_TARGET,
-//                                                     slot->GetWidth(),
-//                                                     slot->GetHeight()));
-//    letter_slot->SetBlendMode(SDL_BLENDMODE_BLEND);
-//    drawing->SetRenderTarget(letter_slot);
-//    drawing->RenderTextureFullscreen(background->SDLTexture(), nullptr);
-//    drawing->RenderTextureFullscreen(slot->SDLTexture(), nullptr);
-//    drawing->SetRenderTarget(nullptr);
-//    IngamePanel::game_letter_slot_.SetSDLTexture(letter_slot->SDLTexture());
-
-//    auto scribb = new Scribbles(Vec2d(0, 0), application->GetResolution() - 35, 35);
-//    scribb->GenerateZigZag();
-//    scribbles.push_back(scribb);
-
     auto scribb = new Scribbles(Vec2d(50, 450), Vec2i(200, 200), 35);
     scribb->GenerateZigZag();
     scribbles.push_back(scribb);
@@ -75,13 +60,18 @@ int main() {
     scribb3->GenerateZigZag();
     scribbles.push_back(scribb3);
 
+    SDL_StartTextInput(Application::Get()->GetWindow());
+
+    Words words_choice;
+
+    AuthMenu auth_menu;
     MainMenu main_menu;
-    IngameMenu guessing_menu;
+    IngameMenu guessing_menu(&words_choice);
     auto current_menu = (FullscreenMenu*)(&main_menu);
 
     Vec2i render_drag_from = Vec2i(0, 0);
     bool render_dragging = false;
-    bool render_debug = false;
+    bool render_debug = true;
     while (true) {
         EventContext event_context;
         SDL_Event sdl_event;
@@ -104,7 +94,14 @@ int main() {
                             scribb->GenerateZigZag();
                     else if (sdl_event.key.scancode == SDL_SCANCODE_Q) render_debug = !render_debug;
                     else if (sdl_event.key.scancode == SDL_SCANCODE_W) current_menu->DebugPrint();
-                    else if (sdl_event.key.scancode == SDL_SCANCODE_1) {
+                    else if (sdl_event.key.scancode == SDL_SCANCODE_E)
+                        Assets::Get()->SaveTextureToDisk(guessing_menu.canvas->GetCanvasTexture(), "canvas_export.png");
+                    else if (sdl_event.key.scancode == SDL_SCANCODE_GRAVE) {
+                        current_menu = &auth_menu;
+                        current_menu->UpdateElement({ 0, 0 },
+                                                    application->GetResolution(),
+                                                    application->GetResolution());
+                    } else if (sdl_event.key.scancode == SDL_SCANCODE_1) {
                         current_menu = &main_menu;
                         current_menu->UpdateElement({ 0, 0 },
                                                     application->GetResolution(),
@@ -142,7 +139,7 @@ int main() {
         }
         if (event_context.had_mouse_motion &&
             event_context.cursor_changed == CursorChange::NO_CHANGE)
-            SDL_SetCursor(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_DEFAULT));
+            SDL_SetCursor(SDL_GetDefaultCursor());
 
         if (clock->TimePassed()) {
             // Ticking
@@ -151,6 +148,7 @@ int main() {
                 scribb->Tick();
 
             // Drawing
+            drawing->SetRenderTarget(nullptr);
             for (auto scribb : scribbles)
                 scribb->Draw();
             if (render_debug) {

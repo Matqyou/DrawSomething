@@ -23,6 +23,8 @@ std::vector<PreloadMusic*> AssetsClass::m_LinkMusic = { };
 std::vector<PreloadFont*> AssetsClass::m_PreloadFonts = { };
 std::vector<LinkFont*> AssetsClass::m_LinkFonts = { };
 
+bool AssetsClass::m_PreloadStage = true;
+
 Texture::Texture(SDL_Texture* sdl_texture, std::string key, std::string load_extension)
     : m_Key(std::move(key)),
       m_LoadExtension(std::move(load_extension)) {
@@ -67,6 +69,10 @@ void Texture::SetColorMod(SDL_FColor color) {
 
 void Texture::SetAlphaMod(int alpha) {
     SDL_SetTextureAlphaMod(m_SDLTexture, alpha);
+}
+
+void Texture::SetScaleMode(SDL_ScaleMode scale_mode) {
+    SDL_SetTextureScaleMode(m_SDLTexture, scale_mode);
 }
 
 Sound::Sound(std::string key, Mix_Chunk* mix_chunk, std::string load_extension)
@@ -147,7 +153,7 @@ std::vector<std::tuple<std::string, std::string, std::string>> GetResourceKeys(c
 
         // Check if the extension is supported
         if (supported_extensions.find(extension) == supported_extensions.end()) {
-            std::wcout << FStringColorsW(L"[Assets] &8Unsupported texture format '%s' for '%s'",
+            std::wcout << FStringColorsW(L"[Assets] &8Unsupported file format '%s' for '%s'",
                                          extension.c_str(),
                                          identificator.c_str()) << std::endl;
             continue;
@@ -167,15 +173,15 @@ void AssetsClass::LoadTextures(SDL_Renderer* renderer) {
     };
     auto texture_keys = GetResourceKeys(R"(.\assets\images\)", texture_extensions);
     for (auto entry : texture_keys) {
-        std::string& key = std::get<0>(entry);
+        std::string& texture_key = std::get<0>(entry);
         std::string& file_path = std::get<1>(entry);
         std::string& extension = std::get<2>(entry);
 
-        auto it = m_Textures.find(key);
+        auto it = m_Textures.find(texture_key);
         if (it != m_Textures.end()) {
             std::wcout << FStringColorsW(L"[Assets] &8Duplicate texture '%s' for existing '%s'(%s)",
                                          extension.c_str(),
-                                         key.c_str(),
+                                         texture_key.c_str(),
                                          it->second->m_LoadExtension.c_str()) << std::endl;
             continue;
         }
@@ -192,9 +198,10 @@ void AssetsClass::LoadTextures(SDL_Renderer* renderer) {
         SDL_DestroySurface(TempSurface);
 
         // Add it to all the textures
-        auto new_texture = (new Texture(NewSDLTexture, key, extension))
+        auto new_texture = (new Texture(NewSDLTexture, texture_key, extension))
             ->FlagForAutomaticDeletion();
-        m_Textures[key] = new_texture;
+        m_Textures[texture_key] = new_texture;
+        std::wcout << FStringColorsW(L"[Assets] &9Loaded texture '%s'", texture_key.c_str()) << std::endl;
     }
     std::wcout << FStringColorsW(L"[Assets] &5Loaded %i textures", m_Textures.size()) << std::endl;
     m_InvalidTextureDefault = nullptr;
@@ -213,9 +220,9 @@ void AssetsClass::LoadTextures(SDL_Renderer* renderer) {
 
 void AssetsClass::LoadSounds() {
     // Load
-    std::unordered_set<std::string> sound_extensions = {
-        ".wav", ".aiff", ".voc", ".mp3", ".ogg", ".flac",
-        ".mod", ".s3m", ".it", ".xm", ".mid", ".midi", ".opus"
+    std::unordered_set<std::string> sound_extensions = { // ".wav" doesn't work for some reason
+        ".aiff", ".voc", ".mp3", ".ogg", ".flac", ".mod",
+        ".s3m", ".it", ".xm", ".mid", ".midi", ".opus"
     };
     auto sound_keys = GetResourceKeys(R"(.\assets\sounds\)", sound_extensions);
     for (auto entry : sound_keys) {
@@ -258,9 +265,9 @@ void AssetsClass::LoadSounds() {
 
 void AssetsClass::LoadMusic() {
     // Load
-    std::unordered_set<std::string> sound_extensions = {
-        ".wav", ".aiff", ".voc", ".mp3", ".ogg", ".flac",
-        ".mod", ".s3m", ".it", ".xm", ".mid", ".midi", ".opus"
+    std::unordered_set<std::string> sound_extensions = { // ".wav" doesn't work for some reason
+        ".aiff", ".voc", ".mp3", ".ogg", ".flac", ".mod",
+        ".s3m", ".it", ".xm", ".mid", ".midi", ".opus"
     };
     auto music_keys = GetResourceKeys(R"(.\assets\music\)", sound_extensions);
     for (auto entry : music_keys) {
@@ -310,7 +317,7 @@ void AssetsClass::LoadFonts() {
     for (auto required_font : m_PreloadFonts) {
         const std::string& font_key = required_font->Key();
         const std::string& font_id = required_font->FontID();
-        int font_size = required_font->Size();
+        float font_size = required_font->Size();
 
         for (auto entry : font_paths) {
             std::string& id = std::get<0>(entry);
@@ -327,7 +334,10 @@ void AssetsClass::LoadFonts() {
                 auto new_font = new Font(ttf_font, font_key, extension);
                 required_font->m_Font = new_font;
                 m_Fonts[font_key] = new_font;
-                std::wcout << Strings::FStringColorsW(L"[Assets] &9Loaded font %s", font_key.c_str()) << std::endl;
+                std::wcout << Strings::FStringColorsW(L"[Assets] &9Loaded font '%s' &7(%s:%.1fpt)",
+                                                      font_key.c_str(),
+                                                      font_id.c_str(),
+                                                      font_size) << std::endl;
 
                 break;
             }
@@ -356,6 +366,7 @@ AssetsClass::AssetsClass(Drawing* drawing, bool sounds_enabled)
     m_SoundsEnabled = sounds_enabled;
 
     // Todo: Loading assets in realtime (adding/removing files?)
+    AssetsClass::m_PreloadStage = false;
     LoadTextures(drawing->Renderer());
     LoadSounds();
     LoadMusic();
@@ -364,12 +375,34 @@ AssetsClass::AssetsClass(Drawing* drawing, bool sounds_enabled)
     // Pre-generate
     for (auto generate_texture : m_PregenerateTextures) {
         const std::string& texture_key = generate_texture->Key();
-        auto new_texture = generate_texture->m_GenerateCallback(this);
-        if (new_texture != nullptr) {
-            new_texture->FlagForAutomaticDeletion();
-            generate_texture->m_Texture = new_texture;
-            m_Textures[texture_key] = new_texture;
+
+        auto it = m_Textures.find(texture_key);
+        if (it != m_Textures.end()) {
+            std::wcout << FStringColorsW(L"[Assets] &8Duplicate pre-generated texture '%s'(%s)",
+                                         texture_key.c_str(),
+                                         it->second->m_LoadExtension.c_str()) << std::endl;
+            continue;
         }
+
+        if (!generate_texture->m_GenerateCallback) {
+            std::wcout
+                << FStringColorsW(L"[Assets] &cCould not pre-generate '%s', invalid callback", texture_key.c_str())
+                << std::endl;
+            continue;
+        }
+
+        auto new_texture = generate_texture->m_GenerateCallback(this);
+        if (new_texture == nullptr) {
+            std::wcout
+                << FStringColorsW(L"[Assets] &cCould not pre-generate '%s', invalid texture", texture_key.c_str())
+                << std::endl;
+            continue;
+        }
+
+        new_texture->FlagForAutomaticDeletion();
+        generate_texture->m_Texture = new_texture;
+        m_Textures[texture_key] = new_texture;
+        std::wcout << FStringColorsW(L"[Assets] &9Generated texture '%s'", texture_key.c_str()) << std::endl;
     }
     std::wcout << FStringColorsW(L"[Assets] &5Generated %zu textures", m_LinkTextures.size()) << std::endl;
     m_PregenerateTextures.clear();
@@ -381,7 +414,7 @@ AssetsClass::~AssetsClass() {
     size_t destroyed_sounds = 0;
     size_t destroyed_music = 0;
     size_t destroyed_fonts = 0;
-    for (const auto& texture : m_AutomaticDeletionTextures) {
+    for (auto texture : m_AutomaticDeletionTextures) {
         delete texture;
         destroyed_textures++;
     }
@@ -450,6 +483,11 @@ Texture* AssetsClass::TextureFromSurface(SDL_Surface* sdl_surface) {
     return new Texture(NewSDLTexture, "FromSurface", "NaN");
 }
 
+SDL_Surface* AssetsClass::CreateSDLSurface(int width, int height, SDL_PixelFormat format) {
+    SDL_Surface* sdl_surface = SDL_CreateSurface(width, height, format);
+    return sdl_surface;
+}
+
 Texture* AssetsClass::CreateTexture(SDL_PixelFormat format, SDL_TextureAccess access, int w, int h) {
     SDL_Texture* NewSDLTexture = SDL_CreateTexture(m_Drawing->Renderer(), format, access, w, h);
 
@@ -470,27 +508,70 @@ Texture* AssetsClass::RenderTextBlended(TTF_Font* font, const char* text, SDL_Co
     return text_render;
 }
 
+bool AssetsClass::SaveTextureToDisk(Texture* texture, const std::string& filename) {
+    m_Drawing->SetRenderTarget(texture);
+    SDL_Surface* sdl_surface = SDL_RenderReadPixels(m_Drawing->Renderer(), nullptr);
+    m_Drawing->SetRenderTarget(nullptr);
+
+    bool save_result = IMG_SavePNG(sdl_surface, filename.c_str());
+    SDL_DestroySurface(sdl_surface);
+    if (!save_result) {
+        std::wcout << Strings::FStringColorsW(L"[Assets] &cFailed to export texture to disk") << std::endl;
+        std::wcout << Strings::FStringColorsW(L"[Assets] &cReason: %s", SDL_GetError()) << std::endl;
+        return false;
+    }
+
+    std::wcout << Strings::FStringColorsW(L"[Assets] &aExported texture '%s' to disk as %s",
+                                          texture->Key().c_str(),
+                                          filename.c_str()) << std::endl;
+    return true;
+}
+
 void AssetsClass::LinkPreloadedTexture(PreloadTexture* link_texture) {
+    if (!m_PreloadStage)
+        throw std::runtime_error(Strings::FString("You cannot link texture '%s' at this stage",
+                                                  link_texture->m_Key.c_str()));
+
     m_LinkTextures.push_back(link_texture);
 }
 
 void AssetsClass::LinkPregeneratedTexture(PregenerateTexture* pregenerate_texture) {
+    if (!m_PreloadStage)
+        throw std::runtime_error(Strings::FString("You cannot pre-generate texture '%s' at this stage",
+                                                  pregenerate_texture->m_Key.c_str()));
+
     m_PregenerateTextures.push_back(pregenerate_texture);
 }
 
 void AssetsClass::LinkPreloadedSound(PreloadSound* link_sound) {
+    if (!m_PreloadStage)
+        throw std::runtime_error(Strings::FString("You cannot link sound '%s' at this stage",
+                                                  link_sound->m_Key.c_str()));
+
     m_LinkSounds.push_back(link_sound);
 }
 
 void AssetsClass::LinkPreloadedMusic(PreloadMusic* link_music) {
+    if (!m_PreloadStage)
+        throw std::runtime_error(Strings::FString("You cannot link music '%s' at this stage",
+                                                  link_music->m_Key.c_str()));
+
     m_LinkMusic.push_back(link_music);
 }
 
 void AssetsClass::PreloadFont_(PreloadFont* preload_font) {
+    if (!m_PreloadStage)
+        throw std::runtime_error(Strings::FString("You cannot pre-load font '%s' at this stage",
+                                                  preload_font->m_Key.c_str()));
+
     m_PreloadFonts.push_back(preload_font);
 }
 
 void AssetsClass::LinkPreloadedFont(LinkFont* link_font) {
+    if (!m_PreloadStage)
+        throw std::runtime_error(Strings::FString("You cannot link font '%s' at this stage",
+                                                  link_font->m_Key.c_str()));
+
     m_LinkFonts.push_back(link_font);
 }
 
@@ -509,7 +590,7 @@ void AssetsClass::AutomaticallyDeleteTexture(Texture* texture) {
 PreloadTexture::PreloadTexture(std::string texture_key)
     : m_Key(std::move(texture_key)) {
     m_Texture = nullptr;
-    m_LoadCallback = [](Texture*) {};
+    m_LoadCallback = [](Texture*) { };
 
     AssetsClass::LinkPreloadedTexture(this);
 }
@@ -523,9 +604,10 @@ PreloadTexture::PreloadTexture(std::string texture_key, TextureCallback load_cal
 }
 
 PregenerateTexture::PregenerateTexture(std::string texture_key, TextureCallback generate_callback)
-    : m_Key(std::move(texture_key)) {
+    : m_Key(std::move(texture_key)),
+      m_GenerateCallback(std::move(generate_callback)) {
     m_Texture = nullptr;
-    m_GenerateCallback = std::move(generate_callback);
+
     AssetsClass::LinkPregeneratedTexture(this);
 }
 

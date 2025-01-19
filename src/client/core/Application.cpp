@@ -3,6 +3,7 @@
 //
 
 #include "Application.h"
+#include "../ui/cursors/Cursors.h"
 
 template<> App* Singleton<App>::instance_ = nullptr;
 template<> const char* Singleton<App>::singleton_name_ = "Application";
@@ -94,12 +95,15 @@ App::App(const char* title, const char* version, const char* identifier, const V
     bool init_audio = true;
     drawing = new Drawing(renderer);
     Assets::init(new AssetsClass(drawing, init_audio));
+    Cursors::Initialize();
 
     Strings::PrintDivider();
 }
 
 App::~App() {
     Strings::PrintDivider("Destroying");
+
+    Cursors::Deinitialize();
 
     // Application objects
     Assets::destroy();

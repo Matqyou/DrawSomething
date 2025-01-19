@@ -37,4 +37,9 @@ SDL_FRect CenterRelative(const Vec2<T>& original, const Vec2<T>& container) {
              static_cast<float>(original.y) };
 }
 
+template<typename T>
+bool PointCollides(T x, T y, T rect_x, T rect_y, T rect_x2, T rect_y2) {
+    return !(x < rect_x || x > rect_x2 || y < rect_y|| y > rect_y2);
+}
+
 }

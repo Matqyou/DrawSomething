@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <string>
 #include <cstdarg>
+#include <algorithm>
 
 // ANSI color codes
 const std::unordered_map<char, std::string> minecraftToAnsi = {
@@ -244,6 +245,22 @@ std::string RepeatString(const std::string& str, int times) {
     for (int i = 0; i < times; ++i)
         result += str;
 
+    return result;
+}
+
+std::string ToUpperCase(const std::string& input) {
+    std::string result = input;
+    std::transform(result.begin(), result.end(), result.begin(), [](unsigned char c) {
+        return std::toupper(c);
+    });
+    return result;
+}
+
+std::string ToLowerCase(const std::string& input) {
+    std::string result = input;
+    std::transform(result.begin(), result.end(), result.begin(), [](unsigned char c) {
+        return std::tolower(c);
+    });
     return result;
 }
 

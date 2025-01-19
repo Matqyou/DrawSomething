@@ -18,6 +18,7 @@ Element::Element(int type, const Vec2i& relative, const Vec2i& size, ElementDraw
     this->edge = pos + size;
 
     // Default
+    enabled = true;
     composition_pos = Vec2i(0, 0);
     visual_size = size;
     visual_offset = Vec2i(0, 0);
@@ -96,12 +97,6 @@ void Element::UnfocusChildren() {
 }
 
 void Element::SetFocus(Element* focus_element) {
-//    if (parent) {
-//        parent->SetFocus(focus_element);
-//        return;
-//    }
-
-//    UnfocusChildren();
     for (auto child : children)
         child->has_focus = false;
 
@@ -119,6 +114,64 @@ void Element::UpdateElement(const Vec2i& new_pos, const Vec2i& new_size, const V
     Refresh();
 }
 
+void Element::AlignHorizontal_() {
+    // Parent check
+    if (align_horizontal != DONT_ALIGN) {
+        switch (align_horizontal) {
+            case ALIGN_BEHIND_LEFT: {
+                composition_pos.x = -size.x;
+                break;
+            }
+            case ALIGN_LEFT: {
+                composition_pos.x = 0;
+                break;
+            }
+            case ALIGN_RIGHT: {
+                composition_pos.x = parent->size.x - size.x;
+                break;
+            }
+            case ALIGN_BEHIND_RIGHT: {
+                composition_pos.x = parent->size.x + size.x;
+                break;
+            }
+            case ALIGN_CENTER: {
+                composition_pos.x = (parent->size.x - size.x) / 2;
+                break;
+            }
+            case DONT_ALIGN: break;
+        }
+    }
+}
+
+void Element::AlignVertical_() {
+    // Parent check
+    if (align_vertical != DONT_ALIGN) {
+        switch (align_vertical) {
+            case ALIGN_ABOVE_TOP: {
+                composition_pos.y = -size.y;
+                break;
+            }
+            case ALIGN_TOP: {
+                composition_pos.y = 0;
+                break;
+            }
+            case ALIGN_BOTTOM: {
+                composition_pos.y = parent->size.y - size.y;
+                break;
+            }
+            case ALIGN_UNDER_BOTTOM: {
+                composition_pos.y = parent->size.y + size.y;
+                break;
+            }
+            case ALIGN_CENTER: {
+                composition_pos.y = (parent->size.y - size.y) / 2;
+                break;
+            }
+            case DONT_ALIGN: break;
+        }
+    }
+}
+
 void Element::Refresh(int child_generation) {
     if (children.empty())
         return;
@@ -128,6 +181,9 @@ void Element::Refresh(int child_generation) {
         int adaptive_h = 0;
         int num_children = 0;
         for (auto child : children) {
+            if (!child->enabled)
+                continue;
+
             if (child->occupy_fully_width) {
                 child->size.x = size.x;
                 child->visual_size.x = size.x;
@@ -176,6 +232,9 @@ void Element::Refresh(int child_generation) {
             int flex_num_children = 0;
             int num_children = 0;
             for (auto child : children) {
+                if (!child->enabled)
+                    continue;
+
                 if (flex == FLEX_WIDTH && child->flex_involved_horizontal) {
                     // The number of dynamic width children
                     if (child->occupy_width) flex_num_children++;
@@ -194,6 +253,9 @@ void Element::Refresh(int child_generation) {
 
             int current_flex = 0;
             for (auto child : children) {
+                if (!child->enabled)
+                    continue;
+
                 // Incase we don't change some values, we can copy the previous ones
                 child->composition_pos = Vec2i(0, 0);
 
@@ -224,64 +286,15 @@ void Element::Refresh(int child_generation) {
                 }
 
                 // Align children
-                if (child->align_horizontal != DONT_ALIGN) {
-                    switch (child->align_horizontal) {
-                        case ALIGN_BEHIND_LEFT: {
-                            child->composition_pos.x = -child->size.x;
-                            break;
-                        }
-                        case ALIGN_LEFT: {
-                            child->composition_pos.x = 0;
-                            break;
-                        }
-                        case ALIGN_RIGHT: {
-                            child->composition_pos.x = size.x - child->size.x;
-                            break;
-                        }
-                        case ALIGN_BEHIND_RIGHT: {
-                            child->composition_pos.x = size.x + child->size.x;
-                            break;
-                        }
-                        case ALIGN_CENTER: {
-                            child->composition_pos.x = (size.x - child->size.x) / 2;
-                            break;
-                        }
-                        case DONT_ALIGN: break;
-                    }
-                }
-                if (child->align_vertical != DONT_ALIGN) {
-                    switch (child->align_vertical) {
-                        case ALIGN_ABOVE_TOP: {
-                            child->composition_pos.y = -child->size.y;
-                            break;
-                        }
-                        case ALIGN_TOP: {
-                            child->composition_pos.y = 0;
-                            break;
-                        }
-                        case ALIGN_BOTTOM: {
-                            child->composition_pos.y = size.y - child->size.y;
-                            break;
-                        }
-                        case ALIGN_UNDER_BOTTOM: {
-                            child->composition_pos.y = size.y + child->size.y;
-                            break;
-                        }
-                        case ALIGN_CENTER: {
-                            child->composition_pos.y = (size.y - child->size.y) / 2;
-                            break;
-                        }
-                        case DONT_ALIGN: break;
-                    }
-                }
+                child->AlignHorizontal_();
+                child->AlignVertical_();
             }
         }
     }
 
     // Grandparents - flex and align
     for (auto parent : children) {
-        if (parent->children.empty())
-            continue;
+        if (parent->children.empty() || !parent->enabled) continue;
 
         // Flex grandchildren
         int flex_negative_space = 0;
@@ -302,10 +315,14 @@ void Element::Refresh(int child_generation) {
         }
 
         int flex_space = (parent->flex == FLEX_WIDTH ? parent->size.x : parent->size.y) - flex_negative_space;
-        int flex_slice = flex_num_children > 0 ? (flex_space - (num_children - 1) * parent->flex_gap) / flex_num_children : 0;
+        int flex_slice =
+            flex_num_children > 0 ? (flex_space - (num_children - 1) * parent->flex_gap) / flex_num_children : 0;
 
         int current_flex = 0;
         for (auto child : parent->children) {
+            if (!child->enabled)
+                continue;
+
             child->composition_pos = Vec2i(0, 0);
             if (parent->flex != DONT_FLEX) {
                 if (parent->flex == FLEX_WIDTH && child->flex_involved_horizontal) {
@@ -333,109 +350,15 @@ void Element::Refresh(int child_generation) {
                 }
             }
 
-            // Align grandchildren
-            if (!parent->occupy_width && child->align_horizontal != DONT_ALIGN) {
-                switch (child->align_horizontal) {
-                    case ALIGN_BEHIND_LEFT: {
-                        child->composition_pos.x = -child->size.x;
-                        break;
-                    }
-                    case ALIGN_LEFT: {
-                        child->composition_pos.x = 0;
-                        break;
-                    }
-                    case ALIGN_RIGHT: {
-                        child->composition_pos.x = parent->size.x - child->size.x;
-                        break;
-                    }
-                    case ALIGN_BEHIND_RIGHT: {
-                        child->composition_pos.x = parent->size.x + child->size.x;
-                        break;
-                    }
-                    case ALIGN_CENTER: {
-                        child->composition_pos.x = (parent->size.x - child->size.x) / 2;
-                        break;
-                    }
-                    case DONT_ALIGN: break;
-                }
-            }
-            if (!parent->occupy_height && child->align_vertical != DONT_ALIGN) {
-                switch (child->align_vertical) {
-                    case ALIGN_ABOVE_TOP: {
-                        child->composition_pos.y = -child->size.y;
-                        break;
-                    }
-                    case ALIGN_TOP: {
-                        child->composition_pos.y = 0;
-                        break;
-                    }
-                    case ALIGN_BOTTOM: {
-                        child->composition_pos.y = parent->size.y - child->size.y;
-                        break;
-                    }
-                    case ALIGN_UNDER_BOTTOM: {
-                        child->composition_pos.y = parent->size.y + child->size.y;
-                        break;
-                    }
-                    case ALIGN_CENTER: {
-                        child->composition_pos.y = (parent->size.y - child->size.y) / 2;
-                        break;
-                    }
-                    case DONT_ALIGN: break;
-                }
-            }
+            if (!parent->occupy_width) child->AlignHorizontal_();
+            if (!parent->occupy_height) child->AlignVertical_();
 
             for (auto grandchild : child->children) {
-                if (child->occupy_width && grandchild->align_horizontal != DONT_ALIGN) {
-                    switch (grandchild->align_horizontal) {
-                        case ALIGN_BEHIND_LEFT: {
-                            grandchild->composition_pos.x = -grandchild->size.x;
-                            break;
-                        }
-                        case ALIGN_LEFT: {
-                            grandchild->composition_pos.x = 0;
-                            break;
-                        }
-                        case ALIGN_RIGHT: {
-                            grandchild->composition_pos.x = child->size.x - grandchild->size.x;
-                            break;
-                        }
-                        case ALIGN_BEHIND_RIGHT: {
-                            grandchild->composition_pos.x = child->size.x + grandchild->size.x;
-                            break;
-                        }
-                        case ALIGN_CENTER: {
-                            grandchild->composition_pos.x = (child->size.x - grandchild->size.x) / 2;
-                            break;
-                        }
-                        case DONT_ALIGN: break;
-                    }
-                }
-                if (child->occupy_height && grandchild->align_vertical != DONT_ALIGN) {
-                    switch (grandchild->align_vertical) {
-                        case ALIGN_ABOVE_TOP: {
-                            grandchild->composition_pos.y = -grandchild->size.y;
-                            break;
-                        }
-                        case ALIGN_TOP: {
-                            grandchild->composition_pos.y = 0;
-                            break;
-                        }
-                        case ALIGN_BOTTOM: {
-                            grandchild->composition_pos.y = child->size.y - grandchild->size.y;
-                            break;
-                        }
-                        case ALIGN_UNDER_BOTTOM: {
-                            grandchild->composition_pos.y = child->size.y + grandchild->size.y;
-                            break;
-                        }
-                        case ALIGN_CENTER: {
-                            grandchild->composition_pos.y = (child->size.y - grandchild->size.y) / 2;
-                            break;
-                        }
-                        case DONT_ALIGN: break;
-                    }
-                }
+                if (!grandchild->enabled)
+                    continue;
+
+                if (child->occupy_width) grandchild->AlignHorizontal_();
+                if (child->occupy_height) grandchild->AlignVertical_();
             }
         }
     }
@@ -503,10 +426,14 @@ void Element::DebugPrint(std::vector<bool> level, bool last_child) {
     output_element +=
         Strings::FStringColorsW(L"(%ls%iw&r,%ls%ih&r)", width_color.c_str(), size.x, height_color.c_str(), size.y);
 
-    const wchar_t* output_draw = draw == DRAW_RECT ? L"&a□" :
-                                 draw == DRAW_TEXTURE ? L"&a■" :
+    const wchar_t* output_draw = draw == DRAW_RECT ? L"&aRECT □" :
+                                 draw == DRAW_TEXTURE ? L"&aTEXTURE ■" :
                                  L"&c□";
     output_element += Strings::FStringColorsW(L" %ls", output_draw);
+
+//    output_element += Strings::FStringColorsW(L" (&b%d&r, &b%d&r)", edge.x, edge.y);
+
+    output_element += Strings::FStringColorsW(L"%s", has_focus ? " &bFOCUSED" : "");
 
     std::wcout << output_element << std::endl;
 
@@ -562,21 +489,37 @@ void Element::RenderDebug() const {
 }
 
 void Element::TickChildren() const {
-    for (auto child : children)
+    for (auto child : children) {
+        if (!child->enabled)
+            continue;
+
         child->Tick();
+    }
 }
 
 void Element::HandleEventChildren(SDL_Event& event, EventContext& event_summary) {
-    for (auto child : children)
+    for (auto child : children) {
+        if (!child->enabled)
+            continue;
+
         child->HandleEvent(event, event_summary);
+    }
 }
 
 void Element::RenderChildren() const {
-    for (auto child : children)
+    for (auto child : children) {
+        if (!child->enabled)
+            continue;
+
         child->Render();
+    }
 }
 
 void Element::RenderDebugChildren() const {
-    for (auto child : children)
+    for (auto child : children) {
+        if (!child->enabled)
+            continue;
+
         child->RenderDebug();
+    }
 }

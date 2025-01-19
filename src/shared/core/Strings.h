@@ -15,6 +15,8 @@ std::string ErasePrefix(std::string string, const std::string& prefix);
 std::string EraseSuffix(std::string string, const std::string& suffix);
 std::string RepeatString(const std::string& str, int times);
 std::wstring RepeatStringW(const std::wstring& str, int times);
+std::string ToUpperCase(const std::string& input);
+std::string ToLowerCase(const std::string& input);
 const char* RandomUppercaseLetter();
 
 // Cout

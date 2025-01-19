@@ -2,16 +2,17 @@
 // Created by Matq on 13/01/2025.
 //
 
-#include "IngameHeader.h"
+#include "Header.h"
 #include "../../../../core/Application.h"
 
-PreloadTexture IngameHeader::game_header_turn("game.header.turn");
-PreloadTexture IngameHeader::game_header_background("game.header.background");
+namespace Ingame {
+PreloadTexture Header::game_header_turn("game.header.turn");
+PreloadTexture Header::game_header_background("game.header.background");
 
-LinkFont IngameHeader::sFontDefaultBigger("fredoka.big");
-LinkFont IngameHeader::sFontDefaultSmaller("fredoka.small");
+LinkFont Header::sFontDefaultBigger("fredoka.big");
+LinkFont Header::sFontDefaultSmaller("fredoka.small");
 
-IngameHeader::IngameHeader()
+Header::Header()
     : Frame(Vec2i(0, 0), Vec2i(0, 73), DONT_DRAW) {
     text_turn = nullptr;
     text_turn_number = nullptr;
@@ -96,14 +97,14 @@ IngameHeader::IngameHeader()
     AddChildren({ turn_display, round_info });
 }
 
-IngameHeader::~IngameHeader() {
+Header::~Header() {
     delete texture_title;
     delete texture_description;
     delete texture_turn;
     delete texture_turn_number;
 }
 
-void IngameHeader::SetTitle(const std::string& new_title) {
+void Header::SetTitle(const std::string& new_title) {
     auto assets = Assets::Get();
     delete texture_title;
     texture_title = assets->RenderTextBlended(sFontDefaultSmaller.GetFont()->TTFFont(),
@@ -116,7 +117,7 @@ void IngameHeader::SetTitle(const std::string& new_title) {
     }
 }
 
-void IngameHeader::SetDescription(const std::string& new_description) {
+void Header::SetDescription(const std::string& new_description) {
     auto assets = Assets::Get();
     delete texture_description;
     texture_description = assets->RenderTextBlended(sFontDefaultSmaller.GetFont()->TTFFont(),
@@ -129,7 +130,7 @@ void IngameHeader::SetDescription(const std::string& new_description) {
     }
 }
 
-void IngameHeader::SetTurnNumber(int turn_number) {
+void Header::SetTurnNumber(int turn_number) {
     auto assets = Assets::Get();
     delete texture_turn_number;
     texture_turn_number = assets->RenderTextBlended(sFontDefaultBigger.GetFont()->TTFFont(),
@@ -142,6 +143,7 @@ void IngameHeader::SetTurnNumber(int turn_number) {
     }
 }
 
-void IngameHeader::SetProfilePicture(Texture* profile_picture) {
+void Header::SetProfilePicture(Texture* profile_picture) {
     texture_profile_picture = profile_picture;
+}
 }

@@ -5,28 +5,30 @@
 #pragma once
 
 #include "base/FullscreenMenu.h"
+#include "../../words/Words.h"
 #include "../components/Canvas.h"
-#include "components/ingame/IngamePanel.h"
-#include "components/ingame/IngameHeader.h"
-#include "components/ingame/IngameColorSelector.h"
-#include "components/ingame/IngameToolSelector.h"
+#include "components/ingame/Panel.h"
+#include "components/ingame/Header.h"
+#include "components/ingame/ColorSelector.h"
+#include "components/ingame/ToolSelector.h"
 
 class IngameMenu : public FullscreenMenu {
-private:
-    IngameHeader* header;
-    Canvas* canvas;
-    IngamePanel* panel;
-    IngameColorSelector* color_selector;
-    IngameToolSelector* tool_selector;
-
 public:
+    Words* words_list;
+
+    Ingame::Header* header;
+    Ingame::Panel* panel;
+    Ingame::ColorSelector* color_selector;
+    Ingame::ToolSelector* tool_selector;
+    Canvas* canvas;
+
     static LinkFont sFontDefault;
     static LinkFont sFontDefaultBiggest;
     static LinkFont sFontDefaultBigger;
     static LinkFont sFontDefaultSmaller;
 
 public:
-    IngameMenu();
+    IngameMenu(Words* words_list);
 
     // Manipulation
     void PrepareGuess();

@@ -4,12 +4,14 @@
 
 #pragma once
 
+
 enum CursorChange {
     NO_CHANGE,
     TO_ARROW,
     TO_HAND,
     TO_IBEAM,
-    TO_POINTER
+    TO_POINTER,
+    TO_CUSTOM,
 };
 
 struct EventContext {

@@ -67,6 +67,7 @@ public:
     int type;
     std::wstring name;
 
+    bool enabled;
     bool flex_involved_horizontal, flex_involved_vertical;
     bool occupy_width, occupy_height;
     bool occupy_fully_width, occupy_fully_height;
@@ -79,6 +80,11 @@ public:
     SDL_Color color;
     SDL_Color focus_color;
 
+private:
+    void AlignHorizontal_();
+    void AlignVertical_();
+
+public:
     Element(int type, const Vec2i& relative, const Vec2i& size, ElementDraw draw);
     Element(int type, const Vec2i& relative, const Vec2i& size, const Vec2i& visual, const Vec2i& offset);
     Element(int type,
@@ -104,6 +110,10 @@ public:
     // Options
     Element* SetChildren(const std::vector<Element*>& children);
     Element* AddChildren(const std::vector<Element*>& children);
+    Element* SetEnabled(bool enabled) {
+        this->enabled = enabled;
+        return this;
+    }
     Element* SetFlexInvolved(bool horizontal, bool vertical) {
         this->flex_involved_horizontal = horizontal;
         this->flex_involved_vertical = vertical;
@@ -156,6 +166,10 @@ public:
     }
     Element* SetFocusColor(Uint8 r, Uint8 g, Uint8 b, Uint8 a) {
         this->focus_color = { r, g, b, a };
+        return this;
+    }
+    Element* SetVisualTexture(Texture* texture) {
+        this->visual_texture = texture;
         return this;
     }
 

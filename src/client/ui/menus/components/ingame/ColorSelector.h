@@ -6,8 +6,10 @@
 
 #include "../../../components/element/Frame.h"
 #include "../../../components/Canvas.h"
+#include "ToolSelector.h"
 
-class IngameColorSelector : public Frame {
+namespace Ingame {
+class ColorSelector : public Frame {
 private:
 
 public:
@@ -21,6 +23,7 @@ public:
     static LinkFont sFontDefaultSmaller;
 
 public:
-    IngameColorSelector(Canvas* canvas);
+    ColorSelector(Canvas* canvas, Ingame::ToolSelector* tool_selector);
 
 };
+}
