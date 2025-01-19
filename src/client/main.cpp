@@ -1,6 +1,5 @@
 #define SDL_MAIN_HANDLED
-#define DRAWSOMETHING_VERSION "1.1.4"
-#define DRAWSOMETHING_NAME "DrawSomething"
+#include "../shared/Protocol.h"
 
 #include <iostream>
 #include <thread>
@@ -37,8 +36,8 @@ void exit_application() {
 
 int main() {
     _setmode(_fileno(stdout), _O_U16TEXT);
-    Application::init(new App(DRAWSOMETHING_NAME,
-                              DRAWSOMETHING_VERSION,
+    Application::init(new App(APPLICATION_NAME,
+                              APPLICATION_VERSION,
                               "com.matq.draw_something",
                               Vec2i(1024, 720),
                               75.0));

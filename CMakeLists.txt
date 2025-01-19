@@ -3,7 +3,13 @@ project(DrawSomething)
 
 set(CMAKE_CXX_STANDARD 20)
 
-include_directories(deps/SDL/include deps/SDL_image/include deps/SDL_mixer/include deps/SDL_ttf/include)
+include_directories(
+        deps/SDL/include
+        deps/SDL_image/include
+        deps/SDL_mixer/include
+        deps/SDL_ttf/include
+        deps/asio/asio/include
+)
 
 link_directories(
         ${CMAKE_SOURCE_DIR}/deps/SDL/cmake-build-debug
@@ -62,10 +68,30 @@ add_executable(DrawSomething src/client/main.cpp
 add_executable(DrawSomethingServer src/server/main.cpp
         deps/icon_resource.rc
         src/shared/core/Strings.cpp
+        src/shared/Protocol.h
+        src/shared/network/ThreadQueue.h
+        src/shared/network/Message.h
+        src/shared/network/Connection.h
+        src/server/network/IServer.h
+)
+
+add_executable(DrawSomethingTestClient src/server/test_client.cpp
+        deps/icon_resource.rc
+        src/shared/core/Strings.cpp
+        src/shared/Protocol.h
+        src/shared/network/ThreadQueue.h
+        src/shared/network/Message.h
+        src/shared/network/Connection.h
+        src/client/network/IClient.h
 )
 
 target_link_libraries(${PROJECT_NAME} SDL3 SDL3_image SDL3_mixer SDL3_ttf)
 target_link_options(${PROJECT_NAME} PRIVATE "-static")
+
+target_link_libraries(DrawSomethingServer ws2_32 wsock32)
+target_link_options(DrawSomethingServer PRIVATE "-static")
+target_link_libraries(DrawSomethingTestClient ws2_32)
+target_link_options(DrawSomethingTestClient PRIVATE "-static")
 
 file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/${PROJECT_NAME})
 
