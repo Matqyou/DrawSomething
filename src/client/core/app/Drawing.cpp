@@ -51,12 +51,8 @@ void Drawing::FillCircle(const Vec2f& center, float radius, SDL_FColor color) {
     }
 }
 
-void Drawing::DrawLine(const Vec2i& start, const Vec2i& end) {
+void Drawing::DrawLine(const Vec2f& start, const Vec2f& end) {
     SDL_RenderLine(m_Renderer, start.x, start.y, end.x, end.y);
-}
-
-void Drawing::DrawLine(const Vec2d& start, const Vec2d& end) {
-    SDL_RenderLine(m_Renderer, (float)start.x, (float)start.y, (float)end.x, (float)end.y);
 }
 
 void Drawing::DrawLine(const Vec2f& start, const Vec2f& end, double size, SDL_FColor color) {

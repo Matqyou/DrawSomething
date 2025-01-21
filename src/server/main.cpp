@@ -42,7 +42,7 @@ protected:
                 break;
             }
             default: {
-                std::cout << Strings::FStringColors("[Server] &8Unknown message_id: %u", message.header.message_id) << std::endl;
+                std::cout << Strings::FStringColors("[Server] &8Unknown message_id: %u\n", message.header.message_id);
                 break;
             }
         }
@@ -52,8 +52,8 @@ protected:
 int main() {
     system("");
     Strings::PrintDivider(SERVER_NAME, false);
-    std::cout << Strings::FStringColors("&3%s %s", SERVER_NAME, APPLICATION_VERSION) << std::endl;
-    std::cout << Strings::FStringColors("[Server] &aHello there!") << std::endl;
+    std::cout << Strings::FStringColors("&3%s %s\n", SERVER_NAME, APPLICATION_VERSION);
+    std::cout << Strings::FStringColors("[Server] &aHello there!\n");
     Strings::PrintDivider();
 
     CustomServer server(60000);

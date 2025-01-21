@@ -138,7 +138,7 @@ void Scribbles::DrawDebug() {
     bool not_first = false;
     for (const auto& node : path) {
         if (not_first) {
-            drawing->DrawLine(previous_node + pos, node + pos);
+            drawing->DrawLine(Vec2f(previous_node + pos), Vec2f(node + pos));
         } else { not_first = true; }
         previous_node = node;
     }

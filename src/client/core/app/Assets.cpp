@@ -48,31 +48,47 @@ Texture* Texture::FlagForAutomaticDeletion() {
     return this;
 }
 
-void Texture::SetSDLTexture(SDL_Texture* sdl_texture) {
+Texture* Texture::SetSDLTexture(SDL_Texture* sdl_texture) {
     m_SDLTexture = sdl_texture;
     SDL_GetTextureSize(m_SDLTexture, &m_Width, &m_Height);
     m_WidthHalf = m_Width / 2.0f;
     m_HeightHalf = m_Height / 2.0f;
+    return this;
 }
 
-void Texture::SetBlendMode(SDL_BlendMode blend_mode) {
+Texture* Texture::SetBlendMode(SDL_BlendMode blend_mode) {
     SDL_SetTextureBlendMode(m_SDLTexture, blend_mode);
+    return this;
 }
 
-void Texture::SetColorMod(Uint8 r, Uint8 g, Uint8 b) {
+Texture* Texture::SetColorMod(Uint8 r, Uint8 g, Uint8 b) {
     SDL_SetTextureColorMod(m_SDLTexture, r, g, b);
+    return this;
 }
 
-void Texture::SetColorMod(SDL_FColor color) {
-    SDL_SetTextureColorMod(m_SDLTexture, (int)color.r, (int)color.g, (int)color.b);
+Texture* Texture::SetColorMod(SDL_Color color) {
+    SDL_SetTextureColorMod(m_SDLTexture, color.r, color.g, color.b);
+    return this;
 }
 
-void Texture::SetAlphaMod(int alpha) {
+Texture* Texture::SetColorModFloat(float r, float g, float b) {
+    SDL_SetTextureColorModFloat(m_SDLTexture, r, g, b);
+    return this;
+}
+
+Texture* Texture::SetColorModFloat(SDL_FColor color) {
+    SDL_SetTextureColorModFloat(m_SDLTexture, color.r, color.g, color.b);
+    return this;
+}
+
+Texture* Texture::SetAlphaMod(int alpha) {
     SDL_SetTextureAlphaMod(m_SDLTexture, alpha);
+    return this;
 }
 
-void Texture::SetScaleMode(SDL_ScaleMode scale_mode) {
+Texture* Texture::SetScaleMode(SDL_ScaleMode scale_mode) {
     SDL_SetTextureScaleMode(m_SDLTexture, scale_mode);
+    return this;
 }
 
 Sound::Sound(std::string key, Mix_Chunk* mix_chunk, std::string load_extension)
@@ -153,9 +169,9 @@ std::vector<std::tuple<std::string, std::string, std::string>> GetResourceKeys(c
 
         // Check if the extension is supported
         if (supported_extensions.find(extension) == supported_extensions.end()) {
-            std::wcout << FStringColorsW(L"[Assets] &8Unsupported file format '%s' for '%s'",
+            std::wcout << FStringColorsW(L"[Assets] &8Unsupported file format '%s' for '%s'\n",
                                          extension.c_str(),
-                                         identificator.c_str()) << std::endl;
+                                         identificator.c_str());
             continue;
         }
 
@@ -179,18 +195,18 @@ void AssetsClass::LoadTextures(SDL_Renderer* renderer) {
 
         auto it = m_Textures.find(texture_key);
         if (it != m_Textures.end()) {
-            std::wcout << FStringColorsW(L"[Assets] &8Duplicate texture '%s' for existing '%s'(%s)",
+            std::wcout << FStringColorsW(L"[Assets] &8Duplicate texture '%s' for existing '%s'(%s)\n",
                                          extension.c_str(),
                                          texture_key.c_str(),
-                                         it->second->m_LoadExtension.c_str()) << std::endl;
+                                         it->second->m_LoadExtension.c_str());
             continue;
         }
 
         // Load the texture
         SDL_Surface* TempSurface = IMG_Load(file_path.c_str());
         if (!TempSurface) {
-            std::wcout << FStringColorsW(L"[Assets] &cFailed to load texture '%s'", file_path.c_str()) << std::endl;
-            std::wcout << FStringColorsW(L"[Assets] &cReason (%s)", SDL_GetError()) << std::endl;
+            std::wcout << FStringColorsW(L"[Assets] &cFailed to load texture '%s'\n", file_path.c_str());
+            std::wcout << FStringColorsW(L"[Assets] &cReason (%s)\n", SDL_GetError());
             continue;
         }
 
@@ -201,9 +217,9 @@ void AssetsClass::LoadTextures(SDL_Renderer* renderer) {
         auto new_texture = (new Texture(NewSDLTexture, texture_key, extension))
             ->FlagForAutomaticDeletion();
         m_Textures[texture_key] = new_texture;
-        std::wcout << FStringColorsW(L"[Assets] &9Loaded texture '%s'", texture_key.c_str()) << std::endl;
+        std::wcout << FStringColorsW(L"[Assets] &9Loaded texture '%s'\n", texture_key.c_str());
     }
-    std::wcout << FStringColorsW(L"[Assets] &5Loaded %i textures", m_Textures.size()) << std::endl;
+    std::wcout << FStringColorsW(L"[Assets] &5Loaded %i textures\n", m_Textures.size());
     m_InvalidTextureDefault = nullptr;
     m_InvalidTextureDefault = GetTexture("invalid");
 
@@ -214,7 +230,7 @@ void AssetsClass::LoadTextures(SDL_Renderer* renderer) {
         required_texture->m_LoadCallback(link_texture);
         required_texture->m_Texture = link_texture;
     }
-    std::wcout << FStringColorsW(L"[Assets] &5Linked %zu textures", m_LinkTextures.size()) << std::endl;
+    std::wcout << FStringColorsW(L"[Assets] &5Linked %zu textures\n", m_LinkTextures.size());
     m_LinkTextures.clear();
 }
 
@@ -232,18 +248,18 @@ void AssetsClass::LoadSounds() {
 
         auto it = m_Sounds.find(key);
         if (it != m_Sounds.end()) {
-            std::wcout << FStringColorsW(L"[Assets] &8Duplicate sound '%s' for existing '%s'(%s)",
+            std::wcout << FStringColorsW(L"[Assets] &8Duplicate sound '%s' for existing '%s'(%s)\n",
                                          extension.c_str(),
                                          key.c_str(),
-                                         it->second->m_LoadExtension.c_str()) << std::endl;
+                                         it->second->m_LoadExtension.c_str());
             continue;
         }
 
         // Load the sound
         Mix_Chunk* NewMixChunk = Mix_LoadWAV(file_path.c_str());
         if (!NewMixChunk) {
-            std::wcout << FStringColorsW(L"[Assets] &cFailed to load sound '%s'", file_path.c_str()) << std::endl;
-            std::wcout << FStringColorsW(L"[Assets] &cReason (%s)", SDL_GetError()) << std::endl;
+            std::wcout << FStringColorsW(L"[Assets] &cFailed to load sound '%s'\n", file_path.c_str());
+            std::wcout << FStringColorsW(L"[Assets] &cReason (%s)\n", SDL_GetError());
             continue;
         }
 
@@ -251,7 +267,7 @@ void AssetsClass::LoadSounds() {
         auto new_sound = new Sound(key, NewMixChunk, extension);
         m_Sounds[key] = new_sound;
     }
-    std::wcout << FStringColorsW(L"[Assets] &5Loaded %i sounds", m_Sounds.size()) << std::endl;
+    std::wcout << FStringColorsW(L"[Assets] &5Loaded %i sounds\n", m_Sounds.size());
 
     // Link
     for (auto required_sound : m_LinkSounds) {
@@ -259,7 +275,7 @@ void AssetsClass::LoadSounds() {
 
         required_sound->m_Sound = GetSound(sound_key);
     }
-    std::wcout << FStringColorsW(L"[Assets] &5Linked %zu sounds", m_LinkSounds.size()) << std::endl;
+    std::wcout << FStringColorsW(L"[Assets] &5Linked %zu sounds\n", m_LinkSounds.size());
     m_LinkSounds.clear();
 }
 
@@ -277,18 +293,18 @@ void AssetsClass::LoadMusic() {
 
         auto it = m_Music.find(key);
         if (it != m_Music.end()) {
-            std::wcout << FStringColorsW(L"[Assets] &8Duplicate music '%s' for existing '%s'(%s)",
+            std::wcout << FStringColorsW(L"[Assets] &8Duplicate music '%s' for existing '%s'(%s)\n",
                                          extension.c_str(),
                                          key.c_str(),
-                                         it->second->m_LoadExtension.c_str()) << std::endl;
+                                         it->second->m_LoadExtension.c_str());
             continue;
         }
 
         // Load the sound
         Mix_Music* NewMixMusic = Mix_LoadMUS(file_path.c_str());
         if (!NewMixMusic) {
-            std::wcout << FStringColorsW(L"[Assets] &cFailed to load music '%s'", file_path.c_str()) << std::endl;
-            std::wcout << FStringColorsW(L"[Assets] &cReason (%s)", SDL_GetError()) << std::endl;
+            std::wcout << FStringColorsW(L"[Assets] &cFailed to load music '%s'\n", file_path.c_str());
+            std::wcout << FStringColorsW(L"[Assets] &cReason (%s)\n", SDL_GetError());
             continue;
         }
 
@@ -296,7 +312,7 @@ void AssetsClass::LoadMusic() {
         auto new_music = new Music(key, NewMixMusic, extension);
         m_Music[key] = new_music;
     }
-    std::wcout << FStringColorsW(L"[Assets] &5Loaded %i music", m_Music.size()) << std::endl;
+    std::wcout << FStringColorsW(L"[Assets] &5Loaded %i music\n", m_Music.size());
 
     // Link
     for (auto required_music : m_LinkMusic) {
@@ -304,7 +320,7 @@ void AssetsClass::LoadMusic() {
 
         required_music->m_Music = GetMusic(music_key);
     }
-    std::wcout << FStringColorsW(L"[Assets] &5Linked %zu music", m_LinkMusic.size()) << std::endl;
+    std::wcout << FStringColorsW(L"[Assets] &5Linked %zu music\n", m_LinkMusic.size());
     m_LinkMusic.clear();
 }
 
@@ -334,10 +350,10 @@ void AssetsClass::LoadFonts() {
                 auto new_font = new Font(ttf_font, font_key, extension);
                 required_font->m_Font = new_font;
                 m_Fonts[font_key] = new_font;
-                std::wcout << Strings::FStringColorsW(L"[Assets] &9Loaded font '%s' &7(%s:%.1fpt)",
+                std::wcout << Strings::FStringColorsW(L"[Assets] &9Loaded font '%s' &7(%s:%.1fpt)\n",
                                                       font_key.c_str(),
                                                       font_id.c_str(),
-                                                      font_size) << std::endl;
+                                                      font_size);
 
                 break;
             }
@@ -354,7 +370,7 @@ void AssetsClass::LoadFonts() {
     auto loaded_fonts_message = FStringW(L"[Assets] &5Loaded %zu fonts", m_PreloadFonts.size());
     if (!m_LinkFonts.empty())
         loaded_fonts_message += FStringW(L" &d(%zu linked)", m_LinkFonts.size());
-    std::wcout << FStringColorsW(L"%ls", loaded_fonts_message.c_str()) << std::endl;
+    std::wcout << FStringColorsW(L"%ls\n", loaded_fonts_message.c_str());
 
     m_PreloadFonts.clear();
     m_LinkFonts.clear();
@@ -378,33 +394,30 @@ AssetsClass::AssetsClass(Drawing* drawing, bool sounds_enabled)
 
         auto it = m_Textures.find(texture_key);
         if (it != m_Textures.end()) {
-            std::wcout << FStringColorsW(L"[Assets] &8Duplicate pre-generated texture '%s'(%s)",
+            std::wcout << FStringColorsW(L"[Assets] &8Duplicate pre-generated texture '%s'(%s)\n",
                                          texture_key.c_str(),
-                                         it->second->m_LoadExtension.c_str()) << std::endl;
+                                         it->second->m_LoadExtension.c_str());
             continue;
         }
 
         if (!generate_texture->m_GenerateCallback) {
-            std::wcout
-                << FStringColorsW(L"[Assets] &cCould not pre-generate '%s', invalid callback", texture_key.c_str())
-                << std::endl;
+            std::wcout << FStringColorsW(L"[Assets] &cCould not pre-generate '%s', invalid callback\n", texture_key.c_str());
             continue;
         }
 
         auto new_texture = generate_texture->m_GenerateCallback(this);
         if (new_texture == nullptr) {
             std::wcout
-                << FStringColorsW(L"[Assets] &cCould not pre-generate '%s', invalid texture", texture_key.c_str())
-                << std::endl;
+                << FStringColorsW(L"[Assets] &cCould not pre-generate '%s', invalid texture\n", texture_key.c_str());
             continue;
         }
 
         new_texture->FlagForAutomaticDeletion();
         generate_texture->m_Texture = new_texture;
         m_Textures[texture_key] = new_texture;
-        std::wcout << FStringColorsW(L"[Assets] &9Generated texture '%s'", texture_key.c_str()) << std::endl;
+        std::wcout << FStringColorsW(L"[Assets] &9Generated texture '%s'\n", texture_key.c_str());
     }
-    std::wcout << FStringColorsW(L"[Assets] &5Generated %zu textures", m_LinkTextures.size()) << std::endl;
+    std::wcout << FStringColorsW(L"[Assets] &5Generated %zu textures\n", m_LinkTextures.size());
     m_PregenerateTextures.clear();
 }
 
@@ -435,10 +448,10 @@ AssetsClass::~AssetsClass() {
     auto unloaded_textures_message = FStringW(L"[Assets] &5Unloaded %zu textures", preloaded_textures);
     if (other_destroyed_textures > 0)
         unloaded_textures_message += FStringW(L" &d(+%zu dynamic)", other_destroyed_textures);
-    std::wcout << FStringColorsW(L"%ls", unloaded_textures_message.c_str()) << std::endl;
-    std::wcout << FStringColorsW(L"[Assets] &5Unloaded %zu sounds", destroyed_sounds) << std::endl;
-    std::wcout << FStringColorsW(L"[Assets] &5Unloaded %zu music", destroyed_music) << std::endl;
-    std::wcout << FStringColorsW(L"[Assets] &5Unloaded %zu fonts", destroyed_fonts) << std::endl;
+    std::wcout << FStringColorsW(L"%ls\n", unloaded_textures_message.c_str());
+    std::wcout << FStringColorsW(L"[Assets] &5Unloaded %zu sounds\n", destroyed_sounds);
+    std::wcout << FStringColorsW(L"[Assets] &5Unloaded %zu music\n", destroyed_music);
+    std::wcout << FStringColorsW(L"[Assets] &5Unloaded %zu fonts\n", destroyed_fonts);
 }
 
 Texture* AssetsClass::GetTexture(const std::string& texture_key) {
@@ -446,7 +459,7 @@ Texture* AssetsClass::GetTexture(const std::string& texture_key) {
     if (it != m_Textures.end())
         return it->second;
 
-    std::wcout << FStringColorsW(L"[Assets] &8Texture '%s' not found", texture_key.c_str()) << std::endl;
+    std::wcout << FStringColorsW(L"[Assets] &8Texture '%s' not found\n", texture_key.c_str());
     return m_InvalidTextureDefault;
 }
 
@@ -455,7 +468,7 @@ Sound* AssetsClass::GetSound(const std::string& sound_key) {
     if (it != m_Sounds.end())
         return it->second;
 
-    std::wcout << FStringColorsW(L"[Assets] &8Sound '%s' not found", sound_key.c_str()) << std::endl;
+    std::wcout << FStringColorsW(L"[Assets] &8Sound '%s' not found\n", sound_key.c_str());
     return nullptr;
 }
 
@@ -464,7 +477,7 @@ Music* AssetsClass::GetMusic(const std::string& music_key) {
     if (it != m_Music.end())
         return it->second;
 
-    std::wcout << FStringColorsW(L"[Assets] &8Music '%s' not found", music_key.c_str()) << std::endl;
+    std::wcout << FStringColorsW(L"[Assets] &8Music '%s' not found\n", music_key.c_str());
     return nullptr;
 }
 
@@ -473,7 +486,7 @@ Font* AssetsClass::GetFont(const std::string& font_key) {
     if (it != m_Fonts.end())
         return it->second;
 
-    std::wcout << FStringColorsW(L"[Assets] &8Font '%s' not found", font_key.c_str()) << std::endl;
+    std::wcout << FStringColorsW(L"[Assets] &8Font '%s' not found\n", font_key.c_str());
     return nullptr;
 }
 
@@ -516,14 +529,14 @@ bool AssetsClass::SaveTextureToDisk(Texture* texture, const std::string& filenam
     bool save_result = IMG_SavePNG(sdl_surface, filename.c_str());
     SDL_DestroySurface(sdl_surface);
     if (!save_result) {
-        std::wcout << Strings::FStringColorsW(L"[Assets] &cFailed to export texture to disk") << std::endl;
-        std::wcout << Strings::FStringColorsW(L"[Assets] &cReason: %s", SDL_GetError()) << std::endl;
+        std::wcout << Strings::FStringColorsW(L"[Assets] &cFailed to export texture to disk\n");
+        std::wcout << Strings::FStringColorsW(L"[Assets] &cReason: %s\n", SDL_GetError());
         return false;
     }
 
-    std::wcout << Strings::FStringColorsW(L"[Assets] &aExported texture '%s' to disk as %s",
+    std::wcout << Strings::FStringColorsW(L"[Assets] &aExported texture '%s' to disk as %s\n",
                                           texture->Key().c_str(),
-                                          filename.c_str()) << std::endl;
+                                          filename.c_str());
     return true;
 }
 

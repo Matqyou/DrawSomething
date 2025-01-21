@@ -6,128 +6,76 @@
 #include "../../../core/Application.h"
 #include "../../cursors/Cursors.h"
 
-#include <vector>
 #include <string>
-#include <stdexcept>
 #include <SDL3_ttf/SDL_ttf.h>
 
-std::vector<std::string> TextBox::WrapText(const std::string& text, TTF_Font* font, int max_width) {
-    std::vector<std::string> lines;
-    std::string current_line;
-    std::string current_word;
-    int measured_width = 0;
-    size_t measured_length = 0;
+TextBox::TextBox(const Vec2i& pos, const Vec2i& size)
+    : Element(ELEMENT_TEXTBOX, pos, size, DRAW_RECT),
+      text(nullptr, { 0, 0, 0, 255 }),
+      placeholder(nullptr, { 200, 200, 200, 255 }) {
+    // Core
+    callback = [](std::string&) { };
 
-    auto measure_text = [&](const std::string& str) -> int {
-        if (TTF_MeasureString(font, str.c_str(), str.length(), max_width, &measured_width, &measured_length)) {
-            return measured_width;
-        } else {
-            throw std::runtime_error("Failed to measure text: " + std::string(SDL_GetError()));
-        }
-    };
-
-    for (char ch : text) {
-        if (ch == ' ' || ch == '\n') {
-            // Measure the current line with the new word appended
-            int new_line_width = measure_text(current_line + current_word);
-
-            if (new_line_width > max_width && !current_line.empty()) {
-                lines.push_back(current_line);
-                current_line.clear();
-            }
-
-            // Check if the word itself exceeds max_width
-            int word_width = measure_text(current_word);
-            if (word_width > max_width) {
-                // Split the word into smaller chunks
-                std::string split_word;
-                for (size_t i = 0; i < current_word.size(); ++i) {
-                    split_word += current_word[i];
-                    int part_width = measure_text(split_word);
-
-                    if (part_width > max_width) {
-                        if (!current_line.empty()) {
-                            lines.push_back(current_line);
-                            current_line.clear();
-                        }
-                        current_line = current_word.substr(i); // Remaining part
-                        break;
-                    }
-                }
-            } else {
-                // Append word to current line
-                current_line += current_word + (ch == ' ' ? " " : "");
-            }
-
-            current_word.clear();
-            if (ch == '\n') {
-                lines.push_back(current_line);
-                current_line.clear();
-            }
-        } else {
-            current_word += ch;
-        }
-    }
-
-    // Handle any remaining word or line
-    if (!current_word.empty()) {
-        int final_line_width = measure_text(current_line + current_word);
-
-        if (final_line_width > max_width) {
-            lines.push_back(current_line);
-            current_line = current_word;
-        } else {
-            current_line += current_word;
-        }
-    }
-    if (!current_line.empty()) {
-        lines.push_back(current_line);
-    }
-
-    return lines;
+    // Visual
+    text_pos = pos;
+    placeholder_pos = pos;
+    update_text = true;
+    update_placeholder = true;
+    text_align_horizontally = SimpleAlign::DONT;
+    text_align_vertically = SimpleAlign::DONT;
 }
 
-TextBox::TextBox(const Vec2i& pos, const Vec2i& size)
-    : Element(ELEMENT_TEXTBOX, pos, size, DRAW_RECT) {
-    font = nullptr;
-    text_lines = {};
-    update_render = true;
-    text_color = { 0, 0, 0, 255 };
-    callback = [](std::string&) {  };
+TextBox::TextBox(const Vec2i& pos, const Vec2i& size, const Vec2i& visual, const Vec2i& offset, Texture* texture)
+    : Element(ELEMENT_TEXTBOX, pos, size, visual, offset, texture),
+      text(nullptr, { 0, 0, 0, 255 }),
+      placeholder(nullptr, { 200, 200, 200, 255 }){
+    // Core
+    callback = [](std::string&) { };
+
+    // Visual
+    text_pos = pos;
+    placeholder_pos = pos;
+    update_text = true;
+    update_placeholder = true;
+    text_align_horizontally = SimpleAlign::DONT;
+    text_align_vertically = SimpleAlign::DONT;
 }
 
 TextBox::~TextBox() {
-    for (auto line_render : text_lines)
-        delete line_render;
+
 }
 
-void TextBox::AppendText(const char* input) {
-    text += input; // Append input string to the current text
-}
-
-void TextBox::Backspace() {
-    if (!text.empty()) {
-        text.pop_back(); // Remove the last character
+void TextBox::UpdateTextPosition(WrappedText& update_text, Vec2i* out_pos) {
+    // Align text
+    switch (text_align_horizontally) {
+        case SimpleAlign::DONT:
+        case SimpleAlign::LEFT: {
+            out_pos->x = pos.x;
+            break;
+        }
+        case SimpleAlign::CENTER: {
+            out_pos->x = (int)((float)pos.x + (float)(size.x - update_text.GetWidth()) / 2.0f);
+            break;
+        }
+        case SimpleAlign::RIGHT: {
+            out_pos->x = pos.x + size.x - update_text.GetWidth();
+            break;
+        }
     }
-}
-
-void TextBox::UpdateRender() {
-//    delete text_render;
-//    SDL_Surface* TempSurface = TTF_RenderText_Blended(sDefaultFont.GetFont()->TTFFont(), text.c_str(), text_color);
-//    text_render = Assets::Get()->TextureFromSurface(TempSurface);
-//    SDL_DestroySurface(TempSurface);
-
-    for (auto line_render : text_lines)
-        delete line_render;
-    text_lines.clear();
-
-    auto lines = WrapText(text, font, 200);
-
-    for (size_t i = 0; i < lines.size(); ++i) {
-        SDL_Surface* surface = TTF_RenderText_Blended(font, lines[i].c_str(), lines[i].size(), text_color);
-        Texture* line_render = Assets::Get()->TextureFromSurface(surface);
-        SDL_DestroySurface(surface);
-        text_lines.push_back(line_render);
+    switch (text_align_vertically) {
+        case SimpleAlign::DONT:
+        case SimpleAlign::TOP: {
+            out_pos->y = pos.y;
+            break;
+        }
+        case SimpleAlign::CENTER: {
+            out_pos->y = (int)((float)pos.y + (float)(size.y - update_text.GetLineHeight()) / 2.0f);
+            break;
+        }
+        case SimpleAlign::BOTTOM: {
+            out_pos->y = pos.y + size.y - update_text.GetLineHeight();
+            break;
+        }
     }
 }
 
@@ -139,7 +87,6 @@ void TextBox::HandleEvent(SDL_Event& event, EventContext& event_summary) {
                 PointCollides(event.motion.x, event.motion.y)) {
                 event_summary.cursor_changed = CursorChange::TO_IBEAM;
                 SDL_SetCursor(Cursors::sCursorSystemText);
-//                SDL_SetCursor(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_TEXT));
             }
 
             break;
@@ -153,18 +100,17 @@ void TextBox::HandleEvent(SDL_Event& event, EventContext& event_summary) {
         case SDL_EVENT_TEXT_INPUT: {
             if (!has_focus) break;
 
-            AppendText(event.text.text);
-            update_render = true;
+            text.AppendText(event.text.text);
+            update_text = true;
             break;
         }
         case SDL_EVENT_KEY_DOWN: {
             if (!has_focus) break;
 
             if (event.key.key == SDLK_BACKSPACE) {
-                Backspace();
-                update_render = true;
-            }
-            else if (event.key.key == SDLK_RETURN) { callback(text); }
+                text.Backspace();
+                update_text = true;
+            } else if (event.key.key == SDLK_RETURN) { callback(text.GetText()); }
 
             break;
         }
@@ -172,28 +118,76 @@ void TextBox::HandleEvent(SDL_Event& event, EventContext& event_summary) {
 }
 
 void TextBox::PostEvent() {
-    if (update_render) {
-        update_render = false;
-        UpdateRender();
+    if (update_text) {
+        update_text = false;
+        text.UpdateRender();
+        UpdateTextPosition(text, &text_pos);
+    }
+    if (update_placeholder) {
+        update_placeholder = false;
+        placeholder.UpdateRender();
+        UpdateTextPosition(placeholder, &placeholder_pos);
     }
 }
 
 void TextBox::Render() {
     auto drawing = Application::Get()->GetDrawing();
-    auto& fill_color = has_focus ? focus_color : color;
+    if (draw != ElementDraw::DONT_DRAW) {
+        auto& fill_color = has_focus ? focus_color : color;
 
-    drawing->SetColor(fill_color);
-    drawing->FillRect(GetRect());
-
-    // Retrieve the font height
-    int line_height = TTF_GetFontHeight(font);
-
-    auto render_rect = GetRect();
-    for (const auto& line_render : text_lines) {
-        render_rect.w = line_render->GetWidth();
-        render_rect.h = line_render->GetHeight();
-        drawing->RenderTexture(line_render->SDLTexture(), nullptr, render_rect);
-
-        render_rect.y += line_height;
+        if (draw == ElementDraw::DRAW_RECT) {
+            drawing->SetColor(fill_color);
+            drawing->FillRect(GetRect());
+        } else if (draw == ElementDraw::DRAW_TEXTURE) {
+            drawing->RenderTexture(visual_texture->SDLTexture(), nullptr, GetVisualRect());
+        }
     }
+
+    if (!text.GetText().empty() || has_focus) {
+        SDL_FRect render_rect = {
+            (float)text_pos.x,
+            (float)text_pos.y,
+            0, 0
+        };
+        float render_width = 0;
+        auto render_height = (float)text.GetLineHeight();
+        auto& lines = text.GetRenderLines();
+        for (const auto& line_render : lines) {
+            render_width = line_render->GetWidth();
+            render_height = line_render->GetHeight();
+
+            render_rect.w = render_width;
+            render_rect.h = render_height;
+
+            drawing->RenderTexture(line_render->SDLTexture(), nullptr, render_rect);
+            render_rect.y += render_height;
+        }
+
+        if (has_focus) {
+            auto cursor_y = lines.empty() ? render_rect.y : render_rect.y - render_height;
+            auto cursor_top = Vec2f(render_rect.x + render_width, cursor_y);
+            auto cursor_bottom = cursor_top + Vec2f(0, render_height);
+            drawing->SetColor(255, 255, 255, 255);
+            drawing->DrawLine(cursor_top, cursor_bottom);
+        }
+    } else {
+        SDL_FRect render_rect = {
+            (float)placeholder_pos.x,
+            (float)placeholder_pos.y,
+            0, 0
+        };
+        for (const auto& line_render : placeholder.GetRenderLines()) {
+            auto render_height = line_render->GetHeight();
+            render_rect.w = line_render->GetWidth();
+            render_rect.h = render_height;
+
+            drawing->RenderTexture(line_render->SDLTexture(), nullptr, render_rect);
+            render_rect.y += render_height;
+        }
+    }
+}
+
+void TextBox::PostRefresh() {
+    UpdateTextPosition(text, &text_pos);
+    UpdateTextPosition(placeholder, &placeholder_pos);
 }

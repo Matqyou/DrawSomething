@@ -13,12 +13,12 @@ SDL_Cursor* sCursorSystemPointer = nullptr;
 void Initialize() {
     sCursorSystemText = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_TEXT);
     sCursorSystemPointer = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_POINTER);
-    std::wcout << Strings::FStringColorsW(L"[Cursors] &5Loaded 2 cursors") << std::endl;
+    std::wcout << Strings::FStringColorsW(L"[Cursors] &5Loaded 2 cursors\n");
 }
 
 void Deinitialize() {
     SDL_DestroyCursor(sCursorSystemText);
     SDL_DestroyCursor(sCursorSystemPointer);
-    std::wcout << Strings::FStringColorsW(L"[Cursors] &5Unloaded 2 cursors") << std::endl;
+    std::wcout << Strings::FStringColorsW(L"[Cursors] &5Unloaded 2 cursors\n");
 }
 }

@@ -37,8 +37,7 @@ public:
     void DrawRect(const SDL_FRect& rect);
     void FillRect(const SDL_FRect& rect);
     void FillCircle(const Vec2f& center, float radius, SDL_FColor color);
-    void DrawLine(const Vec2i& start, const Vec2i& end);
-    void DrawLine(const Vec2d& start, const Vec2d& end);
+    void DrawLine(const Vec2f& start, const Vec2f& end);
     void DrawLine(const Vec2f& start, const Vec2f& end, double size, SDL_FColor color);
     void DrawDegrees(const Vec2d& point_a, const Vec2d& point_b, SDL_Color text_color = { 255, 255, 255, 255 });
     void DrawAnglemark(const Vec2d& point_a,

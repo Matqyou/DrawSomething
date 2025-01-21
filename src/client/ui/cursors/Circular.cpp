@@ -66,8 +66,8 @@ void Circular::Generate(float diameter) {
 
     SDL_Cursor* custom_cursor = SDL_CreateColorCursor(sdl_surface, cursor_size / 2, cursor_size / 2);
     if (custom_cursor == nullptr) {
-        std::wcout << Strings::FStringColorsW(L"[Cursors] &cCircular cursor could not be generated") << std::endl;
-        std::wcout << Strings::FStringColorsW(L"[Cursors] &cReason: %s", SDL_GetError()) << std::endl;
+        std::wcout << Strings::FStringColorsW(L"[Cursors] &cCircular cursor could not be generated\n");
+        std::wcout << Strings::FStringColorsW(L"[Cursors] &cReason: %s\n", SDL_GetError());
     }
     SDL_DestroySurface(sdl_surface);
 

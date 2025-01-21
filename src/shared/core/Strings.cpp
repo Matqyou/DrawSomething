@@ -279,7 +279,6 @@ void PrintDivider(const std::string& label, bool wide) {
     auto label_length = label.size();
     if (label_length == 0) {
         output = Strings::FStringColors("&8%s", Strings::RepeatString("-", LENGTH).c_str());
-
     } else {
         auto new_length = LENGTH - label_length;
         auto half = new_length / 2;
@@ -289,8 +288,8 @@ void PrintDivider(const std::string& label, bool wide) {
         output += Strings::FStringColors("&8%s", Strings::RepeatString("-", (int)remaining).c_str());
     }
 
-    if (wide) std::wcout << std::wstring(output.begin(), output.end()) << std::endl;
-    else std::cout << output << std::endl;
+    if (wide) std::wcout << std::wstring(output.begin(), output.end()) << L"\n";
+    else std::cout << output << "\n";
 }
 
 }

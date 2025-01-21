@@ -9,35 +9,40 @@ template<> App* Singleton<App>::instance_ = nullptr;
 template<> const char* Singleton<App>::singleton_name_ = "Application";
 
 void App::PrintVersions() {
-    std::wcout << Strings::FStringColorsW(L"&8SDL %d.%d.%d",
+    std::wcout << Strings::FStringColorsW(L"&8SDL %d.%d.%d\n",
                                           SDL_MAJOR_VERSION,
                                           SDL_MINOR_VERSION,
-                                          SDL_MICRO_VERSION) << std::endl;
-    std::wcout << Strings::FStringColorsW(L"&8SDLimage %u.%u.%u",
+                                          SDL_MICRO_VERSION);
+    std::wcout << Strings::FStringColorsW(L"&8SDLimage %u.%u.%u\n",
                                           SDL_IMAGE_MAJOR_VERSION,
                                           SDL_IMAGE_MINOR_VERSION,
-                                          SDL_IMAGE_MICRO_VERSION) << std::endl;
-    std::wcout << Strings::FStringColorsW(L"&8SDLmixer %u.%u.%u",
+                                          SDL_IMAGE_MICRO_VERSION);
+    std::wcout << Strings::FStringColorsW(L"&8SDLmixer %u.%u.%u\n",
                                           SDL_MIXER_MAJOR_VERSION,
                                           SDL_MIXER_MINOR_VERSION,
-                                          SDL_MIXER_MICRO_VERSION) << std::endl;
-    std::wcout << Strings::FStringColorsW(L"&8SDLttf %u.%u.%u",
+                                          SDL_MIXER_MICRO_VERSION);
+    std::wcout << Strings::FStringColorsW(L"&8SDLttf %u.%u.%u\n",
                                           SDL_TTF_MAJOR_VERSION,
                                           SDL_TTF_MINOR_VERSION,
-                                          SDL_TTF_MICRO_VERSION) << std::endl;
+                                          SDL_TTF_MICRO_VERSION);
 }
 
-App::App(const char* title, const char* version, const char* identifier, const Vec2i& resolution, double framerate, const char* renderer_backend)
+App::App(const char* title,
+         const char* version,
+         const char* identifier,
+         const Vec2i& resolution,
+         double framerate,
+         const char* renderer_backend)
     : clock(framerate) {
     system("");
     Strings::PrintDivider(title);
 
-    std::wcout << Strings::FStringColorsW(L"&3%s %s", title, version) << std::endl;
+    std::wcout << Strings::FStringColorsW(L"&3%s %s\n", title, version);
 
     bool metadata = SDL_SetAppMetadata(title, version, identifier);
     if (!metadata) {
-        std::wcout << Strings::FStringColorsW(L"[Application] &cCould not set SDL Metadata") << std::endl;
-        std::wcout << Strings::FStringColorsW(L"[Application] &cReason: %s", SDL_GetError()) << std::endl;
+        std::wcout << Strings::FStringColorsW(L"[Application] &cCould not set SDL Metadata\n");
+        std::wcout << Strings::FStringColorsW(L"[Application] &cReason: %s\n", SDL_GetError());
     }
 
     bool init_sdl = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS);
@@ -56,8 +61,8 @@ App::App(const char* title, const char* version, const char* identifier, const V
 
     SDL_AudioDeviceID device_id = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &desired_spec);
     if (device_id == 0) {
-        std::wcout << Strings::FStringColorsW(L"[Application] &cCould not open audio device") << std::endl;
-        std::wcout << Strings::FStringColorsW(L"[Application] &cReason: %s", SDL_GetError()) << std::endl;
+        std::wcout << Strings::FStringColorsW(L"[Application] &cCould not open audio device\n");
+        std::wcout << Strings::FStringColorsW(L"[Application] &cReason: %s\n", SDL_GetError());
     }
 
     if (Mix_Init(MIX_INIT_MP3 | MIX_INIT_OGG) == 0)
@@ -73,24 +78,18 @@ App::App(const char* title, const char* version, const char* identifier, const V
     if (!window)
         throw std::runtime_error(Strings::FString("Error while creating the window %s\n", SDL_GetError()));
 
-//    std::wcout << Strings::FStringColorsW(L"[Application] &6Available render back-ends:") << std::endl;
-//    int numDrivers = SDL_GetNumRenderDrivers();
-//    for (int i = 0; i < numDrivers; i++) {
-////        SDL_RendererInfo info;
-//        if (SDL_GetRenderDriverInfo(i, &info) == 0) {
-//            std::wcout << Strings::FStringColorsW(L"[Application] &6#%i %s", i, info.name) << std::endl;
-//        }
-//    }
+    std::wcout << Strings::FStringColorsW(L"[Application] &6Available render back-ends:\n");
+    int numDrivers = SDL_GetNumRenderDrivers();
+    for (int i = 0; i < numDrivers; i++) {
+        auto info = SDL_GetRenderDriver(i);
+        std::wcout << Strings::FStringColorsW(L"[Application] &6#%i %s\n", i, info);
+    }
 
     renderer = SDL_CreateRenderer(window, renderer_backend != nullptr ? renderer_backend : "direct3d11");
-//    renderer = SDL_CreateRenderer(window, -1, 0);
     if (!renderer)
         throw std::runtime_error(Strings::FString("Error while creating the renderer %s\n", SDL_GetError()));
 
-//    SDL_RendererInfo info;
-//    SDL_GetRendererInfo(renderer, &info);
-    std::wcout << Strings::FStringColorsW(L"[Application] &eUsed renderer: %s", SDL_GetRendererName(renderer))
-               << std::endl;
+    std::wcout << Strings::FStringColorsW(L"[Application] &eUsed renderer: %s\n", SDL_GetRendererName(renderer));
 
     bool init_audio = true;
     drawing = new Drawing(renderer);

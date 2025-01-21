@@ -31,9 +31,9 @@ Element::Element(int type, const Vec2i& relative, const Vec2i& size, ElementDraw
     occupy_fully_height = false;
     adaptive_width = false;
     adaptive_height = false;
-    align_horizontal = DONT_ALIGN;
-    align_vertical = DONT_ALIGN;
-    flex = DONT_FLEX;
+    align_horizontal = Align::DONT;
+    align_vertical = Align::DONT;
+    flex = Flex::DONT;
     flex_gap = 0;
     has_focus = false;
     color = { 150, 150, 150, 255 };
@@ -68,9 +68,6 @@ bool Element::PointCollides(int x, int y) const {
 }
 
 Element* Element::SetChildren(const std::vector<Element*>& children) {
-    for (auto oldChild : this->children)
-        oldChild->SetParent(nullptr);
-
     this->children.clear();
     for (auto newChild : children) {
         newChild->SetParent(this);
@@ -116,58 +113,58 @@ void Element::UpdateElement(const Vec2i& new_pos, const Vec2i& new_size, const V
 
 void Element::AlignHorizontal_() {
     // Parent check
-    if (align_horizontal != DONT_ALIGN) {
+    if (align_horizontal != Align::DONT) {
         switch (align_horizontal) {
-            case ALIGN_BEHIND_LEFT: {
+            case Align::BEHIND_LEFT: {
                 composition_pos.x = -size.x;
                 break;
             }
-            case ALIGN_LEFT: {
+            case Align::LEFT: {
                 composition_pos.x = 0;
                 break;
             }
-            case ALIGN_RIGHT: {
+            case Align::RIGHT: {
                 composition_pos.x = parent->size.x - size.x;
                 break;
             }
-            case ALIGN_BEHIND_RIGHT: {
+            case Align::BEHIND_RIGHT: {
                 composition_pos.x = parent->size.x + size.x;
                 break;
             }
-            case ALIGN_CENTER: {
+            case Align::CENTER: {
                 composition_pos.x = (parent->size.x - size.x) / 2;
                 break;
             }
-            case DONT_ALIGN: break;
+            case Align::DONT: break;
         }
     }
 }
 
 void Element::AlignVertical_() {
     // Parent check
-    if (align_vertical != DONT_ALIGN) {
+    if (align_vertical != Align::DONT) {
         switch (align_vertical) {
-            case ALIGN_ABOVE_TOP: {
+            case Align::ABOVE_TOP: {
                 composition_pos.y = -size.y;
                 break;
             }
-            case ALIGN_TOP: {
+            case Align::TOP: {
                 composition_pos.y = 0;
                 break;
             }
-            case ALIGN_BOTTOM: {
+            case Align::BOTTOM: {
                 composition_pos.y = parent->size.y - size.y;
                 break;
             }
-            case ALIGN_UNDER_BOTTOM: {
+            case Align::UNDER_BOTTOM: {
                 composition_pos.y = parent->size.y + size.y;
                 break;
             }
-            case ALIGN_CENTER: {
+            case Align::CENTER: {
                 composition_pos.y = (parent->size.y - size.y) / 2;
                 break;
             }
-            case DONT_ALIGN: break;
+            case Align::DONT: break;
         }
     }
 }
@@ -194,14 +191,14 @@ void Element::Refresh(int child_generation) {
             }
             child->Refresh(child_generation + 1);
 
-            if (flex == FLEX_WIDTH) {
+            if (flex == Flex::WIDTH) {
                 if (!child->occupy_width && child->flex_involved_horizontal) {
                     num_children++;
                     adaptive_w += child->size.x;
                     if (child->size.y > adaptive_h)
                         adaptive_h = child->size.y;
                 }
-            } else if (flex == FLEX_HEIGHT && child->flex_involved_vertical) {
+            } else if (flex == Flex::HEIGHT && child->flex_involved_vertical) {
                 num_children++;
                 if (!child->occupy_height) {
                     adaptive_h += child->size.y;
@@ -215,12 +212,12 @@ void Element::Refresh(int child_generation) {
         }
 
         if (adaptive_width) {
-            adaptive_w += flex == FLEX_WIDTH ? (num_children - 1) * flex_gap : 0;
+            adaptive_w += flex == Flex::WIDTH ? (num_children - 1) * flex_gap : 0;
             size.x = adaptive_w;
             visual_size.x = adaptive_w;
         }
         if (adaptive_height) {
-            adaptive_h += flex == FLEX_HEIGHT ? (num_children - 1) * flex_gap : 0;
+            adaptive_h += flex == Flex::HEIGHT ? (num_children - 1) * flex_gap : 0;
             size.y = adaptive_h;
             visual_size.y = adaptive_h;
         }
@@ -235,20 +232,20 @@ void Element::Refresh(int child_generation) {
                 if (!child->enabled)
                     continue;
 
-                if (flex == FLEX_WIDTH && child->flex_involved_horizontal) {
+                if (flex == Flex::WIDTH && child->flex_involved_horizontal) {
                     // The number of dynamic width children
                     if (child->occupy_width) flex_num_children++;
                         // Flex volume in static children's width, count adaptive width, take the largest for height
                     else flex_negative_space += child->size.x;
                     num_children++;
-                } else if (flex == FLEX_HEIGHT && child->flex_involved_vertical) {
+                } else if (flex == Flex::HEIGHT && child->flex_involved_vertical) {
                     if (child->occupy_height) flex_num_children++;
                     else flex_negative_space += child->size.y;
                     num_children++;
                 }
             }
 
-            int flex_space = (flex == FLEX_WIDTH ? size.x : size.y) - flex_negative_space;
+            int flex_space = (flex == Flex::WIDTH ? size.x : size.y) - flex_negative_space;
             int flex_slice = flex_num_children > 0 ? (flex_space - (num_children - 1) * flex_gap) / flex_num_children : 0;
 
             int current_flex = 0;
@@ -259,8 +256,8 @@ void Element::Refresh(int child_generation) {
                 // Incase we don't change some values, we can copy the previous ones
                 child->composition_pos = Vec2i(0, 0);
 
-                if (flex != DONT_FLEX) {
-                    if (flex == FLEX_WIDTH && child->flex_involved_horizontal) {
+                if (flex != Flex::DONT) {
+                    if (flex == Flex::WIDTH && child->flex_involved_horizontal) {
                         if (child->occupy_width) {
                             child->composition_pos.x = current_flex;
                             child->size.x = flex_slice;
@@ -271,7 +268,7 @@ void Element::Refresh(int child_generation) {
                             current_flex += child->size.x;
                         }
                         current_flex += flex_gap;
-                    } else if (flex == FLEX_HEIGHT && child->flex_involved_vertical) {
+                    } else if (flex == Flex::HEIGHT && child->flex_involved_vertical) {
                         if (child->occupy_height) {
                             child->composition_pos.y = current_flex;
                             child->size.y = flex_slice;
@@ -301,20 +298,20 @@ void Element::Refresh(int child_generation) {
         int flex_num_children = 0;
         int num_children = 0;
         for (auto child : parent->children) {
-            if (parent->flex == FLEX_WIDTH && child->flex_involved_horizontal) {
+            if (parent->flex == Flex::WIDTH && child->flex_involved_horizontal) {
                 // The number of dynamic width children
                 if (child->occupy_width) flex_num_children++;
                     // Flex volume in static children's width, count adaptive width, take the largest for height
                 else flex_negative_space += child->size.x;
                 num_children++;
-            } else if (flex == FLEX_HEIGHT && child->flex_involved_vertical) {
+            } else if (flex == Flex::HEIGHT && child->flex_involved_vertical) {
                 if (child->occupy_height) flex_num_children++;
                 else flex_negative_space += child->size.y;
                 num_children++;
             }
         }
 
-        int flex_space = (parent->flex == FLEX_WIDTH ? parent->size.x : parent->size.y) - flex_negative_space;
+        int flex_space = (parent->flex == Flex::WIDTH ? parent->size.x : parent->size.y) - flex_negative_space;
         int flex_slice =
             flex_num_children > 0 ? (flex_space - (num_children - 1) * parent->flex_gap) / flex_num_children : 0;
 
@@ -324,8 +321,8 @@ void Element::Refresh(int child_generation) {
                 continue;
 
             child->composition_pos = Vec2i(0, 0);
-            if (parent->flex != DONT_FLEX) {
-                if (parent->flex == FLEX_WIDTH && child->flex_involved_horizontal) {
+            if (parent->flex != Flex::DONT) {
+                if (parent->flex == Flex::WIDTH && child->flex_involved_horizontal) {
                     if (child->occupy_width) {
                         child->composition_pos.x = current_flex;
                         child->size.x = flex_slice;
@@ -336,7 +333,7 @@ void Element::Refresh(int child_generation) {
                         current_flex += child->size.x;
                     }
                     current_flex += parent->flex_gap;
-                } else if (parent->flex == FLEX_HEIGHT && child->flex_involved_vertical) {
+                } else if (parent->flex == Flex::HEIGHT && child->flex_involved_vertical) {
                     if (child->occupy_height) {
                         child->composition_pos.y = current_flex;
                         child->size.y = flex_slice;
@@ -350,8 +347,8 @@ void Element::Refresh(int child_generation) {
                 }
             }
 
-            if (!parent->occupy_width) child->AlignHorizontal_();
-            if (!parent->occupy_height) child->AlignVertical_();
+            if (!parent->occupy_width || this->parent == nullptr) child->AlignHorizontal_();
+            if (!parent->occupy_height || this->parent == nullptr) child->AlignVertical_();
 
             for (auto grandchild : child->children) {
                 if (!grandchild->enabled)
@@ -404,25 +401,25 @@ void Element::DebugPrint(std::vector<bool> level, bool last_child) {
         const wchar_t* y_sign = relative.y > 0 ? L"+" : L"";
         output_element += Strings::FStringColorsW(L" (&d%ls%ix&r,&d%ls%iy&r)", x_sign, relative.x, y_sign, relative.y);
     }
-    const wchar_t* x_color = parent != nullptr && parent->flex == FLEX_WIDTH ? L"&5" : L"&6";
-    const wchar_t* y_color = parent != nullptr && parent->flex == FLEX_HEIGHT ? L"&5" : L"&6";
-    const wchar_t* x_suffix = align_horizontal == DONT_ALIGN ? L"x" :
-                              align_horizontal == ALIGN_LEFT ? L"←" :
-                              align_horizontal == ALIGN_RIGHT ? L"→" :
+    const wchar_t* x_color = parent != nullptr && parent->flex == Flex::WIDTH ? L"&5" : L"&6";
+    const wchar_t* y_color = parent != nullptr && parent->flex == Flex::HEIGHT ? L"&5" : L"&6";
+    const wchar_t* x_suffix = align_horizontal == Align::DONT ? L"x" :
+                              align_horizontal == Align::LEFT ? L"←" :
+                              align_horizontal == Align::RIGHT ? L"→" :
                               L"⇆";
-    const wchar_t* y_suffix = align_vertical == DONT_ALIGN ? L"y" :
-                              align_vertical == ALIGN_TOP ? L"↑" :
-                              align_vertical == ALIGN_BOTTOM ? L"↓" :
+    const wchar_t* y_suffix = align_vertical == Align::DONT ? L"y" :
+                              align_vertical == Align::TOP ? L"↑" :
+                              align_vertical == Align::BOTTOM ? L"↓" :
                               L"⇅";
     output_element +=
         Strings::FStringColorsW(L" (%ls%i%ls&r,%ls%i%ls&r)", x_color, pos.x, x_suffix, y_color, pos.y, y_suffix);
-    if (flex == FLEX_WIDTH) output_element += L"←→";
-    else if (flex == FLEX_HEIGHT) output_element += L" ↕ ";
+    if (flex == Flex::WIDTH) output_element += L"←→";
+    else if (flex == Flex::HEIGHT) output_element += L" ↕ ";
     else output_element += L" ";
     std::wstring width_color =
-        flex != DONT_FLEX && adaptive_width ? L"&d" : occupy_width ? L"&5" : occupy_fully_width ? L"&c" : L"&6";
+        flex != Flex::DONT && adaptive_width ? L"&d" : occupy_width ? L"&5" : occupy_fully_width ? L"&c" : L"&6";
     std::wstring height_color =
-        flex != DONT_FLEX && adaptive_height ? L"&d" : occupy_height ? L"&5" : occupy_fully_height ? L"&c" : L"&6";
+        flex != Flex::DONT && adaptive_height ? L"&d" : occupy_height ? L"&5" : occupy_fully_height ? L"&c" : L"&6";
     output_element +=
         Strings::FStringColorsW(L"(%ls%iw&r,%ls%ih&r)", width_color.c_str(), size.x, height_color.c_str(), size.y);
 
@@ -435,7 +432,7 @@ void Element::DebugPrint(std::vector<bool> level, bool last_child) {
 
     output_element += Strings::FStringColorsW(L"%s", has_focus ? " &bFOCUSED" : "");
 
-    std::wcout << output_element << std::endl;
+    std::wcout << output_element << L"\n";
 
     // Recurse into children
     int index = 0;
@@ -456,9 +453,9 @@ void Element::HandleEvent(SDL_Event& event, EventContext& event_summary) {
 void Element::Render() {
     if (draw != ElementDraw::DONT_DRAW) {
         auto drawing = Application::Get()->GetDrawing();
-        auto& fill_color = has_focus ? focus_color : color;
 
         if (draw == ElementDraw::DRAW_RECT) {
+            auto& fill_color = has_focus ? focus_color : color;
             drawing->SetColor(fill_color);
             drawing->FillRect(GetRect());
         } else if (draw == ElementDraw::DRAW_TEXTURE) {
@@ -486,6 +483,19 @@ void Element::RenderDebug() const {
     drawing->DrawRect(GetRect());
 
     RenderDebugChildren();
+}
+
+void Element::PostEvent() {
+    PostEventChildren();
+}
+
+void Element::PostEventChildren() const {
+    for (auto child : children) {
+        if (!child->enabled)
+            continue;
+
+        child->PostEvent();
+    }
 }
 
 void Element::TickChildren() const {

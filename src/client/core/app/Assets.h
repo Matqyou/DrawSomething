@@ -47,14 +47,14 @@ public:
 
     // Options
     Texture* FlagForAutomaticDeletion();
-
-    // Manipulating
-    void SetSDLTexture(SDL_Texture* sdl_texture);
-    void SetBlendMode(SDL_BlendMode blend_mode);
-    void SetColorMod(Uint8 r, Uint8 g, Uint8 b);
-    void SetColorMod(SDL_FColor color);
-    void SetAlphaMod(int alpha);
-    void SetScaleMode(SDL_ScaleMode scale_mode);
+    Texture* SetSDLTexture(SDL_Texture* sdl_texture);
+    Texture* SetBlendMode(SDL_BlendMode blend_mode);
+    Texture* SetColorMod(Uint8 r, Uint8 g, Uint8 b);
+    Texture* SetColorMod(SDL_Color color);
+    Texture* SetColorModFloat(float r, float g, float b);
+    Texture* SetColorModFloat(SDL_FColor color);
+    Texture* SetAlphaMod(int alpha);
+    Texture* SetScaleMode(SDL_ScaleMode scale_mode);
 };
 
 class Sound {

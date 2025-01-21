@@ -12,6 +12,7 @@ class Button : public Element {
 protected:
     using Callback = std::function<void()>;
     Callback callback;
+    bool clickable;
 
 public:
     Button(const Vec2i& pos, const Vec2i& size);
@@ -21,10 +22,15 @@ public:
     Button(const Vec2i& pos, const Vec2i& size, Texture* texture);
 
     // Options
-    Element* SetCallback(Callback callback) {
+    Button* SetCallback(Callback callback) {
         this->callback = std::move(callback);
         return this;
     }
+    Button* SetClickable(bool new_clickable) {
+        this->clickable = new_clickable;
+        return this;
+    }
+
 
     // Manipulating
     void RunCallback() const;

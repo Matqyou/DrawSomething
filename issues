@@ -1,4 +1,10 @@
-Custom cursor doesnt update immediately in drawing screen
-Textbox not working properly
-Element Refresh still has issues with align
-Preload/Link texture spam in different files
+ == High Priority ==
+
+
+ == Medium Priority ==
+ Custom cursor doesnt update immediately in drawing screen
+ Cannot unfocus objects - currently canvas brush size and auth text boxes
+
+ == Low Priority ==
+ Debug print doesn't show the most accurate colors for width and height
+ Preload/Link texture spam in different files

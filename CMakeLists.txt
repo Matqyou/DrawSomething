@@ -4,24 +4,28 @@ project(DrawSomething)
 set(CMAKE_CXX_STANDARD 20)
 
 include_directories(
-        deps/SDL/include
-        deps/SDL_image/include
-        deps/SDL_mixer/include
-        deps/SDL_ttf/include
-        deps/asio/asio/include
+        C:/libs/SDL/include
+        C:/libs/SDL_image/include
+        C:/libs/SDL_mixer/include
+        C:/libs/SDL_ttf/include
+        C:/libs/asio/asio/include
 )
 
 link_directories(
-        ${CMAKE_SOURCE_DIR}/deps/SDL/cmake-build-debug
-        ${CMAKE_SOURCE_DIR}/deps/SDL_image/cmake-build-debug
-        ${CMAKE_SOURCE_DIR}/deps/SDL_mixer/cmake-build-debug
-        ${CMAKE_SOURCE_DIR}/deps/SDL_ttf/cmake-build-debug
+        C:/libs/SDL/cmake-build-debug
+        C:/libs/SDL_image/cmake-build-debug
+        C:/libs/SDL_mixer/cmake-build-debug
+        C:/libs/SDL_ttf/cmake-build-debug
+#        ${CMAKE_SOURCE_DIR}/deps/SDL/cmake-build-debug
+#        ${CMAKE_SOURCE_DIR}/deps/SDL_image/cmake-build-debug
+#        ${CMAKE_SOURCE_DIR}/deps/SDL_mixer/cmake-build-debug
+#        ${CMAKE_SOURCE_DIR}/deps/SDL_ttf/cmake-build-debug
 )
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_NAME})
 
 add_executable(DrawSomething src/client/main.cpp
-        deps/icon_resource.rc
+        res/client.rc
         src/shared/core/Strings.cpp
         src/client/core/app/Assets.cpp
         src/client/core/app/Assets.h
@@ -43,42 +47,58 @@ add_executable(DrawSomething src/client/main.cpp
         src/client/ui/components/event/EventContext.cpp
         src/client/ui/components/element/Frame.cpp
         src/client/ui/components/element/Frame.h
-        src/client/ui/menus/MainMenu.cpp
-        src/client/ui/menus/MainMenu.h
+        src/client/ui/menus/main/MainMenu.cpp
+        src/client/ui/menus/main/MainMenu.h
         src/client/core/Rectangles.cpp
         src/client/core/Rectangles.h
-        src/client/ui/components/Canvas.cpp
-        src/client/ui/components/Canvas.h
-        src/client/ui/menus/IngameMenu.cpp
-        src/client/ui/menus/IngameMenu.h
-        src/client/ui/menus/base/FullscreenMenu.cpp
-        src/client/ui/menus/base/FullscreenMenu.h
-        src/client/ui/menus/components/ingame/Panel.cpp
-        src/client/ui/menus/components/ingame/Panel.h
-        src/client/ui/menus/components/ingame/Header.cpp
-        src/client/ui/menus/components/ingame/Header.h
-        src/client/ui/menus/components/ingame/ColorSelector.cpp
-        src/client/ui/menus/components/ingame/ColorSelector.h
-        src/client/ui/menus/components/ingame/ToolSelector.cpp
-        src/client/ui/menus/components/ingame/ToolSelector.h
+        src/client/ui/menus/ingame/components/Canvas.cpp
+        src/client/ui/menus/ingame/components/Canvas.h
+        src/client/ui/menus/ingame/IngameMenu.cpp
+        src/client/ui/menus/ingame/IngameMenu.h
+        src/client/ui/menus/FullscreenMenu.cpp
+        src/client/ui/menus/FullscreenMenu.h
+        src/client/ui/menus/ingame/components/panel/Panel.cpp
+        src/client/ui/menus/ingame/components/panel/Panel.h
+        src/client/ui/menus/ingame/components/Header.cpp
+        src/client/ui/menus/ingame/components/Header.h
+        src/client/ui/menus/ingame/components/color_selector/ColorSelector.cpp
+        src/client/ui/menus/ingame/components/color_selector/ColorSelector.h
+        src/client/ui/menus/ingame/components/tool_selector/ToolSelector.cpp
+        src/client/ui/menus/ingame/components/tool_selector/ToolSelector.h
         src/client/ui/components/element/OverlayButton.cpp
         src/client/ui/components/element/OverlayButton.h
         src/client/words/Words.cpp
         src/client/words/Words.h
-        src/client/ui/menus/components/ingame/components/BrushSizeButton.cpp
-        src/client/ui/menus/components/ingame/components/BrushSizeButton.h
+        src/client/ui/menus/ingame/components/tool_selector/BrushSizeButton.cpp
+        src/client/ui/menus/ingame/components/tool_selector/BrushSizeButton.h
         src/shared/core/Numbers.h
-        src/shared/core/Numbers.cpp
-        src/client/ui/menus/AuthMenu.cpp
-        src/client/ui/menus/AuthMenu.h
+        src/client/ui/menus/auth/AuthMenu.cpp
+        src/client/ui/menus/auth/AuthMenu.h
         src/client/ui/cursors/Circular.cpp
         src/client/ui/cursors/Circular.h
         src/client/ui/cursors/Cursors.h
         src/client/ui/cursors/Cursors.cpp
+        src/client/ui/structures/WrappedText.cpp
+        src/client/ui/structures/WrappedText.h
+        src/client/ui/structures/window_texture/WindowTexture.cpp
+        src/client/ui/structures/window_texture/WindowTexture.h
+        src/shared/core/Colors.cpp
+        src/shared/core/Colors.h
+        src/client/ui/structures/window_texture/Sheet.cpp
+        src/client/ui/structures/window_texture/Sheet.h
+        src/client/ui/menus/ingame/components/panel/GuessingBar.cpp
+        src/client/ui/menus/ingame/components/panel/GuessingBar.h
+        src/client/ui/menus/ingame/components/panel/Letters.cpp
+        src/client/ui/menus/ingame/components/panel/Letters.h
+        src/client/ui/menus/ingame/ingame_common.h
+        src/client/ui/menus/ingame/components/panel/Letter.cpp
+        src/client/ui/menus/ingame/components/panel/Letter.h
+        src/client/ui/menus/ingame/components/panel/LetterSlot.cpp
+        src/client/ui/menus/ingame/components/panel/LetterSlot.h
 )
 
 add_executable(DrawSomethingServer src/server/main.cpp
-        deps/icon_resource.rc
+        res/server.rc
         src/shared/core/Strings.cpp
         src/shared/Protocol.h
         src/shared/network/ThreadQueue.h
@@ -87,8 +107,8 @@ add_executable(DrawSomethingServer src/server/main.cpp
         src/server/network/IServer.h
 )
 
-add_executable(DrawSomethingTestClient src/server/test_client.cpp
-        deps/icon_resource.rc
+add_executable(DrawSomethingTestClient src/client/test_client.cpp
+        res/client.rc
         src/shared/core/Strings.cpp
         src/shared/Protocol.h
         src/shared/network/ThreadQueue.h

@@ -15,7 +15,7 @@ Words::Words() {
         word_list.push_back(line);
 
     file.close();
-    std::wcout << Strings::FStringColorsW(L"[Words] &5Loaded %zu words", word_list.size()) << std::endl;
+    std::wcout << Strings::FStringColorsW(L"[Words] &5Loaded %zu words\n", word_list.size());
 }
 
 std::string Words::GetRandomWord() const {

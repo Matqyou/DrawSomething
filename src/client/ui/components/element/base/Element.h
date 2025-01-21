@@ -8,20 +8,7 @@
 #include "../../../../core/app/Drawing.h"
 #include "../../event/EventContext.h"
 #include "../../../../core/Rectangles.h"
-
-enum ElementAlign {
-    ALIGN_BEHIND_LEFT,
-    ALIGN_ABOVE_TOP = ALIGN_BEHIND_LEFT,
-    DONT_ALIGN,
-    ALIGN_LEFT,
-    ALIGN_TOP = ALIGN_LEFT,
-    ALIGN_CENTER,
-    ALIGN_RIGHT,
-    ALIGN_BOTTOM = ALIGN_RIGHT,
-    ALIGN_BEHIND_RIGHT,
-    ALIGN_UNDER_BOTTOM = ALIGN_BEHIND_RIGHT,
-
-};
+#include "../../../../../shared/Protocol.h"
 
 enum ElementType {
     ELEMENT_FRAME,
@@ -38,10 +25,10 @@ static const char* ELEMENTTYPE_NAMES[NUM_ELEMENTTYPES] = {
     "Custom"
 };
 
-enum ElementFlex {
-    DONT_FLEX,
-    FLEX_WIDTH,
-    FLEX_HEIGHT,
+enum class Flex {
+    DONT,
+    WIDTH,
+    HEIGHT,
 };
 
 enum ElementDraw {
@@ -72,8 +59,8 @@ public:
     bool occupy_width, occupy_height;
     bool occupy_fully_width, occupy_fully_height;
     bool adaptive_width, adaptive_height;
-    ElementAlign align_horizontal, align_vertical;
-    ElementFlex flex;
+    Align align_horizontal, align_vertical;
+    Flex flex;
     int flex_gap;
 
     bool has_focus;
@@ -96,12 +83,13 @@ public:
     virtual ~Element();
 
     // Getting
+    [[nodiscard]] Texture* GetVisualTexture() const { return visual_texture; }
     [[nodiscard]] SDL_FRect GetRect() const { return SDL_FRect(pos.x, pos.y, size.x, size.y); }
     [[nodiscard]] SDL_FRect GetVisualRect() const {
-        return SDL_FRect(pos.x + visual_offset.x,
-                        pos.y + visual_offset.y,
-                        visual_size.x,
-                        visual_size.y);
+        return SDL_FRect((float)(pos.x + visual_offset.x),
+                         (float)(pos.y + visual_offset.y),
+                         (float)visual_size.x,
+                         (float)visual_size.y);
     }
 
     // Generating
@@ -112,6 +100,10 @@ public:
     Element* AddChildren(const std::vector<Element*>& children);
     Element* SetEnabled(bool enabled) {
         this->enabled = enabled;
+        return this;
+    }
+    Element* SetDraw(ElementDraw new_draw) {
+        this->draw = new_draw;
         return this;
     }
     Element* SetFlexInvolved(bool horizontal, bool vertical) {
@@ -129,16 +121,16 @@ public:
         this->occupy_fully_height = vertical;
         return this;
     }
-    Element* SetFlex(ElementFlex flex) {
+    Element* SetFlex(Flex flex) {
         this->flex = flex;
         return this;
     }
-    Element* SetFlex(ElementFlex flex, int flex_gap) {
+    Element* SetFlex(Flex flex, int flex_gap) {
         this->flex = flex;
         this->flex_gap = flex_gap;
         return this;
     }
-    Element* SetAlign(ElementAlign horizontal, ElementAlign vertical) {
+    Element* SetAlign(Align horizontal, Align vertical) {
         this->align_horizontal = horizontal;
         this->align_vertical = vertical;
         return this;
@@ -188,9 +180,10 @@ public:
     virtual void HandleEvent(SDL_Event& event, EventContext& event_summary);
     virtual void Render();
     virtual void RenderDebug() const;
-    virtual void PostEvent() { };
+    virtual void PostEvent();
     virtual void PostRefresh() { };
 
+    void PostEventChildren() const;
     void TickChildren() const;
     void HandleEventChildren(SDL_Event& event, EventContext& event_summary);
     void RenderChildren() const;
