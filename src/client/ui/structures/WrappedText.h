@@ -12,7 +12,7 @@ class WrappedText {
 private:
     std::string text;
     TTF_Font* font;
-    std::vector<Texture*> text_lines;
+    std::vector<TextureData*> text_lines;
     Vec2i text_lines_size;
     SDL_Color text_color;
 
@@ -22,7 +22,7 @@ public:
 
     // Getting
     [[nodiscard]] std::string& GetText() { return text; }
-    [[nodiscard]] std::vector<Texture*>& GetRenderLines() { return text_lines; }
+    [[nodiscard]] std::vector<TextureData*>& GetRenderLines() { return text_lines; }
     [[nodiscard]] Vec2i GetSize() const { return text_lines_size; }
     [[nodiscard]] int GetWidth() const { return text_lines_size.x; }
     [[nodiscard]] int GetHeight() const { return text_lines_size.y; }

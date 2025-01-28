@@ -17,7 +17,7 @@ std::string RepeatString(const std::string& str, int times);
 std::wstring RepeatStringW(const std::wstring& str, int times);
 std::string ToUpperCase(const std::string& input);
 std::string ToLowerCase(const std::string& input);
-const char* RandomUppercaseLetter();
+char RandomUppercaseLetter();
 
 // Cout
 void PrintDivider(const std::string& label = "", bool wide = true);

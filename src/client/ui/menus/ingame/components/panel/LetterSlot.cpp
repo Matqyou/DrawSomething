@@ -7,13 +7,14 @@
 
 namespace Ingame {
 SDL_Color LetterSlot::sColorBlue(100, 190, 255, 255);
-PreloadTexture LetterSlot::game_letter_slot("game.ingame_panel.letter.slot");
-PreloadTexture LetterSlot::game_letter_slot_background("game.ingame_panel.letter.slot_background");
+LinkTexture LetterSlot::game_letter_slot("game.ingame_panel.letter.slot");
+LinkTexture LetterSlot::game_letter_slot_background("game.ingame_panel.letter.slot_background");
 
 LetterSlot::LetterSlot()
     : Button(Vec2i(0, 0),
              Vec2i(66, 66),
-             nullptr) {
+             VisualTexture(nullptr),
+             VisualTexture(nullptr)) {
     generated = nullptr;
     occupied = nullptr;
 
@@ -41,8 +42,7 @@ LetterSlot* LetterSlot::UpdateRender(SDL_Color tone) {
     drawing->RenderTextureFullscreen(letter_slot_background->SDLTexture(), nullptr);
     letter_slot_alone->SetColorMod(tone);
     drawing->RenderTextureFullscreen(letter_slot_alone->SDLTexture(), nullptr);
-//    drawing->SetRenderTarget(nullptr);
-    SetVisualTexture(generated);
+    SetVisualTexture(VisualTexture(generated->SDLTexture()));
     return this;
 }
 
@@ -54,6 +54,7 @@ void LetterSlot::RemoveLetter() {
     if (occupied != nullptr) {
         occupied->SetDraw(ElementDraw::DRAW_TEXTURE);
         occupied->SetClickable(true);
+        occupied->SetOccupySlot(nullptr);
         SetClickable(false);
         occupied = nullptr;
     }
@@ -64,15 +65,18 @@ void LetterSlot::Render() {
         auto drawing = Assets::Get()->GetDrawing();
 
         if (occupied == nullptr) {
-            if (draw == ElementDraw::DRAW_RECT) {
-                auto& fill_color = has_focus ? focus_color : color;
-                drawing->SetColor(fill_color);
-                drawing->FillRect(GetRect());
-            } else if (draw == ElementDraw::DRAW_TEXTURE) {
-                drawing->RenderTexture(visual_texture->SDLTexture(), nullptr, GetVisualRect());
+            if (draw == ElementDraw::DRAW_VISUAL_TEXTURE) {
+                if (pressed_down && pressed_visual_texture.SDLTexture() != nullptr) {
+                    drawing->RenderTexture(pressed_visual_texture.SDLTexture(),
+                                           nullptr,
+                                           pressed_visual_texture.GetVisualRect());
+                } else {
+                    drawing->RenderTexture(visual_texture.SDLTexture(), nullptr, visual_texture.GetVisualRect());
+                }
             }
         } else {
-            drawing->RenderTexture(occupied->GetVisualTexture()->SDLTexture(), nullptr, GetVisualRect());
+            // can be problematic if letters themselves have visual offsets and ratios
+            drawing->RenderTexture(occupied->visual_texture.SDLTexture(), nullptr, visual_texture.GetVisualRect());
         }
     }
 

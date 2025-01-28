@@ -174,9 +174,16 @@ double Vec2<T>::CrossProduct(const Vec2& v1, const Vec2& v2) {
 }
 
 template<class T>
-double DistanceVec2(const Vec2<T>& v1, const Vec2<T>& v2) {
+double DistanceVec2d(const Vec2<T>& v1, const Vec2<T>& v2) {
     double dx = static_cast<double>(v1.x) - static_cast<double>(v2.x);
     double dy = static_cast<double>(v1.y) - static_cast<double>(v2.y);
+    return std::sqrt(dx * dx + dy * dy);
+}
+
+template<class T>
+float DistanceVec2f(const Vec2<T>& v1, const Vec2<T>& v2) {
+    float dx = static_cast<float>(v1.x) - static_cast<float>(v2.x);
+    float dy = static_cast<float>(v1.y) - static_cast<float>(v2.y);
     return std::sqrt(dx * dx + dy * dy);
 }
 
@@ -189,5 +196,9 @@ Vec2<T> ClampMax(const Vec2<T>& v, const Vec2<T>& max) {
 }
 
 inline Vec2<double> AngleVec2d(double radians) {
+    return { std::cos(radians), std::sin(radians) };
+}
+
+inline Vec2<float> AngleVec2f(float radians) {
     return { std::cos(radians), std::sin(radians) };
 }

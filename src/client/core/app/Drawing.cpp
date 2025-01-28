@@ -8,12 +8,11 @@ LinkFont Drawing::sFontMath("math");
 
 Drawing::Drawing(SDL_Renderer* renderer) {
     m_Renderer = renderer;
-    m_Zoom = 0.5;
 }
 
 Drawing::~Drawing() = default;
 
-void Drawing::SetRenderTarget(Texture* target) {
+void Drawing::SetRenderTarget(TextureData* target) {
     if (target) SDL_SetRenderTarget(m_Renderer, target->SDLTexture());
     else SDL_SetRenderTarget(m_Renderer, nullptr);
 }
@@ -27,18 +26,18 @@ void Drawing::FillRect(const SDL_FRect& rect) {
 }
 
 void Drawing::FillCircle(const Vec2f& center, float radius, SDL_FColor color) {
-    const int segments = 100; // Number of segments for the circle
+    const int segments = 20; // Number of segments for the circle
     float angle_step = 2.0f * M_PI / segments;
 
     for (int i = 0; i < segments; i++) {
-        float theta1 = i * angle_step;
-        float theta2 = (i + 1) * angle_step;
+        float theta1 = (float)i * angle_step;
+        float theta2 = ((float)i + 1.0f) * angle_step;
 
         // Points on the circle
-        float x1 = center.x + radius * cos(theta1);
-        float y1 = center.y + radius * sin(theta1);
-        float x2 = center.x + radius * cos(theta2);
-        float y2 = center.y + radius * sin(theta2);
+        float x1 = center.x + radius * cosf(theta1);
+        float y1 = center.y + radius * sinf(theta1);
+        float x2 = center.x + radius * cosf(theta2);
+        float y2 = center.y + radius * sinf(theta2);
 
         // Draw triangles for the circle
         SDL_Vertex vertices[3] = {

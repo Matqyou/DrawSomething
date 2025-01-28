@@ -5,22 +5,54 @@
 #include "Canvas.h"
 #include "../../../../core/Application.h"
 #include "../../../cursors/Cursors.h"
-#include "../ingame_common.h"
-
-auto static sCallbackScaleNearest = [](Texture* texture) {
-    SDL_SetTextureScaleMode(texture->SDLTexture(), SDL_SCALEMODE_NEAREST);
-};
+#include "../../../CommonUI.h"
 
 namespace Ingame {
-PreloadTexture Canvas::sTextureGuess("game.canvas.guess", sCallbackScaleNearest);
-PreloadTexture Canvas::sTextureWatch("game.canvas.watch", sCallbackScaleNearest);
-PreloadTexture Canvas::sTextureDraw("game.canvas.draw", sCallbackScaleNearest);
-PreloadTexture sTextureDrawing("drawings.example", sCallbackScaleNearest);
+LinkTexture Canvas::sTextureGuess("game.canvas.guess", CommonUI::sCallbackScaleNearest);
+LinkTexture Canvas::sTextureWatch("game.canvas.watch", CommonUI::sCallbackScaleNearest);
+LinkTexture Canvas::sTextureDraw("game.canvas.draw", CommonUI::sCallbackScaleNearest);
+LinkTexture sTextureDrawing("drawings.example", CommonUI::sCallbackScaleNearest);
+
+void Canvas::EmplaceRecordingData(const Vec2f& segment_start, const Vec2f& segment_end) {
+    auto draw_offset = Vec2f(canvas_rect.x - canvas_source.x, canvas_rect.y - canvas_source.y);
+    if (recording_data.empty())
+        this->playback_start = std::chrono::steady_clock::now();
+
+    auto duration = duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - playback_start);
+    auto milliseconds = duration.count();
+    auto segment = std::pair(segment_start - draw_offset, segment_end - draw_offset);
+    auto paint_color = tool == TOOL_PENCIL ? this->draw_color : this->eraser_color;
+    auto line_thickness = tool == TOOL_PENCIL ? this->brush_size : this->eraser_size;
+    this->recording_data.emplace_back(milliseconds, segment, paint_color.GetIColor(), line_thickness);
+}
+
+void Canvas::CopyRecordingToReplay(long long max_idle_milliseconds) {
+    replay_data.clear();
+    if (recording_data.empty())
+        return;
+
+    long long current_time = 0;
+    long long last_real_time = 0;
+    for (auto data : recording_data) {
+        auto real_time = std::get<0>(data);
+        auto real_duration = real_time - last_real_time;
+
+        // Advance time without weird spaces of nothing happening // todo: fix in the future
+        current_time += real_duration < max_idle_milliseconds ? real_duration : max_idle_milliseconds;
+        std::get<0>(data) = current_time;
+
+        replay_data.push_back(data);
+        last_real_time = real_time;
+    }
+}
 
 Canvas::Canvas(const Vec2i& pos, const Vec2i& size)
-    : Element(ELEMENT_CUSTOM, pos, size, DONT_DRAW),
+    : Element(pos, size, DONT_DRAW),
       draw_color(SDL_Color(0, 0, 0, 255)),
       eraser_color(SDL_Color(255, 255, 255, 255)) {
+    name = L"Canvas";
+
     instructions_intro = true;
     canvas_mode = CANVAS_GUESS;
     canvas = nullptr;
@@ -29,7 +61,7 @@ Canvas::Canvas(const Vec2i& pos, const Vec2i& size)
     auto drawing = Application::Get()->GetDrawing();
 
     // Instruction texts
-    auto instructions_font = Ingame::sFontInstructions.GetFont()->TTFFont();
+    auto instructions_font = CommonUI::sFontInstructions.GetFont()->TTFFont();
     SDL_Color instructions_font_color = { 136, 136, 136, 255 };
     const char* guess_text_ = "TAP TO GUESS.";
     const char* watch_text_ = "TAP TO WATCH!";
@@ -47,11 +79,11 @@ Canvas::Canvas(const Vec2i& pos, const Vec2i& size)
     resolution = Vec2i(950, 550);
     canvas_source = { 0, 0, (float)resolution.x, (float)resolution.y };
     canvas_rect = { (float)pos.x, (float)pos.y, (float)resolution.x, (float)resolution.y };
-    canvas = new Texture(SDL_CreateTexture(drawing->Renderer(),
-                                           SDL_PIXELFORMAT_RGBA8888,
-                                           SDL_TEXTUREACCESS_TARGET,
-                                           resolution.x,
-                                           resolution.y));
+    canvas = new TextureData(SDL_CreateTexture(drawing->Renderer(),
+                                               SDL_PIXELFORMAT_RGBA8888,
+                                               SDL_TEXTUREACCESS_TARGET,
+                                               resolution.x,
+                                               resolution.y));
     canvas->SetScaleMode(SDL_SCALEMODE_NEAREST);
     drawing->SetRenderTarget(canvas);
     drawing->SetColor(255, 255, 255, 255);
@@ -64,6 +96,9 @@ Canvas::Canvas(const Vec2i& pos, const Vec2i& size)
     this->brush_size = 5.0f;
     this->eraser_size = 5.0f;
     this->custom_cursor = nullptr;
+
+    this->canvas_playback = PlaybackMode::DO_NOTHING;
+    last_recording_size = 0;
 }
 
 void Canvas::LoadExample() {
@@ -100,16 +135,35 @@ void Canvas::SetEraserSize(float eraser_size) {
 }
 
 void Canvas::Tick() {
-    if (canvas_mode != CANVAS_DRAW)
+    if (canvas_mode != CANVAS_WATCH)
         return;
 
+//    auto recording_size = recording_data.size();
+//    auto size_difference = recording_size - last_recording_size;
+//    if (recording_canvas && size_difference > 100) {
+//        size_t estimated_size = sizeof(long long) + sizeof(std::pair<Vec2f, Vec2f>) + sizeof(SDL_Color) + sizeof(float);
+//        std::wcout << Strings::FStringColorsW(L"[Recording] Currently at %u segments | Estimated size: %u\n", recording_size, estimated_size * recording_size);
+//
+////        auto it = recording_data.end() - last_recording_size;
+////        for (; it != recording_data.end(); ++it) {
+////            auto [milliseconds, segment, color, thickness] = *it;
+////
+////            auto segment_length = DistanceVec2(segment.first, segment.second);
+////            std::wcout << "Segment length: " << segment_length << "\n";
+////        }
+//
+//        last_recording_size = recording_size;
+//    }
 }
 
 void Canvas::HandleEvent(SDL_Event& event, EventContext& event_summary) {
     switch (event.type) {
         case SDL_EVENT_MOUSE_BUTTON_DOWN: {
             if (event.button.button == SDL_BUTTON_LEFT
-                && PointCollides(event.button.x, event.button.y)) {
+                && PointCollides(event.button.x, event.button.y) &&
+                !event_summary.rapid_context.event_captured) {
+                event_summary.rapid_context.event_captured = true;
+
                 if (instructions_intro) {
                     instructions_intro = false;
                     after_intro_callback();
@@ -117,6 +171,10 @@ void Canvas::HandleEvent(SDL_Event& event, EventContext& event_summary) {
                     painting = true;
                     last_paint_position = Vec2f(event.button.x, event.button.y);
                     paint_segments.emplace_back(last_paint_position, last_paint_position);
+
+                    // Recording
+                    if (canvas_playback == PlaybackMode::RECORD)
+                        EmplaceRecordingData(last_paint_position, last_paint_position);
                 }
             }
             break;
@@ -136,6 +194,10 @@ void Canvas::HandleEvent(SDL_Event& event, EventContext& event_summary) {
             if (painting) {
                 auto mouse_position = Vec2f(event.motion.x, event.motion.y);
                 paint_segments.emplace_back(last_paint_position, mouse_position);
+
+                if (canvas_playback == PlaybackMode::RECORD)
+                    EmplaceRecordingData(last_paint_position, mouse_position);
+
                 last_paint_position = mouse_position;
             }
             break;
@@ -167,6 +229,22 @@ void Canvas::Render() {
         }
         paint_segments.clear();
         drawing->SetRenderTarget(nullptr);
+    } else if (canvas_mode == CANVAS_GUESS && canvas_playback == PlaybackMode::REPLAY) {
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - playback_start).count();
+        drawing->SetRenderTarget(canvas);
+        for (; replay_iterator != replay_data.end(); replay_iterator++) {
+            auto [milliseconds, segment, color, thickness] = *replay_iterator;
+            if (elapsed * 2 < milliseconds)
+                break;
+
+            auto [start, end] = segment;
+            drawing->DrawLine(start, end, thickness, Colors::ColorToFloat(color));
+            // todo: pre Colors::ColorToFloat(color)
+        }
+        if (replay_iterator == replay_data.end())
+            canvas_playback = PlaybackMode::DO_NOTHING;
+        drawing->SetRenderTarget(nullptr);
     }
 
     // Draw instructions
@@ -174,8 +252,8 @@ void Canvas::Render() {
         return;
 
     Vec2i intro_texture_scale;
-    Texture* intro_texture = nullptr;
-    Texture* text_texture = nullptr;
+    TextureData* intro_texture = nullptr;
+    TextureData* text_texture = nullptr;
     switch (canvas_mode) {
         case CANVAS_GUESS: {
             intro_texture_scale = scale_guess;

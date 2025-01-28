@@ -20,8 +20,7 @@ WindowTexture::~WindowTexture() {
     delete generated;
 }
 
-WindowTexture* WindowTexture::Generate(const Vec2f& new_size) {
-    auto assets = Assets::Get();
+TextureData* WindowTexture::Generate(AssetsClass* assets, const Vec2f& new_size) {
     auto drawing = assets->GetDrawing();
 
     this->generate_size = new_size;
@@ -79,5 +78,5 @@ WindowTexture* WindowTexture::Generate(const Vec2f& new_size) {
     }
     drawing->SetRenderTarget(nullptr);
 
-    return this;
+    return generated;
 }

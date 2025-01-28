@@ -53,7 +53,9 @@ public:
 };
 
 template<class T>
-[[nodiscard]] double DistanceVec2(const Vec2<T>& v);
+[[nodiscard]] double DistanceVec2d(const Vec2<T>& v);
+template<class T>
+[[nodiscard]] float DistanceVec2f(const Vec2<T>& v);
 
 template<class T>
 [[nodiscard]] Vec2<T> ClampMax(const Vec2<T>& v, const Vec2<T>& max);
@@ -63,5 +65,6 @@ typedef Vec2<float> Vec2f;
 typedef Vec2<double> Vec2d;
 
 [[nodiscard]] Vec2<double> AngleVec2d(double radians);
+[[nodiscard]] Vec2<float> AngleVec2f(float radians);
 
 #include "Vec2.inl"

@@ -30,7 +30,7 @@ private:
 
 public:
     TextBox(const Vec2i& pos, const Vec2i& size);
-    TextBox(const Vec2i& pos, const Vec2i& size, const Vec2i& visual, const Vec2i& offset, Texture* texture);
+    TextBox(const Vec2i& pos, const Vec2i& size, const Vec2i& visual, const Vec2i& offset, SDL_Texture* sdl_texture);
     ~TextBox() override;
 
     // Getting

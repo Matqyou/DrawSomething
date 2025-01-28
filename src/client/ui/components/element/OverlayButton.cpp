@@ -5,14 +5,22 @@
 #include "OverlayButton.h"
 #include "../../../core/Application.h"
 
-OverlayButton::OverlayButton(const Vec2i& pos, const Vec2i& size, const Vec2i& visual, const Vec2i& offset, Texture* texture, Texture* overlay)
-    : Button(pos, size, visual, offset, texture) {
-    this->overlay = overlay;
+OverlayButton::OverlayButton(const Vec2i& pos,
+                             const Vec2i& size,
+                             const VisualTexture& texture,
+                             const VisualTexture& pressed_texture,
+                             const VisualTexture& overlay_texture)
+    : Button(pos, size, texture, pressed_texture) {
+    name = L"OverlayButton";
+    this->overlay_visual_texture = overlay_texture;
 }
 
-OverlayButton::OverlayButton(const Vec2i& pos, const Vec2i& size, Texture* texture, Texture* overlay)
-    : Button(pos, size, size, Vec2i(0, 0), texture){
-    this->overlay = overlay;
+void OverlayButton::PostRefresh() {
+    if (draw == DRAW_VISUAL_TEXTURE) {
+        UpdateVisualTexture();
+        UpdatePressedVisualTexture();
+        UpdateOverlayVisualTexture();
+    }
 }
 
 void OverlayButton::Render() {
@@ -24,11 +32,23 @@ void OverlayButton::Render() {
             drawing->SetColor(fill_color);
             drawing->FillRect(GetRect());
         } else if (draw == ElementDraw::DRAW_TEXTURE) {
-            drawing->RenderTexture(visual_texture->SDLTexture(), nullptr, GetVisualRect());
+            drawing->RenderTexture(sdl_texture, nullptr, GetVisualRect());
             if (has_focus)
-                drawing->RenderTexture(overlay->SDLTexture(), nullptr, GetVisualRect());
+                drawing->RenderTexture(overlay_visual_texture.SDLTexture(), nullptr, GetVisualRect());
+        } else if (draw == ElementDraw::DRAW_VISUAL_TEXTURE) {
+            if (pressed_down && pressed_visual_texture.SDLTexture() != nullptr) {
+                drawing->RenderTexture(pressed_visual_texture.SDLTexture(), nullptr, pressed_visual_texture.GetVisualRect());
+            } else {
+                drawing->RenderTexture(visual_texture.SDLTexture(), nullptr, visual_texture.GetVisualRect());
+            }
+            if (has_focus)
+                drawing->RenderTexture(overlay_visual_texture.SDLTexture(), nullptr, overlay_visual_texture.GetVisualRect());
         }
     }
 
     RenderChildren();
+}
+
+void OverlayButton::UpdateOverlayVisualTexture() {
+    overlay_visual_texture.UpdateRect(GetRect());
 }

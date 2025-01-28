@@ -8,17 +8,17 @@
 
 class Sheet {
 private:
-    Texture* sheet;
+    TextureData* sheet;
 
-    Texture* top_left;
-    Texture* top;
-    Texture* top_right;
-    Texture* left;
-    Texture* middle;
-    Texture* right;
-    Texture* bottom_left;
-    Texture* bottom;
-    Texture* bottom_right;
+    TextureData* top_left;
+    TextureData* top;
+    TextureData* top_right;
+    TextureData* left;
+    TextureData* middle;
+    TextureData* right;
+    TextureData* bottom_left;
+    TextureData* bottom;
+    TextureData* bottom_right;
 
 public:
     SDL_Texture* top_left_sdl;
@@ -35,6 +35,6 @@ public:
     ~Sheet();
 
     // Manipulation
-    void Generate(Texture* sheet);
+    void Generate(AssetsClass* assets, TextureData* sheet);
 
 };

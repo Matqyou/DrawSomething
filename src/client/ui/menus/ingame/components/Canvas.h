@@ -6,6 +6,8 @@
 
 #include <functional>
 #include <utility>
+#include <chrono>
+#include <queue>
 #include "../../../../../shared/core/Colors.h"
 #include "../../../components/element/base/Element.h"
 
@@ -22,17 +24,23 @@ enum DrawTool {
     TOOL_ERASER,
 };
 
+enum class PlaybackMode {
+    DO_NOTHING,
+    RECORD,
+    REPLAY,
+};
+
 class Canvas : public Element {
 private:
     bool instructions_intro;
     CanvasMode canvas_mode;
     Vec2i resolution;
     SDL_FRect canvas_source, canvas_rect;
-    Texture* canvas;
+    TextureData* canvas;
 
-    Texture* text_guess;
-    Texture* text_watch;
-    Texture* text_draw;
+    TextureData* text_guess;
+    TextureData* text_watch;
+    TextureData* text_draw;
     Vec2i scale_guess;
     Vec2i scale_watch;
     Vec2i scale_draw;
@@ -47,15 +55,26 @@ private:
     float brush_size, eraser_size;
     SDL_Cursor* custom_cursor;
 
-    static PreloadTexture sTextureGuess;
-    static PreloadTexture sTextureWatch;
-    static PreloadTexture sTextureDraw;
+    PlaybackMode canvas_playback;
+    std::chrono::steady_clock::time_point playback_start;
+    // recording_data = time, segment, color, thickness
+    std::vector<std::tuple<long long, std::pair<Vec2f, Vec2f>, SDL_Color, float>> recording_data;
+    std::vector<std::tuple<long long, std::pair<Vec2f, Vec2f>, SDL_Color, float>> replay_data;
+    std::vector<std::tuple<long long, std::pair<Vec2f, Vec2f>, SDL_Color, float>>::iterator replay_iterator;
+    size_t last_recording_size;
+
+    void EmplaceRecordingData(const Vec2f& segment_start, const Vec2f& segment_end);
+    void CopyRecordingToReplay(long long max_idle_milliseconds);
+
+    static LinkTexture sTextureGuess;
+    static LinkTexture sTextureWatch;
+    static LinkTexture sTextureDraw;
 
 public:
     Canvas(const Vec2i& pos, const Vec2i& size);
 
     // Getting
-    [[nodiscard]] Texture* GetCanvasTexture() const { return canvas; }
+    [[nodiscard]] TextureData* GetCanvasTexture() const { return canvas; }
 
     // Options
     Canvas* SetCustomCursor(SDL_Cursor* custom_cursor) {
@@ -69,6 +88,20 @@ public:
     }
     Canvas* SetCallback(Callback callback) {
         this->after_intro_callback = std::move(callback);
+        return this;
+    }
+    Canvas* SetPlaybackMode(PlaybackMode mode) {
+        this->canvas_playback = mode;
+        if (mode == PlaybackMode::RECORD) {
+            this->playback_start = std::chrono::steady_clock::now();
+            this->recording_data.clear();
+        } else if (mode == PlaybackMode::REPLAY) {
+            if (!this->recording_data.empty()) {
+                this->playback_start = std::chrono::steady_clock::now();
+                CopyRecordingToReplay(300);
+                this->replay_iterator = replay_data.begin();
+            } else { this->canvas_playback = PlaybackMode::DO_NOTHING; }
+        }
         return this;
     }
 

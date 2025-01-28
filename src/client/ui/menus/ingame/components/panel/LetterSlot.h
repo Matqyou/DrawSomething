@@ -10,13 +10,13 @@ namespace Ingame {
 class Letter;
 class LetterSlot : public Button {
 private:
-    Texture* generated;
+    TextureData* generated;
     Letter* occupied;
 
 public:
     static SDL_Color sColorBlue;
-    static PreloadTexture game_letter_slot;
-    static PreloadTexture game_letter_slot_background;
+    static LinkTexture game_letter_slot;
+    static LinkTexture game_letter_slot_background;
 
 public:
     LetterSlot();

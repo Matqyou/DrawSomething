@@ -264,11 +264,8 @@ std::string ToLowerCase(const std::string& input) {
     return result;
 }
 
-const char* RandomUppercaseLetter() {
-    static char letter[2];
-    letter[0] = 'A' + (std::rand() % 26);
-    letter[1] = '\0';
-    return letter;
+char RandomUppercaseLetter() {
+    return 'A' + (std::rand() % 26);
 }
 
 // Cout

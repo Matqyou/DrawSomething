@@ -30,6 +30,8 @@ public:
     [[nodiscard]] double GetFramerate() const { return Framerate; }
     [[nodiscard]] double GetTimeElapsed() const { return (double)(NanoElapsed) / 1.0e9; }
     [[nodiscard]] double GetTotalTimeElapsed() const { return (double)(TotalNanoElapsed) / 1.0e9; }
+    [[nodiscard]] long long GetTimeElapsedNano() const { return NanoElapsed; }
+    [[nodiscard]] long long GetTotalTimeElapsedNano() const { return TotalNanoElapsed; }
     [[nodiscard]] unsigned long long CurrentTick() const { return Ticks; }
 
     // Setting
@@ -45,6 +47,11 @@ private:
 
 public:
     explicit NonBlockingClock(double framerate);
+
+    // Getting
+    [[nodiscard]] long long GetTimeElapsedNanoNow() const {
+        return MeasureNanoseconds(Beginning, HNow());
+    }
 
     // Generating
     [[nodiscard]] bool TimePassed();

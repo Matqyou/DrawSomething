@@ -14,12 +14,13 @@ protected:
     Callback callback;
     bool clickable;
 
+    SDL_Texture* sdl_pressed_texture;
+    VisualTexture pressed_visual_texture;
+    bool pressed_down;
+
 public:
-    Button(const Vec2i& pos, const Vec2i& size);
     Button(const Vec2i& pos, const Vec2i& size, ElementDraw draw);
-    Button(const Vec2i& pos, const Vec2i& size, const Vec2i& visual, const Vec2i& offset);
-    Button(const Vec2i& pos, const Vec2i& size, const Vec2i& visual, const Vec2i& offset, Texture* texture);
-    Button(const Vec2i& pos, const Vec2i& size, Texture* texture);
+    Button(const Vec2i& pos, const Vec2i& size, const VisualTexture& texture, const VisualTexture& pressed_texture);
 
     // Options
     Button* SetCallback(Callback callback) {
@@ -30,13 +31,18 @@ public:
         this->clickable = new_clickable;
         return this;
     }
-
+    Button* SetPressedVisualTexture(const VisualTexture& visual_texture) {
+        this->pressed_visual_texture = visual_texture;
+        return this;
+    }
 
     // Manipulating
     void RunCallback() const;
 
     // Ticking
+    void PostRefresh() override;
     void HandleEvent(SDL_Event& event, EventContext& event_summary) override;
-//    void Render(Drawing* drawing) const override;
+    void Render() override;
+    void UpdatePressedVisualTexture();
 
 };

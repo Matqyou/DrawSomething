@@ -19,7 +19,7 @@ private:
     Callback callback;
 
 public:
-    static PreloadTexture game_guessing_bar;
+    static LinkTexture game_guessing_bar;
 
 public:
     GuessingBar();

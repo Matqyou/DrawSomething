@@ -119,7 +119,7 @@ void WrappedText::UpdateRender() {
     auto lines = WrapText(text, font, 200, &text_lines_size);
     for (const auto & line : lines) {
         SDL_Surface* surface = TTF_RenderText_Blended(font, line.c_str(), line.size(), text_color);
-        Texture* line_render = Assets::Get()->TextureFromSurface(surface);
+        TextureData* line_render = Assets::Get()->TextureFromSurface(surface);
         SDL_DestroySurface(surface);
         text_lines.push_back(line_render);
     }

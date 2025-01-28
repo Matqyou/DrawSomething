@@ -7,15 +7,18 @@
 #include "../../../../components/element/Button.h"
 
 namespace Ingame {
+LinkTexture Panel::game_palette_background("game.ingame_panel.letter_palette.background");
+LinkTexture Panel::game_palette_bomba("game.ingame_panel.letter_palette.bomba");
 
-PreloadTexture Panel::game_palette_background("game.ingame_panel.letter_palette.background");
-PreloadTexture Panel::game_palette_bomba("game.ingame_panel.letter_palette.bomba");
+void Panel::ResetBomba() {
+    bomba_button->SetClickable(true);
+}
 
 Panel::Panel()
     : Frame(Vec2i(0, 0), Vec2i(0, 0), DONT_DRAW) {
     // Guessing bar
     guessing_bar = new GuessingBar();
-    guessing_bar->SetCallback([]() { std::wcout << L"Word guessed correctly!\n"; });
+    guessing_bar->SetCallback([]() { std::wcout << Strings::FStringColorsW(L"&aWord guessed correctly!\n"); });
 
     // Rows frame
     letters = new Letters(guessing_bar);
@@ -30,12 +33,16 @@ Panel::Panel()
         ->AddChildren({ letters });
 
     // Bomba
-    auto bomba = (new Button(Vec2i(0, 0),
-                             Vec2i(98, 147),
-                             game_palette_bomba.GetTexture()))
-        ->SetCallback([]() { std::wcout << L"BOMBA\n"; })
+    bomba_button = (Button*)(new Button(Vec2i(0, 0),
+                                        Vec2i(98, 147),
+                                        VisualTexture(game_palette_bomba.GetSDLTexture(), Vec2d(1.0, 1.0), Vec2d(0.0, 0.0)),
+                                        VisualTexture(nullptr, Vec2d(1.0, 1.0), Vec2d(0.0, 0.0))))
         ->SetAlign(Align::CENTER, Align::CENTER)
         ->SetName("Bomba");
+    bomba_button->SetCallback([this]() {
+        letters->BlowUp();
+        bomba_button->SetClickable(false);
+    });
 
     // Bomba side
     auto bomba_frame = (new Frame(Vec2i(0, 0),
@@ -44,12 +51,12 @@ Panel::Panel()
         ->SetFullyOccupy(false, true)
         ->SetFlex(Flex::WIDTH)
         ->SetName("Bomba")
-        ->AddChildren({ bomba });
+        ->AddChildren({ bomba_button });
 
     // Letters bar
     auto letters_bar = (new Frame(Vec2i(0, 0),
                                   Vec2i(0, 165),
-                                  game_palette_background.GetTexture()))
+                                  game_palette_background.GetSDLTexture()))
         ->SetFullyOccupy(true, false)
         ->SetFlex(Flex::WIDTH)
         ->SetName("Bottom")
@@ -65,6 +72,7 @@ Panel::Panel()
 bool Panel::RandomizeWord(const std::string& word) {
     if (letters->RandomizeWord(word)) { // todo: make dynamic num of letters but stay at 12
         guessing_bar->GenerateForWord(word);
+        ResetBomba();
         return true;
     }
 

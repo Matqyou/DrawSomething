@@ -3,19 +3,21 @@
 //
 
 #include "Letter.h"
-#include "../../ingame_common.h"
+#include "../../../../CommonUI.h"
 
 namespace Ingame {
 SDL_Color Letter::sBlueColor(41, 77, 104, 255);
 SDL_Color Letter::sBlueColorBackground(100, 190, 255, 255);
-PreloadTexture Letter::sTextureLetterNormal("game.ingame_panel.letter.normal");
+static LinkTexture sTextureLetterNormal("game.ingame_panel.letter.normal");
 
 Letter::Letter()
     : Button(Vec2i(0, 0),
              Vec2i(66, 66),
-             nullptr) {
-    this->letter = "";
+             VisualTexture(nullptr),
+             VisualTexture(nullptr)) {
+    this->letter = '#';
     this->generated = nullptr;
+    this->occupy_slot = nullptr;
 
     SetAlign(Align::DONT, Align::CENTER);
     SetName("Letter");
@@ -25,15 +27,16 @@ Letter::~Letter() {
     delete generated;
 }
 
-Letter* Letter::UpdateRender(const std::string& letter, SDL_Color background, SDL_Color tone) {
+Letter* Letter::UpdateRender(char letter, SDL_Color background, SDL_Color tone) {
     auto assets = Assets::Get();
     auto drawing = assets->GetDrawing();
     this->letter = letter;
 
-    Texture* character_render =
-        assets->RenderTextBlended(Ingame::sFontDefaultBiggest.GetFont()->TTFFont(), letter, { 255, 255, 255, 255 });
-    auto background_texture = Letter::sTextureLetterNormal.GetTexture();
-    auto size = Letter::sTextureLetterNormal.GetTexture()->GetSize();
+    TextureData* character_render = assets->RenderTextBlended(CommonUI::sFontBiggest.GetFont()->TTFFont(),
+                                                              std::string(1, letter),
+                                                              { 255, 255, 255, 255 });
+    auto background_texture = sTextureLetterNormal.GetTexture();
+    auto size = sTextureLetterNormal.GetTexture()->GetSize();
     SDL_FRect character_rect = {
         (float)(size.x / 2 - character_render->GetWidth()),
         (float)(size.y / 2 - character_render->GetHeight()),
@@ -45,8 +48,8 @@ Letter* Letter::UpdateRender(const std::string& letter, SDL_Color background, SD
     delete generated;
     generated = assets->CreateTexture(SDL_PIXELFORMAT_RGBA8888,
                                       SDL_TEXTUREACCESS_TARGET,
-                                      (int)Letter::sTextureLetterNormal.GetTexture()->GetWidth(),
-                                      (int)Letter::sTextureLetterNormal.GetTexture()->GetHeight())
+                                      (int)sTextureLetterNormal.GetTexture()->GetWidth(),
+                                      (int)sTextureLetterNormal.GetTexture()->GetHeight())
         ->SetBlendMode(SDL_BLENDMODE_BLEND);
     drawing->SetRenderTarget(generated);
     background_texture->SetColorMod(background);
@@ -55,10 +58,19 @@ Letter* Letter::UpdateRender(const std::string& letter, SDL_Color background, SD
     drawing->RenderTexture(character_render->SDLTexture(), nullptr, character_rect_higher);
     character_render->SetColorMod(255, 255, 255);
     drawing->RenderTexture(character_render->SDLTexture(), nullptr, character_rect);
-//    drawing->SetRenderTarget(nullptr);
     delete character_render;
 
-    SetVisualTexture(generated);
+    SetVisualTexture(VisualTexture(generated->SDLTexture()));
     return this;
+}
+
+void Letter::SetOccupySlot(LetterSlot* occupy_slot) {
+    this->occupy_slot = occupy_slot;
+}
+
+void Letter::ResetLetter() {
+    SetClickable(true);
+    SetDraw(ElementDraw::DRAW_VISUAL_TEXTURE);
+    SetOccupySlot(nullptr);
 }
 }

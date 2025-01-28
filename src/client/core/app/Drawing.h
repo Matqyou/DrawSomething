@@ -12,7 +12,6 @@
 class Drawing {
 private:
     SDL_Renderer* m_Renderer;
-    double m_Zoom;
 
     static LinkFont sFontMath;
 
@@ -22,11 +21,9 @@ public:
 
     // Getting
     [[nodiscard]] SDL_Renderer* Renderer() const { return m_Renderer; }
-    [[nodiscard]] double GetZoom() const { return m_Zoom; }
 
     // Setting
-    void SetRenderTarget(Texture* target);
-    void SetZoom(double zoom) { m_Zoom = zoom; }
+    void SetRenderTarget(TextureData* target);
     void SetDrawBlendMode(SDL_BlendMode blend_mode) { SDL_SetRenderDrawBlendMode(m_Renderer, blend_mode); }
     void SetColor(Uint8 r, Uint8 g, Uint8 b, Uint8 a) { SDL_SetRenderDrawColor(m_Renderer, r, g, b, a); }
     void SetColor(SDL_Color color) { SetColor(color.r, color.g, color.b, color.a); }

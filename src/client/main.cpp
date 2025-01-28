@@ -7,31 +7,20 @@
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
-#include "core/Application.h"
-#include "ui/components/Scribbles.h"
+#include "ui/menus/intermission/IntermissionMenu.h"
 #include "ui/components/event/EventContext.h"
-#include "ui/menus/main/MainMenu.h"
+#include "ui/menus/picking/PickingMenu.h"
 #include "ui/menus/ingame/IngameMenu.h"
-#include "words/Words.h"
 #include "ui/menus/auth/AuthMenu.h"
+#include "ui/menus/main/MainMenu.h"
 #include "ui/cursors/Cursors.h"
+#include "core/Application.h"
+#include "words/Words.h"
+#include "ui/CommonUI.h"
 
-//std::vector<Scribbles*> scribbles;
-static PreloadTexture pencil("pencil2");
-static PreloadFont sFontDefault("default", "fredoka.bold", 26);
-static PreloadFont sFontMinecraft24("minecraft", "minecraft", 24);
-static PreloadFont sFontMath16("math", "computer_modern.cmunrm", 16);
-
-static PreloadFont sFontDefaultBiggest("fredoka.biggest", "fredoka.bold", 46);
-static PreloadFont sFontDefaultBigger("fredoka.big", "fredoka.bold", 36);
-static PreloadFont sFontDefaultSmaller("fredoka.small", "fredoka.medium", 18);
-
-Vec2d pencil_tip(222, 918);
+static LinkFont sFont("fredoka.smaller");
 
 void exit_application() {
-//    for (auto scribb : scribbles)
-//        delete scribb;
-
     Application::destroy();
     std::wcout << L"Graceful exit\n";
     exit(0);
@@ -45,25 +34,16 @@ int main() {
                               Vec2i(1024, 720),
                               75.0));
     auto application = Application::Get();
+    auto assets = Assets::Get();
     auto drawing = application->GetDrawing();
     auto clock = application->GetClock();
-
-//    auto scribb = new Scribbles(Vec2d(50, 450), Vec2i(200, 200), 35);
-//    scribb->GenerateZigZag();
-//    scribbles.push_back(scribb);
-//
-//    auto scribb2 = new Scribbles(Vec2d(300, 450), Vec2i(250, 75), 35);
-//    scribb2->GenerateZigZag();
-//    scribbles.push_back(scribb2);
-//
-//    auto scribb3 = new Scribbles(Vec2d(300, 600), Vec2i(250, 40), 35);
-//    scribb3->GenerateZigZag();
-//    scribbles.push_back(scribb3);
 
     SDL_StartTextInput(Application::Get()->GetWindow());
 
     Words words_choice;
 
+    IntermissionMenu intermission_menu;
+    PickingMenu picking_menu;
     AuthMenu auth_menu;
     MainMenu main_menu;
     IngameMenu guessing_menu(&words_choice);
@@ -72,10 +52,18 @@ int main() {
     Vec2i render_drag_from = Vec2i(0, 0);
     bool render_dragging = false;
     bool render_debug = true;
+    long long frame_duration = 1;
+    bool update_frame_duration = true;
+    Uint64 last_fps_update = 0;
+    TextureData* fps_texture = nullptr;
+    SDL_FRect fps_texture_rect;
+
+    SDL_Event sdl_event;
+    EventContext event_context;
     while (true) {
-        EventContext event_context;
-        SDL_Event sdl_event;
+        event_context.ResetContext();
         while (SDL_PollEvent(&sdl_event)) {
+            event_context.ResetRapidContext();
             application->Event(sdl_event);
             current_menu->HandleEvent(sdl_event, event_context);
 
@@ -89,36 +77,44 @@ int main() {
                     break;
                 }
                 case SDL_EVENT_KEY_DOWN: {
-//                    if (sdl_event.key.scancode == SDL_SCANCODE_SPACE)
-//                        for (auto scribb : scribbles)
-//                            scribb->GenerateZigZag();
                     if (sdl_event.key.scancode == SDL_SCANCODE_9) current_menu->DebugPrint();
                     else if (sdl_event.key.scancode == SDL_SCANCODE_0)
                         Assets::Get()->SaveTextureToDisk(guessing_menu.canvas->GetCanvasTexture(), "canvas_export.png");
                     else if (sdl_event.key.scancode == SDL_SCANCODE_GRAVE) render_debug = !render_debug;
                     else if (sdl_event.key.scancode == SDL_SCANCODE_1) {
+                        current_menu = &intermission_menu;
+                        intermission_menu.SetTurnNumber(std::rand() % 1000);
+                        intermission_menu.ShowMenuA(true);
+                    } else if (sdl_event.key.scancode == SDL_SCANCODE_2) {
+                        current_menu = &intermission_menu;
+                        intermission_menu.PlayScribbles();
+                        intermission_menu.ShowMenuA(false);
+                    } else if (sdl_event.key.scancode == SDL_SCANCODE_3) {
+                        current_menu = &picking_menu;
+                        current_menu->RefreshMenu();
+                    } else if (sdl_event.key.scancode == SDL_SCANCODE_4) {
                         current_menu = &auth_menu;
                         current_menu->UpdateElement({ 0, 0 },
                                                     application->GetResolution(),
                                                     application->GetResolution());
-                    } else if (sdl_event.key.scancode == SDL_SCANCODE_2) {
+                    } else if (sdl_event.key.scancode == SDL_SCANCODE_5) {
                         current_menu = &main_menu;
                         current_menu->UpdateElement({ 0, 0 },
                                                     application->GetResolution(),
                                                     application->GetResolution());
-                    } else if (sdl_event.key.scancode == SDL_SCANCODE_3) {
+                    } else if (sdl_event.key.scancode == SDL_SCANCODE_6) {
                         current_menu = &guessing_menu;
                         ((IngameMenu*)current_menu)->PrepareGuess();
                         current_menu->UpdateElement({ 0, 0 },
                                                     application->GetResolution(),
                                                     application->GetResolution());
-                    } else if (sdl_event.key.scancode == SDL_SCANCODE_4) {
+                    } else if (sdl_event.key.scancode == SDL_SCANCODE_7) {
                         current_menu = &guessing_menu;
                         ((IngameMenu*)current_menu)->PrepareWatch();
                         current_menu->UpdateElement({ 0, 0 },
                                                     application->GetResolution(),
                                                     application->GetResolution());
-                    } else if (sdl_event.key.scancode == SDL_SCANCODE_5) {
+                    } else if (sdl_event.key.scancode == SDL_SCANCODE_8) {
                         current_menu = &guessing_menu;
                         ((IngameMenu*)current_menu)->PrepareDraw();
                         current_menu->UpdateElement({ 0, 0 },
@@ -143,46 +139,24 @@ int main() {
                     break;
                 }
             }
+
+            Element::DestroyElements(); // todo: might be expensive
         }
         if (event_context.had_mouse_motion &&
             event_context.cursor_changed == CursorChange::NO_CHANGE)
             SDL_SetCursor(SDL_GetDefaultCursor());
 
         if (clock->TimePassed()) {
+            update_frame_duration = true;
+
             // Post-Event
             current_menu->PostEvent();
 
             // Ticking
             current_menu->Tick();
-//            for (auto scribb : scribbles)
-//                scribb->Tick();
 
             // Drawing
             drawing->SetRenderTarget(nullptr);
-//            for (auto scribb : scribbles)
-//                scribb->Draw();
-//            if (render_debug) {
-//                for (auto scribb : scribbles)
-//                    scribb->DrawDebug();
-//            }
-
-//            auto scribble1 = scribbles[0];
-//            if (scribble1->IsPlaying() || true) {
-//                auto pen_position = scribble1->GetGlobalPen() - pencil_tip * 0.2;
-//                SDL_FRect pencil_rect = {
-//                    (float)pen_position.x,
-//                    (float)pen_position.y,
-//                    (float)(pencil.GetTexture()->GetWidth() * 0.2),
-//                    (float)(pencil.GetTexture()->GetHeight() * 0.2),
-//                };
-//                SDL_FPoint center = { (float)(pencil_tip.x * 0.2), (float)(pencil_tip.y * 0.2) };
-//                drawing->RenderTextureEx(pencil.GetTexture()->SDLTexture(),
-//                                         nullptr,
-//                                         pencil_rect,
-//                                         35,
-//                                         &center,
-//                                         SDL_FLIP_NONE);
-//            }
 
             current_menu->Render();
 
@@ -210,9 +184,10 @@ int main() {
                                       Vec2f((float)application->GetWidth(), (float)render_drag_from.y));
 
                     auto debug_size = Strings::FString("%i, %i", abs(debug_width), abs(debug_height));
-                    Texture* debug_render = Assets::Get()->RenderTextBlended(sFontDefaultSmaller.GetFont()->TTFFont(),
-                                                                             debug_size,
-                                                                             { 255, 255, 255, 255 });
+                    TextureData
+                        * debug_render = Assets::Get()->RenderTextBlended(CommonUI::sFontSmaller.GetFont()->TTFFont(),
+                                                                          debug_size,
+                                                                          { 255, 255, 255, 255 });
                     SDL_FRect text_rect = {
                         ((float)render_drag_from.x + ((float)debug_width - debug_render->GetWidth()) / 2.0f),
                         ((float)render_drag_from.y + ((float)debug_height - debug_render->GetHeight()) / 2.0f),
@@ -228,9 +203,10 @@ int main() {
                 drawing->DrawLine(Vec2f(0, mouse_y), Vec2f((float)application->GetWidth(), mouse_y));
 
                 auto coordinates = Strings::FString("%i, %i", (int)mouse_x, (int)mouse_y);
-                Texture* debug_render = Assets::Get()->RenderTextBlended(sFontDefaultSmaller.GetFont()->TTFFont(),
-                                                                         coordinates,
-                                                                         { 255, 255, 255, 255 });
+                TextureData
+                    * debug_render = Assets::Get()->RenderTextBlended(CommonUI::sFontSmaller.GetFont()->TTFFont(),
+                                                                      coordinates,
+                                                                      { 255, 255, 255, 255 });
                 SDL_FRect text_rect = {
                     (float)(mouse_x - debug_render->GetWidth()),
                     (float)(mouse_y - debug_render->GetHeight()),
@@ -241,7 +217,23 @@ int main() {
                 delete debug_render;
             }
 
+            if (last_fps_update - SDL_GetTicks() >= 1000) {
+                last_fps_update = SDL_GetTicks();
+                long long fps = (long long)1e9 / frame_duration;
+                delete fps_texture;
+                fps_texture = assets->RenderTextSolid(sFont.GetFont()->TTFFont(),
+                                                      Strings::FString("%lld", fps),
+                                                      { 0, 255, 0, 255 });
+                fps_texture_rect = { 0, 0, fps_texture->GetWidth(), fps_texture->GetHeight() };
+            }
+            if (fps_texture != nullptr)
+                drawing->RenderTexture(fps_texture->SDLTexture(), nullptr, fps_texture_rect);
+
             drawing->UpdateWindow();
+        }
+        if (update_frame_duration) {
+            update_frame_duration = false;
+            frame_duration = clock->GetTimeElapsedNanoNow();
         }
     }
 

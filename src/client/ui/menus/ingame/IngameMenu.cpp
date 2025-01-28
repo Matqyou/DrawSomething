@@ -5,13 +5,9 @@
 #include "IngameMenu.h"
 #include "../../../core/Application.h"
 
-LinkFont IngameMenu::sFontDefault("default");
-LinkFont IngameMenu::sFontDefaultBiggest("fredoka.biggest");
-LinkFont IngameMenu::sFontDefaultBigger("fredoka.big");
-LinkFont IngameMenu::sFontDefaultSmaller("fredoka.small");
-
 IngameMenu::IngameMenu(Words* words_list)
     : FullscreenMenu() {
+    name = L"IngameMenu";
     this->words_list = words_list;
 
     // Header
@@ -22,7 +18,7 @@ IngameMenu::IngameMenu(Words* words_list)
         ->SetFullyOccupy(true, false)
         ->SetOccupy(false, true)
         ->SetColor(255, 255, 255, 255)
-        ->SetName("Canvas", false);
+        ->SetName("Canvas");
 
     // Buttons and stuff
     panel = new Ingame::Panel();
@@ -31,8 +27,9 @@ IngameMenu::IngameMenu(Words* words_list)
 
     SetColor(230, 230, 230, 255);
     SetFlex(Flex::HEIGHT);
-    AddChildren({ header, canvas })->SetName("GuessingMenu", false);
-    Refresh();
+    AddChildren({ header, canvas });
+    SetName("GuessingMenu");
+    RefreshMenu();
 
     PrepareDraw();
 }
@@ -44,13 +41,15 @@ void IngameMenu::PrepareGuess() {
     header->SetDescription("Matiss B.'s drawing.");
     header->SetTurnNumber(3);
     panel->RandomizeWord(random_word);
-    canvas->ClearCanvas();
 
     SetChildren({ header, canvas });
     Refresh();
+    canvas->ClearCanvas();
+    canvas->SetPlaybackMode(Ingame::PlaybackMode::DO_NOTHING);
     canvas->SetMode(Ingame::CANVAS_GUESS);
     canvas->SetCallback([this]() {
-        canvas->LoadExample();
+//        canvas->LoadExample();
+        canvas->SetPlaybackMode(Ingame::PlaybackMode::REPLAY);
         this->SetChildren({ header, canvas, panel });
         this->Refresh();
     });
@@ -63,10 +62,11 @@ void IngameMenu::PrepareWatch() {
     header->SetDescription(Strings::FString("guess the word %s.", random_word.c_str()));
     header->SetTurnNumber(4);
     panel->RandomizeWord(random_word);
-    canvas->ClearCanvas();
 
     SetChildren({ header, canvas });
     Refresh();
+    canvas->ClearCanvas();
+    canvas->SetPlaybackMode(Ingame::PlaybackMode::DO_NOTHING);
     canvas->SetMode(Ingame::CANVAS_WATCH);
     canvas->SetCallback([this]() {
         canvas->LoadExample();
@@ -82,11 +82,13 @@ void IngameMenu::PrepareDraw() {
     header->SetDescription("for Matiss B.");
     header->SetTurnNumber(5);
     canvas->ClearCanvas();
+    canvas->SetPlaybackMode(Ingame::PlaybackMode::DO_NOTHING);
 
     SetChildren({ header, canvas });
     Refresh();
     canvas->SetMode(Ingame::CANVAS_DRAW);
     canvas->SetCallback([this]() {
+        canvas->SetPlaybackMode(Ingame::PlaybackMode::RECORD);
         this->SetChildren({ header, color_selector, canvas, tool_selector });
         this->Refresh();
     });

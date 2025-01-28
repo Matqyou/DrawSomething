@@ -8,10 +8,10 @@
 
 class Frame : public Element {
 public:
-    Frame(const Vec2i& pos, const Vec2i& size);
+    Frame();
     Frame(const Vec2i& pos, const Vec2i& size, ElementDraw draw);
-    Frame(const Vec2i& pos, const Vec2i& size, const Vec2i& visual, const Vec2i& offset);
-    Frame(const Vec2i& pos, const Vec2i& size, const Vec2i& visual, const Vec2i& offset, Texture* texture);
-    Frame(const Vec2i& pos, const Vec2i& size, Texture* texture);
+    Frame(const Vec2i& pos, const Vec2i& size, SDL_Texture* sdl_texture);
+    Frame(const Vec2i& pos, const Vec2i& size, const Vec2i& visual, const Vec2i& offset, SDL_Texture* sdl_texture);
+    Frame(const Vec2i& pos, const Vec2i& size, const VisualTexture& visual_texture);
 
 };

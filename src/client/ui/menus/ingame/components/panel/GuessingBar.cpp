@@ -5,19 +5,19 @@
 #include "GuessingBar.h"
 #include "Letter.h"
 
-auto static sCallbackGuessingBar = [](Texture* texture) {
+namespace Ingame {
+auto static sCallbackGuessingBar = [](TextureData* texture) {
     texture->SetColorMod(100, 190, 255);
     texture->SetAlphaMod(170);
     texture->SetBlendMode(SDL_BLENDMODE_BLEND);
 };
 
-namespace Ingame {
-PreloadTexture GuessingBar::game_guessing_bar("game.ingame_panel.guessing_bar", sCallbackGuessingBar);
+LinkTexture GuessingBar::game_guessing_bar("game.ingame_panel.guessing_bar", sCallbackGuessingBar);
 
 GuessingBar::GuessingBar()
     : Frame(Vec2i(0, 0),
             Vec2i(0, 90),
-            game_guessing_bar.GetTexture()) {
+            game_guessing_bar.GetSDLTexture()) {
     guess_word = "not set";
 
     // Guessing letter frame
@@ -75,6 +75,7 @@ bool GuessingBar::AddLetter(Letter* new_letter) {
         if (slot->GetOccupyLetter() == nullptr) {
             if (find_available) {
                 find_available = false;
+                new_letter->SetOccupySlot(slot);
                 slot->OccupyLetter(new_letter);
                 slot->SetClickable(true);
             }

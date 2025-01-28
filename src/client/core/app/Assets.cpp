@@ -15,17 +15,17 @@ using namespace Strings;
 
 template<> AssetsClass* Singleton<AssetsClass>::instance_ = nullptr;
 template<> const char* Singleton<AssetsClass>::singleton_name_ = "Assets";
-std::vector<Texture*> AssetsClass::m_AutomaticDeletionTextures = { };
-std::vector<PreloadTexture*> AssetsClass::m_LinkTextures = { };
+std::vector<TextureData*> AssetsClass::m_AutomaticDeletionTextures = { };
+std::vector<LinkTexture*> AssetsClass::m_LinkTextures = { };
 std::vector<PregenerateTexture*> AssetsClass::m_PregenerateTextures = { };
-std::vector<PreloadSound*> AssetsClass::m_LinkSounds = { };
-std::vector<PreloadMusic*> AssetsClass::m_LinkMusic = { };
+std::vector<LinkSound*> AssetsClass::m_LinkSounds = { };
+std::vector<LinkMusic*> AssetsClass::m_LinkMusic = { };
 std::vector<PreloadFont*> AssetsClass::m_PreloadFonts = { };
 std::vector<LinkFont*> AssetsClass::m_LinkFonts = { };
 
-bool AssetsClass::m_PreloadStage = true;
+bool AssetsClass::sPreloadStage = true;
 
-Texture::Texture(SDL_Texture* sdl_texture, std::string key, std::string load_extension)
+TextureData::TextureData(SDL_Texture* sdl_texture, std::string key, std::string load_extension)
     : m_Key(std::move(key)),
       m_LoadExtension(std::move(load_extension)) {
     m_SDLTexture = nullptr;
@@ -35,12 +35,12 @@ Texture::Texture(SDL_Texture* sdl_texture, std::string key, std::string load_ext
     m_AutomaticDeletion = false;
 }
 
-Texture::~Texture() {
+TextureData::~TextureData() {
     if (m_SDLTexture)
         SDL_DestroyTexture(m_SDLTexture);
 }
 
-Texture* Texture::FlagForAutomaticDeletion() {
+TextureData* TextureData::FlagForAutomaticDeletion() {
     if (!this->m_AutomaticDeletion) {
         this->m_AutomaticDeletion = true;
         AssetsClass::AutomaticallyDeleteTexture(this);
@@ -48,7 +48,7 @@ Texture* Texture::FlagForAutomaticDeletion() {
     return this;
 }
 
-Texture* Texture::SetSDLTexture(SDL_Texture* sdl_texture) {
+TextureData* TextureData::SetSDLTexture(SDL_Texture* sdl_texture) {
     m_SDLTexture = sdl_texture;
     SDL_GetTextureSize(m_SDLTexture, &m_Width, &m_Height);
     m_WidthHalf = m_Width / 2.0f;
@@ -56,37 +56,37 @@ Texture* Texture::SetSDLTexture(SDL_Texture* sdl_texture) {
     return this;
 }
 
-Texture* Texture::SetBlendMode(SDL_BlendMode blend_mode) {
+TextureData* TextureData::SetBlendMode(SDL_BlendMode blend_mode) {
     SDL_SetTextureBlendMode(m_SDLTexture, blend_mode);
     return this;
 }
 
-Texture* Texture::SetColorMod(Uint8 r, Uint8 g, Uint8 b) {
+TextureData* TextureData::SetColorMod(Uint8 r, Uint8 g, Uint8 b) {
     SDL_SetTextureColorMod(m_SDLTexture, r, g, b);
     return this;
 }
 
-Texture* Texture::SetColorMod(SDL_Color color) {
+TextureData* TextureData::SetColorMod(SDL_Color color) {
     SDL_SetTextureColorMod(m_SDLTexture, color.r, color.g, color.b);
     return this;
 }
 
-Texture* Texture::SetColorModFloat(float r, float g, float b) {
+TextureData* TextureData::SetColorModFloat(float r, float g, float b) {
     SDL_SetTextureColorModFloat(m_SDLTexture, r, g, b);
     return this;
 }
 
-Texture* Texture::SetColorModFloat(SDL_FColor color) {
+TextureData* TextureData::SetColorModFloat(SDL_FColor color) {
     SDL_SetTextureColorModFloat(m_SDLTexture, color.r, color.g, color.b);
     return this;
 }
 
-Texture* Texture::SetAlphaMod(int alpha) {
+TextureData* TextureData::SetAlphaMod(int alpha) {
     SDL_SetTextureAlphaMod(m_SDLTexture, alpha);
     return this;
 }
 
-Texture* Texture::SetScaleMode(SDL_ScaleMode scale_mode) {
+TextureData* TextureData::SetScaleMode(SDL_ScaleMode scale_mode) {
     SDL_SetTextureScaleMode(m_SDLTexture, scale_mode);
     return this;
 }
@@ -195,7 +195,7 @@ void AssetsClass::LoadTextures(SDL_Renderer* renderer) {
 
         auto it = m_Textures.find(texture_key);
         if (it != m_Textures.end()) {
-            std::wcout << FStringColorsW(L"[Assets] &8Duplicate texture '%s' for existing '%s'(%s)\n",
+            std::wcout << FStringColorsW(L"[Assets] &cDuplicate texture '%s' for existing '%s'(%s)\n",
                                          extension.c_str(),
                                          texture_key.c_str(),
                                          it->second->m_LoadExtension.c_str());
@@ -214,7 +214,7 @@ void AssetsClass::LoadTextures(SDL_Renderer* renderer) {
         SDL_DestroySurface(TempSurface);
 
         // Add it to all the textures
-        auto new_texture = (new Texture(NewSDLTexture, texture_key, extension))
+        auto new_texture = (new TextureData(NewSDLTexture, texture_key, extension))
             ->FlagForAutomaticDeletion();
         m_Textures[texture_key] = new_texture;
         std::wcout << FStringColorsW(L"[Assets] &9Loaded texture '%s'\n", texture_key.c_str());
@@ -248,7 +248,7 @@ void AssetsClass::LoadSounds() {
 
         auto it = m_Sounds.find(key);
         if (it != m_Sounds.end()) {
-            std::wcout << FStringColorsW(L"[Assets] &8Duplicate sound '%s' for existing '%s'(%s)\n",
+            std::wcout << FStringColorsW(L"[Assets] &cDuplicate sound '%s' for existing '%s'(%s)\n",
                                          extension.c_str(),
                                          key.c_str(),
                                          it->second->m_LoadExtension.c_str());
@@ -293,7 +293,7 @@ void AssetsClass::LoadMusic() {
 
         auto it = m_Music.find(key);
         if (it != m_Music.end()) {
-            std::wcout << FStringColorsW(L"[Assets] &8Duplicate music '%s' for existing '%s'(%s)\n",
+            std::wcout << FStringColorsW(L"[Assets] &cDuplicate music '%s' for existing '%s'(%s)\n",
                                          extension.c_str(),
                                          key.c_str(),
                                          it->second->m_LoadExtension.c_str());
@@ -382,7 +382,7 @@ AssetsClass::AssetsClass(Drawing* drawing, bool sounds_enabled)
     m_SoundsEnabled = sounds_enabled;
 
     // Todo: Loading assets in realtime (adding/removing files?)
-    AssetsClass::m_PreloadStage = false;
+    AssetsClass::sPreloadStage = false;
     LoadTextures(drawing->Renderer());
     LoadSounds();
     LoadMusic();
@@ -394,7 +394,7 @@ AssetsClass::AssetsClass(Drawing* drawing, bool sounds_enabled)
 
         auto it = m_Textures.find(texture_key);
         if (it != m_Textures.end()) {
-            std::wcout << FStringColorsW(L"[Assets] &8Duplicate pre-generated texture '%s'(%s)\n",
+            std::wcout << FStringColorsW(L"[Assets] &cDuplicate pre-generated texture '%s'(%s)\n",
                                          texture_key.c_str(),
                                          it->second->m_LoadExtension.c_str());
             continue;
@@ -454,7 +454,7 @@ AssetsClass::~AssetsClass() {
     std::wcout << FStringColorsW(L"[Assets] &5Unloaded %zu fonts\n", destroyed_fonts);
 }
 
-Texture* AssetsClass::GetTexture(const std::string& texture_key) {
+TextureData* AssetsClass::GetTexture(const std::string& texture_key) {
     auto it = m_Textures.find(texture_key);
     if (it != m_Textures.end())
         return it->second;
@@ -490,10 +490,10 @@ Font* AssetsClass::GetFont(const std::string& font_key) {
     return nullptr;
 }
 
-Texture* AssetsClass::TextureFromSurface(SDL_Surface* sdl_surface) {
+TextureData* AssetsClass::TextureFromSurface(SDL_Surface* sdl_surface) {
     SDL_Texture* NewSDLTexture = SDL_CreateTextureFromSurface(m_Drawing->Renderer(), sdl_surface);
 
-    return new Texture(NewSDLTexture, "FromSurface", "NaN");
+    return new TextureData(NewSDLTexture, "FromSurface", "NaN");
 }
 
 SDL_Surface* AssetsClass::CreateSDLSurface(int width, int height, SDL_PixelFormat format) {
@@ -501,27 +501,41 @@ SDL_Surface* AssetsClass::CreateSDLSurface(int width, int height, SDL_PixelForma
     return sdl_surface;
 }
 
-Texture* AssetsClass::CreateTexture(SDL_PixelFormat format, SDL_TextureAccess access, int w, int h) {
+TextureData* AssetsClass::CreateTexture(SDL_PixelFormat format, SDL_TextureAccess access, int w, int h) {
     SDL_Texture* NewSDLTexture = SDL_CreateTexture(m_Drawing->Renderer(), format, access, w, h);
 
-    return new Texture(NewSDLTexture, "CreateTexture", "NaN");
+    return new TextureData(NewSDLTexture, "CreateTexture", "NaN");
 }
 
-Texture* AssetsClass::RenderTextBlended(TTF_Font* font, const std::string& text, SDL_Color color) {
+TextureData* AssetsClass::RenderTextBlended(TTF_Font* font, const std::string& text, SDL_Color color) {
     SDL_Surface* surface = TTF_RenderText_Blended(font, text.c_str(), text.size(), color);
-    Texture* text_render = TextureFromSurface(surface);
+    TextureData* text_render = TextureFromSurface(surface);
     SDL_DestroySurface(surface);
     return text_render;
 }
 
-Texture* AssetsClass::RenderTextBlended(TTF_Font* font, const char* text, SDL_Color color) {
+TextureData* AssetsClass::RenderTextBlended(TTF_Font* font, const char* text, SDL_Color color) {
     SDL_Surface* surface = TTF_RenderText_Blended(font, text, strlen(text), color);
-    Texture* text_render = TextureFromSurface(surface);
+    TextureData* text_render = TextureFromSurface(surface);
     SDL_DestroySurface(surface);
     return text_render;
 }
 
-bool AssetsClass::SaveTextureToDisk(Texture* texture, const std::string& filename) {
+TextureData* AssetsClass::RenderTextSolid(TTF_Font* font, const std::string& text, SDL_Color color) {
+    SDL_Surface* surface = TTF_RenderText_Solid(font, text.c_str(), text.size(), color);
+    TextureData* text_render = TextureFromSurface(surface);
+    SDL_DestroySurface(surface);
+    return text_render;
+}
+
+TextureData* AssetsClass::RenderTextSolid(TTF_Font* font, const char* text, SDL_Color color) {
+    SDL_Surface* surface = TTF_RenderText_Solid(font, text, strlen(text), color);
+    TextureData* text_render = TextureFromSurface(surface);
+    SDL_DestroySurface(surface);
+    return text_render;
+}
+
+bool AssetsClass::SaveTextureToDisk(TextureData* texture, const std::string& filename) {
     m_Drawing->SetRenderTarget(texture);
     SDL_Surface* sdl_surface = SDL_RenderReadPixels(m_Drawing->Renderer(), nullptr);
     m_Drawing->SetRenderTarget(nullptr);
@@ -540,8 +554,8 @@ bool AssetsClass::SaveTextureToDisk(Texture* texture, const std::string& filenam
     return true;
 }
 
-void AssetsClass::LinkPreloadedTexture(PreloadTexture* link_texture) {
-    if (!m_PreloadStage)
+void AssetsClass::LinkPreloadedTexture(LinkTexture* link_texture) {
+    if (!sPreloadStage)
         throw std::runtime_error(Strings::FString("You cannot link texture '%s' at this stage",
                                                   link_texture->m_Key.c_str()));
 
@@ -549,23 +563,23 @@ void AssetsClass::LinkPreloadedTexture(PreloadTexture* link_texture) {
 }
 
 void AssetsClass::LinkPregeneratedTexture(PregenerateTexture* pregenerate_texture) {
-    if (!m_PreloadStage)
+    if (!sPreloadStage)
         throw std::runtime_error(Strings::FString("You cannot pre-generate texture '%s' at this stage",
                                                   pregenerate_texture->m_Key.c_str()));
 
     m_PregenerateTextures.push_back(pregenerate_texture);
 }
 
-void AssetsClass::LinkPreloadedSound(PreloadSound* link_sound) {
-    if (!m_PreloadStage)
+void AssetsClass::LinkPreloadedSound(LinkSound* link_sound) {
+    if (!sPreloadStage)
         throw std::runtime_error(Strings::FString("You cannot link sound '%s' at this stage",
                                                   link_sound->m_Key.c_str()));
 
     m_LinkSounds.push_back(link_sound);
 }
 
-void AssetsClass::LinkPreloadedMusic(PreloadMusic* link_music) {
-    if (!m_PreloadStage)
+void AssetsClass::LinkPreloadedMusic(LinkMusic* link_music) {
+    if (!sPreloadStage)
         throw std::runtime_error(Strings::FString("You cannot link music '%s' at this stage",
                                                   link_music->m_Key.c_str()));
 
@@ -573,7 +587,7 @@ void AssetsClass::LinkPreloadedMusic(PreloadMusic* link_music) {
 }
 
 void AssetsClass::PreloadFont_(PreloadFont* preload_font) {
-    if (!m_PreloadStage)
+    if (!sPreloadStage)
         throw std::runtime_error(Strings::FString("You cannot pre-load font '%s' at this stage",
                                                   preload_font->m_Key.c_str()));
 
@@ -581,7 +595,7 @@ void AssetsClass::PreloadFont_(PreloadFont* preload_font) {
 }
 
 void AssetsClass::LinkPreloadedFont(LinkFont* link_font) {
-    if (!m_PreloadStage)
+    if (!sPreloadStage)
         throw std::runtime_error(Strings::FString("You cannot link font '%s' at this stage",
                                                   link_font->m_Key.c_str()));
 
@@ -596,19 +610,19 @@ void AssetsClass::PauseMusic() {
     Mix_PauseMusic();
 }
 
-void AssetsClass::AutomaticallyDeleteTexture(Texture* texture) {
+void AssetsClass::AutomaticallyDeleteTexture(TextureData* texture) {
     m_AutomaticDeletionTextures.push_back(texture);
 }
 
-PreloadTexture::PreloadTexture(std::string texture_key)
+LinkTexture::LinkTexture(std::string texture_key)
     : m_Key(std::move(texture_key)) {
     m_Texture = nullptr;
-    m_LoadCallback = [](Texture*) { };
+    m_LoadCallback = [](TextureData*) { };
 
     AssetsClass::LinkPreloadedTexture(this);
 }
 
-PreloadTexture::PreloadTexture(std::string texture_key, TextureCallback load_callback)
+LinkTexture::LinkTexture(std::string texture_key, TextureCallback load_callback)
     : m_Key(std::move(texture_key)) {
     m_Texture = nullptr;
     m_LoadCallback = std::move(load_callback);
@@ -624,28 +638,28 @@ PregenerateTexture::PregenerateTexture(std::string texture_key, TextureCallback 
     AssetsClass::LinkPregeneratedTexture(this);
 }
 
-PreloadSound::PreloadSound(std::string sound_key)
+LinkSound::LinkSound(std::string sound_key)
     : m_Key(std::move(sound_key)) {
     m_Sound = nullptr;
 
     AssetsClass::LinkPreloadedSound(this);
 }
 
-Sound* PreloadSound::GetSound() const {
+Sound* LinkSound::GetSound() const {
     if (m_Sound == nullptr)
         throw std::runtime_error(FString("[Sound] GetSound '%s' was nullptr", m_Key.c_str()));
 
     return m_Sound;
 }
 
-PreloadMusic::PreloadMusic(std::string music_key)
+LinkMusic::LinkMusic(std::string music_key)
     : m_Key(std::move(music_key)) {
     m_Music = nullptr;
 
     AssetsClass::LinkPreloadedMusic(this);
 }
 
-Music* PreloadMusic::GetMusic() const {
+Music* LinkMusic::GetMusic() const {
     if (m_Music == nullptr)
         throw std::runtime_error(FString("[Music] GetMusic '%s' was nullptr", m_Key.c_str()));
 
@@ -666,6 +680,17 @@ Font* PreloadFont::GetFont() const {
         throw std::runtime_error(FString("[Font] GetFont '%s' was nullptr", m_Key.c_str()));
 
     return m_Font;
+}
+
+TTF_Font* PreloadFont::GetTTFFont() const {
+    if (m_Font == nullptr)
+        throw std::runtime_error(FString("[Font] GetTTFFont - m_Font '%s' was nullptr", m_Key.c_str()));
+
+    TTF_Font* ttf_font = m_Font->TTFFont();
+    if (ttf_font == nullptr)
+        throw std::runtime_error(FString("[Font] GetTTFFont - TTF_Font '%s' was nullptr", m_Key.c_str()));
+
+    return ttf_font;
 }
 
 LinkFont::LinkFont(std::string font_key)

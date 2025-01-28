@@ -15,12 +15,25 @@ enum CursorChange {
 };
 
 struct EventContext {
+    struct RapidContext {
+        bool event_captured;
+    } rapid_context;
+
     bool had_mouse_motion;
     CursorChange cursor_changed;
 
     EventContext() {
-        had_mouse_motion = false;
-        cursor_changed = NO_CHANGE;
+        this->ResetContext();
+        this->ResetRapidContext();
+    }
+
+    // Manipulation
+    void ResetContext() {
+        this->had_mouse_motion = false;
+        this->cursor_changed = NO_CHANGE;
+    }
+    void ResetRapidContext() {
+        this->rapid_context.event_captured = false;
     }
 
 };

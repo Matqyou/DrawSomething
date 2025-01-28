@@ -13,10 +13,13 @@ class Panel : public Frame {
 private:
     GuessingBar* guessing_bar;
     Letters* letters;
+    Button* bomba_button;
 
 public:
-    static PreloadTexture game_palette_background;
-    static PreloadTexture game_palette_bomba;
+    static LinkTexture game_palette_background;
+    static LinkTexture game_palette_bomba;
+
+    void ResetBomba();
 
 public:
     Panel();

@@ -5,25 +5,11 @@
 #pragma once
 
 #include "SDL3/SDL.h"
-#include "../../../../core/app/Drawing.h"
-#include "../../event/EventContext.h"
-#include "../../../../core/Rectangles.h"
 #include "../../../../../shared/Protocol.h"
-
-enum ElementType {
-    ELEMENT_FRAME,
-    ELEMENT_BUTTON,
-    ELEMENT_TEXTBOX,
-    ELEMENT_CUSTOM,
-    NUM_ELEMENTTYPES,
-};
-
-static const char* ELEMENTTYPE_NAMES[NUM_ELEMENTTYPES] = {
-    "Frame",
-    "Button",
-    "Textbox",
-    "Custom"
-};
+#include "../../../../core/app/Drawing.h"
+#include "../../../../core/Rectangles.h"
+#include "../../../structures/VisualTexture.h"
+#include "../../event/EventContext.h"
 
 enum class Flex {
     DONT,
@@ -35,13 +21,15 @@ enum ElementDraw {
     DONT_DRAW,
     DRAW_RECT,
     DRAW_TEXTURE,
+    DRAW_VISUAL_TEXTURE,
 };
 
 struct Element {
 protected:
     Vec2i composition_pos;
-
     void UpdateComposition();
+
+    static std::vector<Element*> sDestroyElements;
 
 public:
     Element* parent;
@@ -50,8 +38,8 @@ public:
     Vec2i relative, pos, size, edge;
     Vec2i visual_size, visual_offset;
     ElementDraw draw;
-    Texture* visual_texture;
-    int type;
+    SDL_Texture* sdl_texture;
+    VisualTexture visual_texture;
     std::wstring name;
 
     bool enabled;
@@ -67,23 +55,25 @@ public:
     SDL_Color color;
     SDL_Color focus_color;
 
+    bool flagged_to_destroy;
+
+    static void DestroyElements();
+
 private:
     void AlignHorizontal_();
     void AlignVertical_();
+    int GetFlexSlice();
+    void FlexChildHorizontal_(Element* child, int flex_slice, int& current_flex) const;
+    void FlexChildVertical_(Element* child, int flex_slice, int& current_flex) const;
 
 public:
-    Element(int type, const Vec2i& relative, const Vec2i& size, ElementDraw draw);
-    Element(int type, const Vec2i& relative, const Vec2i& size, const Vec2i& visual, const Vec2i& offset);
-    Element(int type,
-            const Vec2i& relative,
-            const Vec2i& size,
-            const Vec2i& visual,
-            const Vec2i& offset,
-            Texture* texture);
+    Element(const Vec2i& relative, const Vec2i& size, ElementDraw draw);
+    Element(const Vec2i& relative, const Vec2i& size, const Vec2i& visual, const Vec2i& offset, SDL_Texture* sdl_texture);
+    Element(const Vec2i& relative, const Vec2i& size, const VisualTexture& visual_texture);
     virtual ~Element();
 
     // Getting
-    [[nodiscard]] Texture* GetVisualTexture() const { return visual_texture; }
+    [[nodiscard]] SDL_Texture* SDLTexture() const { return sdl_texture; }
     [[nodiscard]] SDL_FRect GetRect() const { return SDL_FRect(pos.x, pos.y, size.x, size.y); }
     [[nodiscard]] SDL_FRect GetVisualRect() const {
         return SDL_FRect((float)(pos.x + visual_offset.x),
@@ -140,16 +130,12 @@ public:
         this->adaptive_height = vertical;
         return this;
     }
-    Element* SetName(const char* name, bool suffix = true) {
-        std::wstring new_name = Strings::FStringW(L"%s", name);
-        if (suffix) new_name += Strings::FStringW(L"%s", ELEMENTTYPE_NAMES[type]);
-        this->name = new_name;
+    Element* SetName(const char* name) {
+        this->name =Strings::FStringW(L"%s", name);
         return this;
     }
-    Element* SetName(const wchar_t* name, bool suffix = true) {
-        std::wstring new_name = name;
-        if (suffix) new_name += Strings::FStringW(L"%s", ELEMENTTYPE_NAMES[type]);
-        this->name = new_name;
+    Element* SetName(const wchar_t* name) {
+        this->name = name;
         return this;
     }
     Element* SetColor(Uint8 r, Uint8 g, Uint8 b, Uint8 a) {
@@ -160,8 +146,12 @@ public:
         this->focus_color = { r, g, b, a };
         return this;
     }
-    Element* SetVisualTexture(Texture* texture) {
-        this->visual_texture = texture;
+    Element* SetSDLTexture(SDL_Texture* sdl_texture) {
+        this->sdl_texture = sdl_texture;
+        return this;
+    }
+    Element* SetVisualTexture(const VisualTexture& visual_texture) {
+        this->visual_texture = visual_texture;
         return this;
     }
 
@@ -174,19 +164,21 @@ public:
     void UpdateElement(const Vec2i& new_pos, const Vec2i& new_size, const Vec2i& new_visual);
     void Refresh(int child_generation = 0);
     void DebugPrint(std::vector<bool> level = { }, bool last_child = true);
+    void FlagToDestroy();
 
     // Ticking
     virtual void Tick();
     virtual void HandleEvent(SDL_Event& event, EventContext& event_summary);
     virtual void Render();
-    virtual void RenderDebug() const;
+    virtual void RenderDebug();
     virtual void PostEvent();
-    virtual void PostRefresh() { };
+    virtual void PostRefresh();
 
     void PostEventChildren() const;
     void TickChildren() const;
     void HandleEventChildren(SDL_Event& event, EventContext& event_summary);
     void RenderChildren() const;
     void RenderDebugChildren() const;
+    void UpdateVisualTexture();
 
 };

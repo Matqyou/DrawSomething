@@ -2,9 +2,10 @@
 
 
  == Medium Priority ==
+ Refresh cannot handle occupy within occupy elements
+ Refresh cannot handle adaptive size when child uses occupy
  Custom cursor doesnt update immediately in drawing screen
  Cannot unfocus objects - currently canvas brush size and auth text boxes
 
  == Low Priority ==
- Debug print doesn't show the most accurate colors for width and height
- Preload/Link texture spam in different files
+

@@ -15,15 +15,15 @@ private:
     Frame* text_description;
     Frame* picture;
 
-    Texture* texture_title;
-    Texture* texture_description;
-    Texture* texture_turn;
-    Texture* texture_turn_number;
-    Texture* texture_profile_picture;
+    TextureData* texture_title;
+    TextureData* texture_description;
+    TextureData* texture_turn;
+    TextureData* texture_turn_number;
+    TextureData* texture_profile_picture;
 
 public:
-    static PreloadTexture game_header_turn;
-    static PreloadTexture game_header_background;
+    static LinkTexture game_header_turn;
+    static LinkTexture game_header_background;
 
 public:
     Header();
@@ -33,7 +33,7 @@ public:
     void SetTitle(const std::string& new_title);
     void SetDescription(const std::string& new_description);
     void SetTurnNumber(int turn_number);
-    void SetProfilePicture(Texture* profile_picture);
+    void SetProfilePicture(TextureData* profile_picture);
 
 };
 }

@@ -8,13 +8,18 @@
 
 class OverlayButton : public Button {
 private:
-    Texture* overlay;
+    VisualTexture overlay_visual_texture;
 
 public:
-    OverlayButton(const Vec2i& pos, const Vec2i& size, const Vec2i& visual, const Vec2i& offset, Texture* texture, Texture* overlay);
-    OverlayButton(const Vec2i& pos, const Vec2i& size, Texture* texture, Texture* overlay);
+    OverlayButton(const Vec2i& pos,
+                  const Vec2i& size,
+                  const VisualTexture& texture,
+                  const VisualTexture& pressed_texture,
+                  const VisualTexture& overlay_texture);
 
     // Ticking
+    void PostRefresh();
     void Render() override;
+    void UpdateOverlayVisualTexture();
 
 };

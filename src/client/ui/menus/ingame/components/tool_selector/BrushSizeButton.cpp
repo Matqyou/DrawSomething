@@ -5,25 +5,23 @@
 #include "BrushSizeButton.h"
 
 #include "../../../../../../shared/core/Numbers.h"
-
-auto static sCallbackScaleNearest = [](Texture* texture) {
-    SDL_SetTextureScaleMode(texture->SDLTexture(), SDL_SCALEMODE_NEAREST);
-};
-
-PreloadTexture sTextureOutlineSelected2("game.tool_selector.outline_selected", sCallbackScaleNearest); // todo: not a good idea ( duplicate names aswell )
-PreloadTexture sTextureOutlineBackground2("game.tool_selector.outline_background", sCallbackScaleNearest);
+#include "../../../../CommonUI.h"
 
 namespace Ingame {
+static LinkTexture sTextureOutlineSelected2("game.tool_selector.outline_selected", CommonUI::sCallbackScaleNearest); // todo: not a good idea ( duplicate names aswell )
+static LinkTexture sTextureOutlineBackground2("game.tool_selector.outline_background", CommonUI::sCallbackScaleNearest);
+
 BrushSizeButton::BrushSizeButton(Canvas* canvas, Frame* parent, float brush_size)
     : OverlayButton(Vec2i(0, 0),
                     Vec2i(54, 54),
-                    nullptr,
-                    sTextureOutlineSelected2.GetTexture()) {
+                    VisualTexture(nullptr),
+                    VisualTexture(nullptr),
+                    VisualTexture(sTextureOutlineSelected2.GetSDLTexture())) {
     this->composition_texture = nullptr;
 
     auto assets = Assets::Get();
     auto drawing = assets->GetDrawing();
-    float visual_brush_size = Numbers::mapValue(brush_size, 5.0f, 35.0f, 5.0f, 20.0f);
+    float visual_brush_size = Numbers::mapValue(brush_size, 5.0f, 50.0f, 5.0f, 20.0f);
     this->brush_texture = assets->CreateTexture(SDL_PIXELFORMAT_RGBA8888,
                                                 SDL_TEXTUREACCESS_TARGET,
                                                 size.x, size.y);
@@ -34,7 +32,7 @@ BrushSizeButton::BrushSizeButton(Canvas* canvas, Frame* parent, float brush_size
 
     brush_cursor.Generate(brush_size);
     UpdateColor({ 0, 0, 0, 255 });
-    SetName("BrushSize", false);
+    SetName("BrushSize");
 }
 
 BrushSizeButton::~BrushSizeButton() {
@@ -58,6 +56,7 @@ void BrushSizeButton::UpdateColor(SDL_Color color) {
     brush_texture->SetColorMod(color);
     drawing->RenderTextureFullscreen(brush_texture->SDLTexture(), nullptr);
 
-    SetVisualTexture(composition_texture);
+    visual_texture.SetSDLTexture(composition_texture->SDLTexture());
+//    SetSDLTexture(composition_texture->SDLTexture());
 }
 }

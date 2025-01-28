@@ -35,8 +35,8 @@ add_executable(DrawSomething src/client/main.cpp
         src/client/core/app/Drawing.h
         src/client/core/Application.cpp
         src/client/core/Application.h
-        src/client/ui/components/Scribbles.cpp
-        src/client/ui/components/Scribbles.h
+        src/client/ui/menus/intermission/components/Scribbles.cpp
+        src/client/ui/menus/intermission/components/Scribbles.h
         src/client/ui/components/element/Button.h
         src/client/ui/components/element/TextBox.cpp
         src/client/ui/components/element/base/Element.cpp
@@ -44,7 +44,6 @@ add_executable(DrawSomething src/client/main.cpp
         src/client/ui/components/element/Button.cpp
         src/client/ui/components/element/TextBox.h
         src/client/ui/components/event/EventContext.h
-        src/client/ui/components/event/EventContext.cpp
         src/client/ui/components/element/Frame.cpp
         src/client/ui/components/element/Frame.h
         src/client/ui/menus/main/MainMenu.cpp
@@ -90,11 +89,38 @@ add_executable(DrawSomething src/client/main.cpp
         src/client/ui/menus/ingame/components/panel/GuessingBar.h
         src/client/ui/menus/ingame/components/panel/Letters.cpp
         src/client/ui/menus/ingame/components/panel/Letters.h
-        src/client/ui/menus/ingame/ingame_common.h
         src/client/ui/menus/ingame/components/panel/Letter.cpp
         src/client/ui/menus/ingame/components/panel/Letter.h
         src/client/ui/menus/ingame/components/panel/LetterSlot.cpp
         src/client/ui/menus/ingame/components/panel/LetterSlot.h
+        src/client/ui/menus/intermission/IntermissionMenu.cpp
+        src/client/ui/menus/intermission/IntermissionMenu.h
+        src/client/ui/CommonUI.h
+        src/client/ui/CommonUI.cpp
+        src/client/ui/components/element/TextElement.cpp
+        src/client/ui/components/element/TextElement.h
+        src/client/ui/menus/intermission/components/MiniProfile.cpp
+        src/client/ui/menus/intermission/components/MiniProfile.h
+        src/client/ui/structures/VisualTexture.cpp
+        src/client/ui/structures/VisualTexture.h
+        src/client/ui/menus/main/components/Header.cpp
+        src/client/ui/menus/main/components/Header.h
+        src/client/ui/menus/main/components/Profile.cpp
+        src/client/ui/menus/main/components/Profile.h
+        src/client/ui/menus/main/components/games/Games.cpp
+        src/client/ui/menus/main/components/games/Games.h
+        src/client/ui/menus/main/components/Connections.cpp
+        src/client/ui/menus/main/components/Connections.h
+        src/client/ui/menus/main/components/games/game/Game.cpp
+        src/client/ui/menus/main/components/games/game/Game.h
+        src/client/ui/menus/main/components/games/game/Statistics.cpp
+        src/client/ui/menus/main/components/games/game/Statistics.h
+        src/client/ui/menus/picking/PickingMenu.cpp
+        src/client/ui/menus/picking/PickingMenu.h
+        src/client/ui/menus/picking/components/Header.cpp
+        src/client/ui/menus/picking/components/Header.h
+        src/client/ui/menus/main/components/Settings.cpp
+        src/client/ui/menus/main/components/Settings.h
 )
 
 add_executable(DrawSomethingServer src/server/main.cpp

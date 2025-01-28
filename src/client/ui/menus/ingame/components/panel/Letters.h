@@ -14,6 +14,7 @@ private:
     std::vector<Letter*> all_letters;
     Frame* top_row;
     Frame* bottom_row;
+    std::string guess_word;
 
 public:
     explicit Letters(GuessingBar* guessing_bar);
@@ -21,6 +22,7 @@ public:
 
     // Manipulation
     bool RandomizeWord(const std::string& word);
+    void BlowUp();
 
 };
 }

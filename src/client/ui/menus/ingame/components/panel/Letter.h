@@ -8,25 +8,29 @@
 #include "../../../../components/element/Button.h"
 
 namespace Ingame {
+class LetterSlot;
 class Letter : public Button {
 private:
-    std::string letter;
-    Texture* generated;
+    char letter;
+    TextureData* generated;
+    LetterSlot* occupy_slot;
 
 public:
     static SDL_Color sBlueColor;
     static SDL_Color sBlueColorBackground;
-    static PreloadTexture sTextureLetterNormal;
 
 public:
     Letter();
     ~Letter() override;
 
     // Getting
-    [[nodiscard]] std::string GetLetter() const { return letter; }
+    [[nodiscard]] char GetLetter() const { return letter; }
+    [[nodiscard]] LetterSlot* GetOccupySlot() const { return occupy_slot; }
 
     // Manipulation
-    Letter* UpdateRender(const std::string& letter, SDL_Color background, SDL_Color tone);
+    Letter* UpdateRender(char letter, SDL_Color background, SDL_Color tone);
+    void SetOccupySlot(LetterSlot* occupy_slot);
+    void ResetLetter();
 
 };
 }

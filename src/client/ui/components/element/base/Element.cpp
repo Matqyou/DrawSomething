@@ -3,58 +3,80 @@
 //
 
 #include "Element.h"
+
+#include <ranges>
 #include "../../../../core/Application.h"
 
-Element::Element(int type, const Vec2i& relative, const Vec2i& size, ElementDraw draw) {
+std::vector<Element*> Element::sDestroyElements = { };
+
+void Element::DestroyElements() {
+    if (sDestroyElements.empty())
+        return;
+
+    for (auto destroy_element : sDestroyElements) {
+        if (destroy_element->parent != nullptr) {
+            auto parent_ = destroy_element->parent;
+            auto it = std::find(parent_->children.begin(), parent_->children.end(), destroy_element);
+            if (it != parent_->children.end())
+                parent_->children.erase(it);
+        }
+
+        delete destroy_element;
+    }
+
+    sDestroyElements.clear();
+}
+
+Element::Element(const Vec2i& relative, const Vec2i& size, ElementDraw draw)
+    : name(L"Element") {
     this->parent = nullptr;
     this->relative = relative;
     this->pos = relative;
     this->size = size;
     this->draw = draw;
-    this->type = type;
-    this->name = Strings::FStringW(L"%s", ELEMENTTYPE_NAMES[type]);
 
     // Calculated
     this->edge = pos + size;
 
     // Default
-    enabled = true;
-    composition_pos = Vec2i(0, 0);
-    visual_size = size;
-    visual_offset = Vec2i(0, 0);
-    visual_texture = nullptr;
-    flex_involved_horizontal = true;
-    flex_involved_vertical = true;
-    occupy_width = false;
-    occupy_height = false;
-    occupy_fully_width = false;
-    occupy_fully_height = false;
-    adaptive_width = false;
-    adaptive_height = false;
-    align_horizontal = Align::DONT;
-    align_vertical = Align::DONT;
-    flex = Flex::DONT;
-    flex_gap = 0;
-    has_focus = false;
-    color = { 150, 150, 150, 255 };
-    focus_color = { 255, 255, 255, 255 };
+    this->enabled = true;
+    this->composition_pos = Vec2i(0, 0);
+    this->visual_size = size;
+    this->visual_offset = Vec2i(0, 0);
+    this->sdl_texture = Assets::Get()->GetInvalidTexture()->SDLTexture(); // todo: might optimize
+    this->flex_involved_horizontal = true;
+    this->flex_involved_vertical = true;
+    this->occupy_width = false;
+    this->occupy_height = false;
+    this->occupy_fully_width = false;
+    this->occupy_fully_height = false;
+    this->adaptive_width = false;
+    this->adaptive_height = false;
+    this->align_horizontal = Align::DONT;
+    this->align_vertical = Align::DONT;
+    this->flex = Flex::DONT;
+    this->flex_gap = 0;
+    this->has_focus = false;
+    this->color = { 150, 150, 150, 255 };
+    this->focus_color = { 255, 255, 255, 255 };
+
+    this->flagged_to_destroy = false;
 }
 
-Element::Element(int type, const Vec2i& pos, const Vec2i& size, const Vec2i& visual, const Vec2i& offset)
-    : Element(type, pos, size, DRAW_RECT) {
-    this->visual_size = visual;
-    this->visual_offset = offset;
-}
-
-Element::Element(int type,
-                 const Vec2i& pos,
+Element::Element(const Vec2i& pos,
                  const Vec2i& size,
                  const Vec2i& visual,
                  const Vec2i& offset,
-                 Texture* texture)
-    : Element(type, pos, size, visual, offset) {
-    this->visual_texture = texture;
-    this->draw = DRAW_TEXTURE;
+                 SDL_Texture* sdl_texture)
+    : Element(pos, size, DRAW_TEXTURE) {
+    this->visual_size = visual;
+    this->visual_offset = offset;
+    this->sdl_texture = sdl_texture;
+}
+
+Element::Element(const Vec2i& relative, const Vec2i& size, const VisualTexture& visual_texture)
+    : Element(relative, size, DRAW_VISUAL_TEXTURE) {
+    this->visual_texture = visual_texture;
 }
 
 Element::~Element() {
@@ -128,7 +150,7 @@ void Element::AlignHorizontal_() {
                 break;
             }
             case Align::BEHIND_RIGHT: {
-                composition_pos.x = parent->size.x + size.x;
+                composition_pos.x = parent->size.x;
                 break;
             }
             case Align::CENTER: {
@@ -157,7 +179,7 @@ void Element::AlignVertical_() {
                 break;
             }
             case Align::UNDER_BOTTOM: {
-                composition_pos.y = parent->size.y + size.y;
+                composition_pos.y = parent->size.y;
                 break;
             }
             case Align::CENTER: {
@@ -169,11 +191,68 @@ void Element::AlignVertical_() {
     }
 }
 
-void Element::Refresh(int child_generation) {
-    if (children.empty())
-        return;
+int Element::GetFlexSlice() {
+    int flex_negative_space = 0;
+    int flex_num_children = 0;
+    int num_children = 0;
+    for (auto child : children) {
+        if (!child->enabled)
+            continue;
 
-    { // All parents - adaptive resizing
+        if (flex == Flex::WIDTH && child->flex_involved_horizontal) {
+            // The number of dynamic width children
+            if (child->occupy_width) flex_num_children++;
+                // Flex volume in static children's width, count adaptive width, take the largest for height
+            else flex_negative_space += child->size.x;
+            num_children++;
+        } else if (flex == Flex::HEIGHT && child->flex_involved_vertical) {
+            if (child->occupy_height) flex_num_children++;
+            else flex_negative_space += child->size.y;
+            num_children++;
+        }
+    }
+
+    int flex_space = (flex == Flex::WIDTH ? size.x : size.y) - flex_negative_space;
+    return flex_num_children > 0 ? (flex_space - (num_children - 1) * flex_gap) / flex_num_children : 0;
+}
+
+void Element::FlexChildHorizontal_(Element* child, int flex_slice, int& current_flex) const {
+    child->composition_pos.x = 0;
+
+    if (this->flex == Flex::WIDTH && child->flex_involved_horizontal) {
+        if (child->occupy_width) {
+            child->composition_pos.x = current_flex;
+            child->size.x = flex_slice;
+            child->visual_size.x = flex_slice;
+            current_flex += flex_slice;
+        } else {
+            child->composition_pos.x = current_flex;
+            current_flex += child->size.x;
+        }
+        current_flex += this->flex_gap;
+    }
+}
+
+void Element::FlexChildVertical_(Element* child, int flex_slice, int& current_flex) const {
+    child->composition_pos.y = 0;
+
+    if (this->flex == Flex::HEIGHT && child->flex_involved_vertical) {
+        if (child->occupy_height) {
+            child->composition_pos.y = current_flex;
+            child->size.y = flex_slice;
+            child->visual_size.y = flex_slice;
+            current_flex += flex_slice;
+        } else {
+            child->composition_pos.y = current_flex;
+            current_flex += child->size.y;
+        }
+        current_flex += this->flex_gap;
+    }
+
+}
+
+void Element::Refresh(int child_generation) {
+    { // 1st gen - adaptive resizing
         int adaptive_w = 0;
         int adaptive_h = 0;
         int num_children = 0;
@@ -222,65 +301,17 @@ void Element::Refresh(int child_generation) {
             visual_size.y = adaptive_h;
         }
     }
-    { // Parentless parents - flex and align
-        if (parent == nullptr) {
-            // Flex children
-            int flex_negative_space = 0;
-            int flex_num_children = 0;
-            int num_children = 0;
-            for (auto child : children) {
-                if (!child->enabled)
-                    continue;
-
-                if (flex == Flex::WIDTH && child->flex_involved_horizontal) {
-                    // The number of dynamic width children
-                    if (child->occupy_width) flex_num_children++;
-                        // Flex volume in static children's width, count adaptive width, take the largest for height
-                    else flex_negative_space += child->size.x;
-                    num_children++;
-                } else if (flex == Flex::HEIGHT && child->flex_involved_vertical) {
-                    if (child->occupy_height) flex_num_children++;
-                    else flex_negative_space += child->size.y;
-                    num_children++;
-                }
-            }
-
-            int flex_space = (flex == Flex::WIDTH ? size.x : size.y) - flex_negative_space;
-            int flex_slice = flex_num_children > 0 ? (flex_space - (num_children - 1) * flex_gap) / flex_num_children : 0;
-
+    { // 1st gen - flex and align
+        if (this->parent == nullptr) {
+            int flex_slice = this->GetFlexSlice();
             int current_flex = 0;
-            for (auto child : children) {
+            for (auto child : this->children) {
                 if (!child->enabled)
                     continue;
 
-                // Incase we don't change some values, we can copy the previous ones
-                child->composition_pos = Vec2i(0, 0);
-
-                if (flex != Flex::DONT) {
-                    if (flex == Flex::WIDTH && child->flex_involved_horizontal) {
-                        if (child->occupy_width) {
-                            child->composition_pos.x = current_flex;
-                            child->size.x = flex_slice;
-                            child->visual_size.x = flex_slice;
-                            current_flex += flex_slice;
-                        } else {
-                            child->composition_pos.x = current_flex;
-                            current_flex += child->size.x;
-                        }
-                        current_flex += flex_gap;
-                    } else if (flex == Flex::HEIGHT && child->flex_involved_vertical) {
-                        if (child->occupy_height) {
-                            child->composition_pos.y = current_flex;
-                            child->size.y = flex_slice;
-                            child->visual_size.y = flex_slice;
-                            current_flex += flex_slice;
-                        } else {
-                            child->composition_pos.y = current_flex;
-                            current_flex += child->size.y;
-                        }
-                        current_flex += flex_gap;
-                    }
-                }
+                // Flex
+                FlexChildHorizontal_(child, flex_slice, current_flex);
+                FlexChildVertical_(child, flex_slice, current_flex);
 
                 // Align children
                 child->AlignHorizontal_();
@@ -289,71 +320,36 @@ void Element::Refresh(int child_generation) {
         }
     }
 
-    // Grandparents - flex and align
+    // 2nd gen - flex and align
     for (auto parent : children) {
-        if (parent->children.empty() || !parent->enabled) continue;
+        if (!parent->enabled) continue;
 
-        // Flex grandchildren
-        int flex_negative_space = 0;
-        int flex_num_children = 0;
-        int num_children = 0;
-        for (auto child : parent->children) {
-            if (parent->flex == Flex::WIDTH && child->flex_involved_horizontal) {
-                // The number of dynamic width children
-                if (child->occupy_width) flex_num_children++;
-                    // Flex volume in static children's width, count adaptive width, take the largest for height
-                else flex_negative_space += child->size.x;
-                num_children++;
-            } else if (flex == Flex::HEIGHT && child->flex_involved_vertical) {
-                if (child->occupy_height) flex_num_children++;
-                else flex_negative_space += child->size.y;
-                num_children++;
-            }
-        }
-
-        int flex_space = (parent->flex == Flex::WIDTH ? parent->size.x : parent->size.y) - flex_negative_space;
-        int flex_slice =
-            flex_num_children > 0 ? (flex_space - (num_children - 1) * parent->flex_gap) / flex_num_children : 0;
-
+        int flex_slice = parent->GetFlexSlice();
         int current_flex = 0;
         for (auto child : parent->children) {
             if (!child->enabled)
                 continue;
 
-            child->composition_pos = Vec2i(0, 0);
-            if (parent->flex != Flex::DONT) {
-                if (parent->flex == Flex::WIDTH && child->flex_involved_horizontal) {
-                    if (child->occupy_width) {
-                        child->composition_pos.x = current_flex;
-                        child->size.x = flex_slice;
-                        child->visual_size.x = flex_slice;
-                        current_flex += flex_slice;
-                    } else {
-                        child->composition_pos.x = current_flex;
-                        current_flex += child->size.x;
-                    }
-                    current_flex += parent->flex_gap;
-                } else if (parent->flex == Flex::HEIGHT && child->flex_involved_vertical) {
-                    if (child->occupy_height) {
-                        child->composition_pos.y = current_flex;
-                        child->size.y = flex_slice;
-                        child->visual_size.y = flex_slice;
-                        current_flex += flex_slice;
-                    } else {
-                        child->composition_pos.y = current_flex;
-                        current_flex += child->size.y;
-                    }
-                    current_flex += parent->flex_gap;
-                }
-            }
+            // Flex
+            if (!(parent->occupy_width && child->occupy_width))
+                parent->FlexChildHorizontal_(child,
+                                             flex_slice,
+                                             current_flex);
+            if (!(parent->occupy_height && child->occupy_height))
+                parent->FlexChildVertical_(child,
+                                           flex_slice,
+                                           current_flex);
 
+            // Align
             if (!parent->occupy_width || this->parent == nullptr) child->AlignHorizontal_();
             if (!parent->occupy_height || this->parent == nullptr) child->AlignVertical_();
 
+            // 3rd gen - align
             for (auto grandchild : child->children) {
                 if (!grandchild->enabled)
                     continue;
 
+                // Align
                 if (child->occupy_width) grandchild->AlignHorizontal_();
                 if (child->occupy_height) grandchild->AlignVertical_();
             }
@@ -384,7 +380,7 @@ void Element::DebugPrint(std::vector<bool> level, bool last_child) {
     // Build the indentation for current level
     for (size_t i = 0; i < level.size(); ++i) {
         if (i < level.size() - 1) {
-            indent += level[i] && !level[i + 1] ? L" │  " : L"    "; // Draw vertical line or space
+            indent += !level[i + 1] ? L" │  " : L"    "; // Draw vertical line or space // level[i] && !level[i + 1]
         } else {
             indent += last_child ? L" └─>" : L" ├─>"; // Draw branch or last branch
         }
@@ -425,12 +421,19 @@ void Element::DebugPrint(std::vector<bool> level, bool last_child) {
 
     const wchar_t* output_draw = draw == DRAW_RECT ? L"&aRECT □" :
                                  draw == DRAW_TEXTURE ? L"&aTEXTURE ■" :
+                                 draw == DRAW_VISUAL_TEXTURE ? L"&aVISUAL ■" :
                                  L"&c□";
     output_element += Strings::FStringColorsW(L" %ls", output_draw);
 
 //    output_element += Strings::FStringColorsW(L" (&b%d&r, &b%d&r)", edge.x, edge.y);
 
     output_element += Strings::FStringColorsW(L"%s", has_focus ? " &bFOCUSED" : "");
+
+
+//    std::wstring level_output;
+//    for (auto num : level)
+//        level_output += num ? L"1" : L"0";
+//    output_element = level_output + L"\t" + output_element;
 
     std::wcout << output_element << L"\n";
 
@@ -459,14 +462,24 @@ void Element::Render() {
             drawing->SetColor(fill_color);
             drawing->FillRect(GetRect());
         } else if (draw == ElementDraw::DRAW_TEXTURE) {
-            drawing->RenderTexture(visual_texture->SDLTexture(), nullptr, GetVisualRect());
+            drawing->RenderTexture(sdl_texture, nullptr, GetVisualRect());
+        } else if (draw == ElementDraw::DRAW_VISUAL_TEXTURE) {
+            drawing->RenderTexture(visual_texture.SDLTexture(), nullptr, visual_texture.GetVisualRect());
         }
     }
 
     RenderChildren();
 }
 
-void Element::RenderDebug() const {
+void Element::FlagToDestroy() {
+    if (!this->flagged_to_destroy) {
+        this->flagged_to_destroy = true;
+
+        sDestroyElements.push_back(this);
+    }
+}
+
+void Element::RenderDebug() {
     auto drawing = Application::Get()->GetDrawing();
 
     drawing->SetDrawBlendMode(SDL_BLENDMODE_BLEND);
@@ -489,6 +502,11 @@ void Element::PostEvent() {
     PostEventChildren();
 }
 
+void Element::PostRefresh() {
+    if (draw == DRAW_VISUAL_TEXTURE)
+        UpdateVisualTexture();
+}
+
 void Element::PostEventChildren() const {
     for (auto child : children) {
         if (!child->enabled)
@@ -508,7 +526,7 @@ void Element::TickChildren() const {
 }
 
 void Element::HandleEventChildren(SDL_Event& event, EventContext& event_summary) {
-    for (auto child : children) {
+    for (auto child : std::ranges::reverse_view(children)) {
         if (!child->enabled)
             continue;
 
@@ -532,4 +550,8 @@ void Element::RenderDebugChildren() const {
 
         child->RenderDebug();
     }
+}
+
+void Element::UpdateVisualTexture() {
+    visual_texture.UpdateRect(GetRect());
 }

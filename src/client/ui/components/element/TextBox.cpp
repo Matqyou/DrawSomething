@@ -10,9 +10,11 @@
 #include <SDL3_ttf/SDL_ttf.h>
 
 TextBox::TextBox(const Vec2i& pos, const Vec2i& size)
-    : Element(ELEMENT_TEXTBOX, pos, size, DRAW_RECT),
+    : Element(pos, size, DRAW_RECT),
       text(nullptr, { 0, 0, 0, 255 }),
       placeholder(nullptr, { 200, 200, 200, 255 }) {
+    name = L"TextBox";
+
     // Core
     callback = [](std::string&) { };
 
@@ -25,10 +27,12 @@ TextBox::TextBox(const Vec2i& pos, const Vec2i& size)
     text_align_vertically = SimpleAlign::DONT;
 }
 
-TextBox::TextBox(const Vec2i& pos, const Vec2i& size, const Vec2i& visual, const Vec2i& offset, Texture* texture)
-    : Element(ELEMENT_TEXTBOX, pos, size, visual, offset, texture),
+TextBox::TextBox(const Vec2i& pos, const Vec2i& size, const Vec2i& visual, const Vec2i& offset, SDL_Texture* sdl_texture)
+    : Element(pos, size, visual, offset, sdl_texture),
       text(nullptr, { 0, 0, 0, 255 }),
-      placeholder(nullptr, { 200, 200, 200, 255 }){
+      placeholder(nullptr, { 200, 200, 200, 255 }) {
+    name = L"TextBox";
+
     // Core
     callback = [](std::string&) { };
 
@@ -81,6 +85,9 @@ void TextBox::UpdateTextPosition(WrappedText& update_text, Vec2i* out_pos) {
 
 // Ticking
 void TextBox::HandleEvent(SDL_Event& event, EventContext& event_summary) {
+    if (event_summary.rapid_context.event_captured)
+        return;
+
     switch (event.type) {
         case SDL_EVENT_MOUSE_MOTION: {
             if (event_summary.cursor_changed == CursorChange::NO_CHANGE &&
@@ -139,7 +146,7 @@ void TextBox::Render() {
             drawing->SetColor(fill_color);
             drawing->FillRect(GetRect());
         } else if (draw == ElementDraw::DRAW_TEXTURE) {
-            drawing->RenderTexture(visual_texture->SDLTexture(), nullptr, GetVisualRect());
+            drawing->RenderTexture(sdl_texture, nullptr, GetVisualRect());
         }
     }
 

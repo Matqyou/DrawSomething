@@ -5,11 +5,11 @@
 #pragma once
 
 #include <iostream>
+#include "../../shared/core/Singleton.h"
+#include "../../shared/core/Vec2.h"
 #include "app/Drawing.h"
 #include "app/Clock.h"
 #include "app/Assets.h"
-#include "../../shared/core/Singleton.h"
-#include "../../shared/core/Vec2.h"
 
 class App {
 protected:
