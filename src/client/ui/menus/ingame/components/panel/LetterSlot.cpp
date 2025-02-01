@@ -52,9 +52,7 @@ void LetterSlot::OccupyLetter(Letter* new_letter) {
 
 void LetterSlot::RemoveLetter() {
     if (occupied != nullptr) {
-        occupied->SetDraw(ElementDraw::DRAW_TEXTURE);
-        occupied->SetClickable(true);
-        occupied->SetOccupySlot(nullptr);
+        occupied->ResetLetter();
         SetClickable(false);
         occupied = nullptr;
     }

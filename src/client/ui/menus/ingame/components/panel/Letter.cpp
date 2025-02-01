@@ -44,7 +44,6 @@ Letter* Letter::UpdateRender(char letter, SDL_Color background, SDL_Color tone) 
         (float)(character_render->GetHeight() * 2),
     };
     SDL_FRect character_rect_higher = character_rect;
-    character_rect_higher.y -= 4;
     delete generated;
     generated = assets->CreateTexture(SDL_PIXELFORMAT_RGBA8888,
                                       SDL_TEXTUREACCESS_TARGET,
@@ -55,7 +54,10 @@ Letter* Letter::UpdateRender(char letter, SDL_Color background, SDL_Color tone) 
     background_texture->SetColorMod(background);
     drawing->RenderTextureFullscreen(background_texture->SDLTexture(), nullptr);
     character_render->SetColorMod(tone);
-    drawing->RenderTexture(character_render->SDLTexture(), nullptr, character_rect_higher);
+    for (int i = 0; i < 5; i++) {
+        character_rect_higher.y--;
+        drawing->RenderTexture(character_render->SDLTexture(), nullptr, character_rect_higher);
+    }
     character_render->SetColorMod(255, 255, 255);
     drawing->RenderTexture(character_render->SDLTexture(), nullptr, character_rect);
     delete character_render;
@@ -72,5 +74,10 @@ void Letter::ResetLetter() {
     SetClickable(true);
     SetDraw(ElementDraw::DRAW_VISUAL_TEXTURE);
     SetOccupySlot(nullptr);
+}
+
+void Letter::SetAnsweredCorrectly() {
+    this->UpdateRender(this->letter, { 75, 200, 75, 255 }, { 52, 117, 46, 255 });
+    this->UpdateVisualTexture();
 }
 }

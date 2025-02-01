@@ -15,3 +15,9 @@ VisualTexture::VisualTexture(SDL_Texture* sdl_texture, const Vec2d& visual_ratio
 VisualTexture::~VisualTexture() {
 
 }
+
+Vec2f VisualTexture::GetOriginalTextureSize() {
+    Vec2f texture_size;
+    SDL_GetTextureSize(sdl_texture, &texture_size.x, &texture_size.y);
+    return texture_size;
+}

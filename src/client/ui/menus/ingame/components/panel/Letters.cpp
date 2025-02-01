@@ -14,12 +14,13 @@ Letters::Letters(GuessingBar* guessing_bar)
             Vec2i(0, 0),
             DONT_DRAW) {
     guess_word = "not set";
+    guessing_bar_ = guessing_bar;
 
     for (int i = 0; i < 12; i++) {
         auto new_letter = new Letter();
         new_letter->UpdateRender('#', Letter::sBlueColorBackground, Letter::sBlueColor);
-        new_letter->SetCallback([guessing_bar, new_letter]() {
-            if (guessing_bar->AddLetter(new_letter)) {
+        new_letter->SetCallback([this, new_letter]() {
+            if (guessing_bar_->AddLetter(new_letter)) {
                 new_letter->SetDraw(ElementDraw::DONT_DRAW);
                 new_letter->SetClickable(false);
             }
@@ -125,6 +126,29 @@ void Letters::BlowUp() {
         } else {
             letter->SetDraw(ElementDraw::DONT_DRAW);
             letter->SetClickable(false);
+        }
+    }
+}
+
+void Letters::HandleEvent(SDL_Event& event, EventContext& event_summary) {
+    HandleEventChildren(event, event_summary);
+
+    switch (event.type) {
+        case SDL_EVENT_TEXT_INPUT: {
+            char pressed_character = (char)std::toupper((int)event.text.text[0]);
+            for (auto letter : all_letters) {
+                if (letter->GetOccupySlot() != nullptr || letter->draw == ElementDraw::DONT_DRAW)
+                    continue;
+
+                if (letter->GetLetter() == pressed_character) {
+                    if (guessing_bar_->AddLetter(letter)) {
+                        letter->SetDraw(ElementDraw::DONT_DRAW);
+                        letter->SetClickable(false);
+                    }
+                    break;
+                }
+            }
+            break;
         }
     }
 }

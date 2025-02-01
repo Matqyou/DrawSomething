@@ -44,6 +44,7 @@ Element::Element(const Vec2i& relative, const Vec2i& size, ElementDraw draw)
     this->visual_size = size;
     this->visual_offset = Vec2i(0, 0);
     this->sdl_texture = Assets::Get()->GetInvalidTexture()->SDLTexture(); // todo: might optimize
+    this->fullscreen_element = false;
     this->flex_involved_horizontal = true;
     this->flex_involved_vertical = true;
     this->occupy_width = false;
@@ -332,13 +333,9 @@ void Element::Refresh(int child_generation) {
 
             // Flex
             if (!(parent->occupy_width && child->occupy_width))
-                parent->FlexChildHorizontal_(child,
-                                             flex_slice,
-                                             current_flex);
+                parent->FlexChildHorizontal_(child,  flex_slice, current_flex);
             if (!(parent->occupy_height && child->occupy_height))
-                parent->FlexChildVertical_(child,
-                                           flex_slice,
-                                           current_flex);
+                parent->FlexChildVertical_(child, flex_slice, current_flex);
 
             // Align
             if (!parent->occupy_width || this->parent == nullptr) child->AlignHorizontal_();

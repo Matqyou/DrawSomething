@@ -36,4 +36,10 @@ public:
 
 };
 
+struct ColorHSL {
+    double h, s, l; // 0-360, 0-100, 0-100
+};
+
+SDL_Color HSLtoRGB(const ColorHSL& color_hsl);
+
 }

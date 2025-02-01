@@ -24,6 +24,7 @@ public:
 
     // Setting
     void SetRenderTarget(TextureData* target);
+    void SetRenderTargetSDL(SDL_Texture* target);
     void SetDrawBlendMode(SDL_BlendMode blend_mode) { SDL_SetRenderDrawBlendMode(m_Renderer, blend_mode); }
     void SetColor(Uint8 r, Uint8 g, Uint8 b, Uint8 a) { SDL_SetRenderDrawColor(m_Renderer, r, g, b, a); }
     void SetColor(SDL_Color color) { SetColor(color.r, color.g, color.b, color.a); }

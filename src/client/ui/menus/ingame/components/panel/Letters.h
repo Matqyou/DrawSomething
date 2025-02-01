@@ -16,6 +16,8 @@ private:
     Frame* bottom_row;
     std::string guess_word;
 
+    GuessingBar* guessing_bar_;
+
 public:
     explicit Letters(GuessingBar* guessing_bar);
     ~Letters();
@@ -23,6 +25,9 @@ public:
     // Manipulation
     bool RandomizeWord(const std::string& word);
     void BlowUp();
+
+    // Ticking
+    void HandleEvent(SDL_Event& event, EventContext& event_summary) override;
 
 };
 }

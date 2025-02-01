@@ -7,7 +7,7 @@
 #include "Button.h"
 
 class OverlayButton : public Button {
-private:
+protected:
     VisualTexture overlay_visual_texture;
 
 public:
@@ -17,8 +17,14 @@ public:
                   const VisualTexture& pressed_texture,
                   const VisualTexture& overlay_texture);
 
+    // Options
+    Button* SetOverlayVisualTexture(const VisualTexture& visual_texture) {
+        this->overlay_visual_texture = visual_texture;
+        return this;
+    }
+
     // Ticking
-    void PostRefresh();
+    void PostRefresh() override;
     void Render() override;
     void UpdateOverlayVisualTexture();
 

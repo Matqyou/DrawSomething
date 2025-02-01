@@ -17,6 +17,11 @@ void Drawing::SetRenderTarget(TextureData* target) {
     else SDL_SetRenderTarget(m_Renderer, nullptr);
 }
 
+void Drawing::SetRenderTargetSDL(SDL_Texture* target) {
+    if (target) SDL_SetRenderTarget(m_Renderer, target);
+    else SDL_SetRenderTarget(m_Renderer, nullptr);
+}
+
 void Drawing::DrawRect(const SDL_FRect& rect) {
     SDL_RenderRect(m_Renderer, &rect);
 }

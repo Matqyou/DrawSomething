@@ -126,12 +126,10 @@ void Canvas::SetDrawColor(SDL_Color color) {
     this->draw_color.SetColor(color);
 }
 
-void Canvas::SetBrushSize(float brush_size) {
-    this->brush_size = brush_size;
-}
+void Canvas::SetCurrentToolSize(float new_size) {
+    if (tool == TOOL_PENCIL) this->brush_size = new_size;
+    else this->eraser_size = new_size;
 
-void Canvas::SetEraserSize(float eraser_size) {
-    this->eraser_size = eraser_size;
 }
 
 void Canvas::Tick() {

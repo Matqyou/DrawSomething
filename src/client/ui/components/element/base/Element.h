@@ -43,6 +43,7 @@ public:
     std::wstring name;
 
     bool enabled;
+    bool fullscreen_element;
     bool flex_involved_horizontal, flex_involved_vertical;
     bool occupy_width, occupy_height;
     bool occupy_fully_width, occupy_fully_height;
@@ -68,13 +69,22 @@ private:
 
 public:
     Element(const Vec2i& relative, const Vec2i& size, ElementDraw draw);
-    Element(const Vec2i& relative, const Vec2i& size, const Vec2i& visual, const Vec2i& offset, SDL_Texture* sdl_texture);
+    Element(const Vec2i& relative,
+            const Vec2i& size,
+            const Vec2i& visual,
+            const Vec2i& offset,
+            SDL_Texture* sdl_texture);
     Element(const Vec2i& relative, const Vec2i& size, const VisualTexture& visual_texture);
     virtual ~Element();
 
     // Getting
     [[nodiscard]] SDL_Texture* SDLTexture() const { return sdl_texture; }
-    [[nodiscard]] SDL_FRect GetRect() const { return SDL_FRect(pos.x, pos.y, size.x, size.y); }
+    [[nodiscard]] SDL_FRect GetRect() const {
+        return SDL_FRect((float)pos.x,
+                         (float)pos.y,
+                         (float)size.x,
+                         (float)size.y);
+    }
     [[nodiscard]] SDL_FRect GetVisualRect() const {
         return SDL_FRect((float)(pos.x + visual_offset.x),
                          (float)(pos.y + visual_offset.y),
@@ -131,7 +141,7 @@ public:
         return this;
     }
     Element* SetName(const char* name) {
-        this->name =Strings::FStringW(L"%s", name);
+        this->name = Strings::FStringW(L"%s", name);
         return this;
     }
     Element* SetName(const wchar_t* name) {
@@ -152,6 +162,15 @@ public:
     }
     Element* SetVisualTexture(const VisualTexture& visual_texture) {
         this->visual_texture = visual_texture;
+        return this;
+    }
+    Element* ResizeToTexture() {
+        this->size = Vec2i(visual_texture.GetOriginalTextureSize());
+        this->edge = pos + size;
+        return this;
+    }
+    Element* SetFullscreenElement() {
+        this->fullscreen_element = true;
         return this;
     }
 

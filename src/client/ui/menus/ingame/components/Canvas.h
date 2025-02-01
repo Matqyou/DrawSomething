@@ -110,8 +110,7 @@ public:
     void ClearCanvas();
     void SetTool(DrawTool tool);
     void SetDrawColor(SDL_Color color);
-    void SetBrushSize(float brush_size);
-    void SetEraserSize(float eraser_size);
+    void SetCurrentToolSize(float new_size);
 
     // Ticking
     void Tick() override;

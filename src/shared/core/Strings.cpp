@@ -268,6 +268,23 @@ char RandomUppercaseLetter() {
     return 'A' + (std::rand() % 26);
 }
 
+std::string ConvertTimeNano(long long nanoseconds) {
+    const auto day = static_cast<long long>(86400e9L);
+    const auto hour = static_cast<long long>(3600e9L);
+    const auto minute = static_cast<long long>(60e9L);
+    const auto second = static_cast<long long>(1e9L);
+    const auto millisecond = static_cast<long long>(1e6L);
+    const auto microsecond = static_cast<long long>(1e3L);
+
+    if (nanoseconds > day) return FString("%lldd", nanoseconds / day);
+    else if (nanoseconds > hour) return FString("%lldh", nanoseconds / hour);
+    else if (nanoseconds > minute) return FString("%lldmin", nanoseconds / minute);
+    else if (nanoseconds > second) return FString("%llds", nanoseconds / second);
+    else if (nanoseconds > millisecond) return FString("%lldms", nanoseconds / millisecond);
+    else if (nanoseconds > microsecond) return FString("%lldus", nanoseconds / microsecond);
+    else return FString("%lldns", nanoseconds);
+}
+
 // Cout
 void PrintDivider(const std::string& label, bool wide) {
     const int LENGTH = 72;

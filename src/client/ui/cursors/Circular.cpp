@@ -45,10 +45,10 @@ Circular::Circular() {
 }
 
 Circular::~Circular() {
-    SDL_DestroyCursor(cursor);
+    SDL_DestroyCursor(this->cursor);
 }
 
-void Circular::Generate(float diameter) {
+void Circular::Generate(float diameter, SDL_Color sdl_color) {
     this->diameter = diameter;
     auto assets = Assets::Get();
 
@@ -60,7 +60,7 @@ void Circular::Generate(float diameter) {
     SDL_FillSurfaceRect(sdl_surface, nullptr, SDL_MapRGBA(details, nullptr, 0, 0, 0, 0));
 
     Uint32 white = SDL_MapRGBA(details, nullptr, 255, 255, 255, 255);
-    Uint32 black = SDL_MapRGBA(details, nullptr, 0, 0, 0, 255);
+    Uint32 black = SDL_MapRGBA(details, nullptr, sdl_color.r, sdl_color.g, sdl_color.b, sdl_color.a);
     DrawCircle(sdl_surface, cursor_size / 2, cursor_size / 2, (int)(diameter / 2.0f), 3, black);
     DrawCircle(sdl_surface, cursor_size / 2, cursor_size / 2, (int)(diameter / 2.0f), 1, white);
 
@@ -71,6 +71,7 @@ void Circular::Generate(float diameter) {
     }
     SDL_DestroySurface(sdl_surface);
 
+    SDL_DestroyCursor(this->cursor);
     this->cursor = custom_cursor;
 }
 }

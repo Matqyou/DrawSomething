@@ -23,6 +23,7 @@ public:
     // Getting
     [[nodiscard]] SDL_FRect GetVisualRect() const { return visual_rect; }
     [[nodiscard]] SDL_Texture* SDLTexture() const { return sdl_texture; }
+    [[nodiscard]] Vec2f GetOriginalTextureSize();
 
     // Manipulation
     void UpdateRect(const SDL_FRect& new_rect) {

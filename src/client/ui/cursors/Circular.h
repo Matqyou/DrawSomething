@@ -24,7 +24,7 @@ public:
     [[nodiscard]] SDL_Cursor* GetCursor() const { return cursor; }
 
     // Manipulating
-    void Generate(float diameter);
+    void Generate(float diameter, SDL_Color sdl_color);
 
 };
 }

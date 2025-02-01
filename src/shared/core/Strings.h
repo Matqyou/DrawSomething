@@ -19,6 +19,8 @@ std::string ToUpperCase(const std::string& input);
 std::string ToLowerCase(const std::string& input);
 char RandomUppercaseLetter();
 
+std::string ConvertTimeNano(long long nanoseconds);
+
 // Cout
 void PrintDivider(const std::string& label = "", bool wide = true);
 

@@ -84,6 +84,7 @@ Header::Header(Settings* settings)
         ->SetName("Settings");
     settings_button->SetCallback([settings]() {
         settings->SetEnabled(true);
+        settings->parent->Refresh();
     });
 
     SetFullyOccupy(true, false);

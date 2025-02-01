@@ -99,8 +99,9 @@ class Font {
 private:
     friend class AssetsClass;
     const std::string m_Key;
-    TTF_Font* m_TTFFont;
     std::string m_LoadExtension;
+    TTF_Font* m_TTFFont;
+    float m_Size;
 
 public:
     explicit Font(TTF_Font* ttf_font = nullptr, std::string key = "NaN", std::string load_extension = "NaN");
@@ -108,6 +109,12 @@ public:
 
     // Getting
     [[nodiscard]] TTF_Font* TTFFont() const { return m_TTFFont; }
+
+    // Manipulating
+    Font* CacheSize(float size) {
+        this->m_Size = size;
+        return this;
+    }
 
 };
 
@@ -118,9 +125,15 @@ class LinkSound;
 class LinkMusic;
 class PreloadFont;
 class LinkFont;
-class AssetsClass {
+class AssetsClass { // This class should be completely extern
     Drawing* m_Drawing;
     bool m_SoundsEnabled;
+
+    using Resources = std::vector<std::tuple<std::string, std::string, std::string>>;
+    Resources m_TextureResources;
+    Resources m_SoundResources;
+    Resources m_MusicResources;
+    Resources m_FontResources;
 
     std::unordered_map<std::string, TextureData*> m_Textures;
     std::unordered_map<std::string, Sound*> m_Sounds;
@@ -128,21 +141,39 @@ class AssetsClass {
     std::unordered_map<std::string, Font*> m_Fonts;
     TextureData* m_InvalidTextureDefault;
 
-    static std::vector<TextureData*> m_AutomaticDeletionTextures;
-
+    static std::vector<PreloadFont*> m_PreloadFonts;
     static std::vector<LinkTexture*> m_LinkTextures;
-    static std::vector<PregenerateTexture*> m_PregenerateTextures;
     static std::vector<LinkSound*> m_LinkSounds;
     static std::vector<LinkMusic*> m_LinkMusic;
-    static std::vector<PreloadFont*> m_PreloadFonts;
     static std::vector<LinkFont*> m_LinkFonts;
+    static std::vector<PregenerateTexture*> m_PregenerateTextures;
 
+    // Iterators
+    Resources::iterator m_TextureResourcesIterator;
+    Resources::iterator m_SoundResourcesIterator;
+    Resources::iterator m_MusicResourcesIterator;
+    std::vector<PreloadFont*>::iterator m_PreloadFontIterator;
+    static std::vector<LinkTexture*>::iterator m_LinkTexturesIterator;
+    static std::vector<LinkSound*>::iterator m_LinkSoundsIterator;
+    static std::vector<LinkMusic*>::iterator m_LinkMusicIterator;
+    static std::vector<LinkFont*>::iterator m_LinkFontsIterator;
+    static std::vector<PregenerateTexture*>::iterator m_PregenerateTexturesIterator;
+
+    static size_t sTotalWork, sWorkDone;
+
+    static std::vector<TextureData*> m_AutomaticDeletionTextures;
     static bool sPreloadStage;
+    static bool sLoadingStage;
 
-    void LoadTextures(SDL_Renderer* renderer);
-    void LoadSounds();
-    void LoadMusic();
-    void LoadFonts();
+    bool LoadingTextures();
+    bool LoadingSounds();
+    bool LoadingMusic();
+    bool LoadingFonts(); // All at once
+    bool GeneratingTextures();
+    bool LinkingTextures(); // All at once
+    bool LinkingSounds(); // All at once
+    bool LinkingMusic(); // All at once
+    bool LinkingFonts(); // All at once
 
 public:
     AssetsClass(Drawing* drawing, bool sounds_enabled);
@@ -156,11 +187,15 @@ public:
     [[nodiscard]] Music* GetMusic(const std::string& music_key);
     [[nodiscard]] Font* GetFont(const std::string& font_key);
     [[nodiscard]] bool SoundsEnabled() const { return m_SoundsEnabled; }
+    [[nodiscard]] static bool IsLoading() { return sLoadingStage; }
+    [[nodiscard]] static size_t GetTotalWork() { return sTotalWork; }
+    [[nodiscard]] static size_t GetWorkDone() { return sWorkDone; }
 
     // Generating
     TextureData* TextureFromSurface(SDL_Surface* sdl_surface);
     SDL_Surface* CreateSDLSurface(int width, int height, SDL_PixelFormat format);
     TextureData* CreateTexture(SDL_PixelFormat format, SDL_TextureAccess access, int w, int h);
+    TextureData* CopyTexture(SDL_Texture* copy_texture, SDL_TextureAccess access);
     TextureData* RenderTextBlended(TTF_Font* font, const std::string& text, SDL_Color color);
     TextureData* RenderTextBlended(TTF_Font* font, const char* text, SDL_Color color);
     TextureData* RenderTextSolid(TTF_Font* font, const std::string& text, SDL_Color color);
@@ -177,6 +212,7 @@ public:
     static void SetMusicVolume(int volume);
     static void PauseMusic();
     static void AutomaticallyDeleteTexture(TextureData* texture);
+    void ThreadedLoading();
 
 };
 
@@ -264,7 +300,7 @@ private:
     Font* m_Font;
 
 public:
-    explicit PreloadFont(std::string font_key, std::string font_id, int ptsize);
+    explicit PreloadFont(std::string font_key, std::string font_id, float ptsize);
 
     // Getting
     [[nodiscard]] const std::string& Key() const { return m_Key; }

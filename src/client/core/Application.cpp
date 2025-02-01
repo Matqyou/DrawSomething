@@ -93,8 +93,9 @@ App::App(const char* title,
 
     bool init_audio = true;
     drawing = new Drawing(renderer);
-    Assets::init(new AssetsClass(drawing, init_audio));
+
     Cursors::Initialize();
+    Assets::init(new AssetsClass(drawing, init_audio));
 
     Strings::PrintDivider();
 }

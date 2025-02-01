@@ -27,7 +27,7 @@ protected:
     void OnMessage(std::shared_ptr<Connection<MessageID>> client, Message<MessageID>& message) override {
         switch (message.header.message_id) {
             case MessageID::SHARED_Ping: {
-                std::cout << "[" << client->GetID() << "]: Server Ping\n";
+//                std::cout << "[" << client->GetID() << "]: Server Ping\n";
 
                 client->AsyncSend(message);
                 break;

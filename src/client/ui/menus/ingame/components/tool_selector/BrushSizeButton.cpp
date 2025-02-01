@@ -8,16 +8,16 @@
 #include "../../../../CommonUI.h"
 
 namespace Ingame {
-static LinkTexture sTextureOutlineSelected2("game.tool_selector.outline_selected", CommonUI::sCallbackScaleNearest); // todo: not a good idea ( duplicate names aswell )
 static LinkTexture sTextureOutlineBackground2("game.tool_selector.outline_background", CommonUI::sCallbackScaleNearest);
 
-BrushSizeButton::BrushSizeButton(Canvas* canvas, Frame* parent, float brush_size)
+BrushSizeButton::BrushSizeButton(float brush_size)
     : OverlayButton(Vec2i(0, 0),
                     Vec2i(54, 54),
                     VisualTexture(nullptr),
                     VisualTexture(nullptr),
-                    VisualTexture(sTextureOutlineSelected2.GetSDLTexture())) {
+                    VisualTexture(nullptr)) {
     this->composition_texture = nullptr;
+    this->brush_size = brush_size;
 
     auto assets = Assets::Get();
     auto drawing = assets->GetDrawing();
@@ -30,8 +30,7 @@ BrushSizeButton::BrushSizeButton(Canvas* canvas, Frame* parent, float brush_size
     drawing->SetRenderTarget(brush_texture);
     drawing->FillCircle(Vec2f(size) / 2.0f, visual_brush_size, { 255, 255, 255, 255 });
 
-    brush_cursor.Generate(brush_size);
-    UpdateColor({ 0, 0, 0, 255 });
+    UpdateColor(SDL_Color(0, 0, 0, 255));
     SetName("BrushSize");
 }
 
@@ -40,23 +39,23 @@ BrushSizeButton::~BrushSizeButton() {
     delete composition_texture;
 }
 
-void BrushSizeButton::UpdateColor(SDL_Color color) {
+void BrushSizeButton::UpdateColor(SDL_Color sdl_color) {
+    this->brush_cursor.Generate(brush_size, sdl_color);
     auto assets = Assets::Get();
     auto drawing = assets->GetDrawing();
     auto button_outline = sTextureOutlineBackground2.GetTexture();
 
-    delete composition_texture;
-    composition_texture = assets->CreateTexture(SDL_PIXELFORMAT_RGBA8888,
+    delete this->composition_texture;
+    this->composition_texture = assets->CreateTexture(SDL_PIXELFORMAT_RGBA8888,
                                                 SDL_TEXTUREACCESS_TARGET,
                                                 size.x, size.y);
-    composition_texture->SetScaleMode(SDL_SCALEMODE_NEAREST);
-    composition_texture->SetBlendMode(SDL_BLENDMODE_BLEND);
+    this->composition_texture->SetScaleMode(SDL_SCALEMODE_NEAREST);
+    this->composition_texture->SetBlendMode(SDL_BLENDMODE_BLEND);
     drawing->SetRenderTarget(composition_texture);
     drawing->RenderTextureFullscreen(button_outline->SDLTexture(), nullptr);
-    brush_texture->SetColorMod(color);
+    this->brush_texture->SetColorMod(sdl_color);
     drawing->RenderTextureFullscreen(brush_texture->SDLTexture(), nullptr);
 
-    visual_texture.SetSDLTexture(composition_texture->SDLTexture());
-//    SetSDLTexture(composition_texture->SDLTexture());
+    this->visual_texture.SetSDLTexture(composition_texture->SDLTexture());
 }
 }

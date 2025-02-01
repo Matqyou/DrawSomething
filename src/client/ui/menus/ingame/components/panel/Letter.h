@@ -31,6 +31,7 @@ public:
     Letter* UpdateRender(char letter, SDL_Color background, SDL_Color tone);
     void SetOccupySlot(LetterSlot* occupy_slot);
     void ResetLetter();
+    void SetAnsweredCorrectly();
 
 };
 }

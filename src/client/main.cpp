@@ -17,8 +17,9 @@
 #include "core/Application.h"
 #include "words/Words.h"
 #include "ui/CommonUI.h"
+#include "ui/particles/Particles.h"
 
-static LinkFont sFont("fredoka.smaller");
+static LinkTexture sTextureStar("particles.star", CommonUI::sCallbackScaleNearest);
 
 void exit_application() {
     Application::destroy();
@@ -38,9 +39,50 @@ int main() {
     auto drawing = application->GetDrawing();
     auto clock = application->GetClock();
 
+    // Loading loop
+    SDL_Event event;
+    while (AssetsClass::IsLoading()) {
+        // Events
+        while (SDL_PollEvent(&event)) {
+            application->Event(event);
+            switch (event.type) {
+                case SDL_EVENT_QUIT: {
+                    exit_application();
+                    break;
+                }
+            }
+        }
+
+        // Ticking
+        assets->ThreadedLoading();
+
+        // Drawing
+        if (clock->TimePassed()) {
+            drawing->SetRenderTarget(nullptr);
+            drawing->SetColor(0, 0, 0, 255);
+            drawing->Clear();
+
+            SDL_FRect progress_rect = {
+                ((float)application->GetWidth() - 800.0f) / 2.0f,
+                ((float)application->GetHeight() - 50.0f) / 2.0f,
+                800.0f * ((float)AssetsClass::GetWorkDone() / (float)AssetsClass::GetTotalWork()),
+                50.0f
+            };
+            drawing->SetColor(104, 195, 235, 255);
+            drawing->FillRect(progress_rect);
+
+            progress_rect.w = 800.0f;
+            progress_rect.h = 50.0f;
+            drawing->DrawRect(progress_rect);
+
+            drawing->UpdateWindow();
+        }
+    }
+
     SDL_StartTextInput(Application::Get()->GetWindow());
 
     Words words_choice;
+//    Particles particles;
 
     IntermissionMenu intermission_menu;
     PickingMenu picking_menu;
@@ -51,7 +93,7 @@ int main() {
 
     Vec2i render_drag_from = Vec2i(0, 0);
     bool render_dragging = false;
-    bool render_debug = true;
+    bool render_debug = false;
     long long frame_duration = 1;
     bool update_frame_duration = true;
     Uint64 last_fps_update = 0;
@@ -60,6 +102,7 @@ int main() {
 
     SDL_Event sdl_event;
     EventContext event_context;
+    drawing->SetDrawBlendMode(SDL_BLENDMODE_BLEND);
     while (true) {
         event_context.ResetContext();
         while (SDL_PollEvent(&sdl_event)) {
@@ -74,6 +117,33 @@ int main() {
                 }
                 case SDL_EVENT_MOUSE_MOTION: {
                     event_context.had_mouse_motion = true;
+
+//                    if (std::rand() % 25 != 0)
+//                        break;
+//
+//                    float mouse_x, mouse_y;
+//                    SDL_GetMouseState(&mouse_x, &mouse_y);
+//
+//                    auto particle_texture = assets->CopyTexture(sTextureStar.GetSDLTexture(), SDL_TEXTUREACCESS_TARGET)
+//                        ->SetScaleMode(SDL_SCALEMODE_NEAREST)
+//                        ->FlagForAutomaticDeletion();
+//
+//                    particle_texture->SetColorMod(255, 200 - rand() % 50, 125);
+//                    particle_texture->SetAlphaMod(100 + rand() % 150);
+//                    Particles.PlayParticle(
+//                        FlyingParticle(
+//                            Vec2f(mouse_x, mouse_y),
+//                            Vec2f(90.0f, 90.0f),
+//                            0.25f,
+//                            Vec2f((float)(std::rand() % 100 - 50) / 5.0f, (float)(std::rand() % 100 - 50) / 5.0f),
+//                            Vec2f(0.0f, 0.2f),
+//                            0.96f,
+//                            0.0f,
+//                            (float)(std::rand() % 20) - 10.0f,
+//                            0.99f,
+//                            particle_texture
+//                        )
+//                    );
                     break;
                 }
                 case SDL_EVENT_KEY_DOWN: {
@@ -154,6 +224,7 @@ int main() {
 
             // Ticking
             current_menu->Tick();
+            Particles.Tick();
 
             // Drawing
             drawing->SetRenderTarget(nullptr);
@@ -217,11 +288,13 @@ int main() {
                 delete debug_render;
             }
 
+            Particles.Render();
+
             if (last_fps_update - SDL_GetTicks() >= 1000) {
                 last_fps_update = SDL_GetTicks();
                 long long fps = (long long)1e9 / frame_duration;
                 delete fps_texture;
-                fps_texture = assets->RenderTextSolid(sFont.GetFont()->TTFFont(),
+                fps_texture = assets->RenderTextSolid(CommonUI::sFontSmaller.GetFont()->TTFFont(),
                                                       Strings::FString("%lld", fps),
                                                       { 0, 255, 0, 255 });
                 fps_texture_rect = { 0, 0, fps_texture->GetWidth(), fps_texture->GetHeight() };

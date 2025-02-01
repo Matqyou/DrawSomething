@@ -4,26 +4,43 @@
 
 #pragma once
 
+#include "../../../../../../game/game_info/GameInfo.h"
 #include "../../../../../components/element/TextElement.h"
 #include "../../../../../components/element/Frame.h"
+#include "../../../../../components/element/Button.h"
 #include "Statistics.h"
+#include "../../../../../CommonUI.h"
 
 namespace Main {
+class Games;
 class Game : public Frame {
 private:
     Statistics* statistics;
     TextElement* turn_number;
-    int turn_number_;
+    Frame* profile_picture;
+    TextElement* picture_text;
+    TextElement* state_text;
+    TextElement* state_description;
+    Button* game_button;
+    GameInfo* game_info_;
+    Games* games_;
+
+    static LinkTexture sTextureDefaultProfilePicture;
+
+    void SetTurnNumber(int turn);
+    void SetProfilePicture(TextureData* texture_data);
+    void SetUsername(const char* username);
+    void SetState(GameInfo::GameState game_state);
 
 public:
-    Game();
+    explicit Game(Games* games);
     ~Game() override;
 
     // Getting
-    [[nodiscard]] int GetTurnNumber() const { return turn_number_; }
+    [[nodiscard]] GameInfo* GetGameInfo() const { return game_info_; }
 
     // Manipulation
-    void SetTurnNumber(int number);
+    void UpdateInfo(GameInfo* game_info);
 
 };
 }

@@ -101,10 +101,8 @@ ColorSelector::ColorSelector(Canvas* canvas, Ingame::ToolSelector* tool_selector
             canvas->SetDrawColor(sdl_color);
             canvas->SetTool(TOOL_PENCIL);
             tool_selector->SetFocus(tool_selector->pencil_tool);
-            for (auto brush_size_button : tool_selector->pencil_brush_frame->children) {
-                auto button = (BrushSizeButton*)brush_size_button;
-                button->UpdateColor(sdl_color);
-            }
+            tool_selector->pencil_tool->GenerateBrushesColor(sdl_color);
+            canvas->SetCustomCursor(tool_selector->pencil_tool->GetSelectedCursor());
         });
         colors.push_back(new_color);
     }

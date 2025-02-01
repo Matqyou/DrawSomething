@@ -48,7 +48,6 @@ void IngameMenu::PrepareGuess() {
     canvas->SetPlaybackMode(Ingame::PlaybackMode::DO_NOTHING);
     canvas->SetMode(Ingame::CANVAS_GUESS);
     canvas->SetCallback([this]() {
-//        canvas->LoadExample();
         canvas->SetPlaybackMode(Ingame::PlaybackMode::REPLAY);
         this->SetChildren({ header, canvas, panel });
         this->Refresh();

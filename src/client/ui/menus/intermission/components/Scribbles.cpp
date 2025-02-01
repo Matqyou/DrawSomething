@@ -3,9 +3,12 @@
 //
 
 #include "Scribbles.h"
+#include "../../../../../shared/core/Colors.h"
 #include "../../../../core/Application.h"
+#include "../../../particles/Particles.h"
 
 namespace Intermission {
+static LinkTexture sTextureStar("particles.star");
 static LinkTexture sTexturePencil("pencil2");
 static const Vec2f sPencilTip(222, 918);
 
@@ -131,6 +134,7 @@ void Scribbles::Tick() {
 }
 
 void Scribbles::Render() {
+    auto assets = Assets::Get();
     auto drawing = Application::Get()->GetDrawing();
 
     if (playing) {
@@ -142,7 +146,8 @@ void Scribbles::Render() {
     drawing->RenderTexture(generated->SDLTexture(), nullptr, GetVisualRect());
 
     if (IsPlaying()) {
-        auto pen_position = GetGlobalPen() - Intermission::sPencilTip * 0.3;
+        auto global_pen = GetGlobalPen();
+        auto pen_position = global_pen - Intermission::sPencilTip * 0.3;
         SDL_FRect pencil_rect = {
             (float)pen_position.x,
             (float)pen_position.y,
@@ -156,6 +161,30 @@ void Scribbles::Render() {
                                  35,
                                  &center,
                                  SDL_FLIP_NONE);
+
+        auto yellowness = rand() % 25;
+        auto particle_texture = assets->CopyTexture(sTextureStar.GetSDLTexture(), SDL_TEXTUREACCESS_TARGET)
+            ->SetScaleMode(SDL_SCALEMODE_NEAREST)
+            ->SetColorMod(Colors::HSLtoRGB(Colors::ColorHSL(35 + yellowness, 100, 100)))
+            ->SetAlphaMod((Uint8)(175 + yellowness * 2.5))
+            ->FlagForAutomaticDeletion();
+
+        Particles.PlayParticle(
+            FlyingParticle(
+                global_pen,
+                Vec2f(90.0f, 90.0f) * (float)(50 + rand() % 50) / 100.0f,
+                0.35f,
+                Vec2f((float)(std::rand() % 100 - 50) / 5.0f, (float)(std::rand() % 100 - 50) / 5.0f),
+                Vec2f(0.2f, -0.15f),
+                0.96f,
+                0.0f,
+                (float)(std::rand() % 30) - 15.0f,
+                0.99f,
+                particle_texture
+            )
+        );
+        drawing->SetRenderTarget(nullptr);
+
     }
 
     RenderChildren();

@@ -8,14 +8,18 @@
 #include "../../../components/element/Button.h"
 
 namespace Main {
+LinkTexture sTextureClose("main_menu.settings.x");
+LinkTexture sTextureClosePressed("main_menu.settings.x_pressed");
+
 Settings::Settings()
     : FullscreenMenu() {
 
     auto close_button = (Button*)(new Button(Vec2i(-8, 8),
-                                    Vec2i(16, 16),
-                                    DRAW_RECT))
+                                             Vec2i(32, 32),
+                                             VisualTexture(sTextureClose.GetSDLTexture()),
+                                             VisualTexture(sTextureClosePressed.GetSDLTexture())))
         ->SetColor(150, 0, 0, 255)
-        ->SetAlign(Align::BEHIND_RIGHT, Align::ABOVE_TOP)
+        ->SetAlign(Align::RIGHT, Align::TOP)
         ->SetFlexInvolved(false, false)
         ->SetName("CloseButton");
     close_button->SetCallback([this]() {
@@ -24,6 +28,7 @@ Settings::Settings()
 
     auto title = (new TextElement(Vec2i(0, 0)))
         ->UpdateText(CommonUI::sFontBigger.GetTTFFont(), "Account Settings", { 255, 255, 255, 255 })
+//        ->SetAlign(Align::CENTER, Align::DONT)
         ->SetName("Title");
 
     auto setting_name1 = (new TextElement(Vec2i(0, 0)))
@@ -43,14 +48,16 @@ Settings::Settings()
         ->SetName("Setting1")
         ->AddChildren({ setting_name1, setting_button1 });
 
-    auto settings_frame = (new Frame())
-        ->SetAdaptive(true, true)
+    auto settings_frame = (new Frame(Vec2i(0, 0),
+                                     Vec2i(400, 0),
+                                     DRAW_RECT))
+        ->SetAdaptive(false, true)
         ->SetFlex(Flex::HEIGHT)
         ->SetAlign(Align::CENTER, Align::CENTER)
         ->SetName("SettingsFrame")
         ->AddChildren({ close_button, title, setting_frame1 });
 
-    SetEnabled(true);
+    SetEnabled(false);
     SetColor(0, 0, 0, 150);
     SetFlexInvolved(false, false);
     SetFullyOccupy(true, true);

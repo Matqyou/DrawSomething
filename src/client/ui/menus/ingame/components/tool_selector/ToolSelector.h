@@ -8,15 +8,14 @@
 #include "../../../../components/element/Button.h"
 #include "../../../../components/element/OverlayButton.h"
 #include "../Canvas.h"
+#include "DrawingToolButton.h"
 
 namespace Ingame {
 class ToolSelector : public Frame {
 public:
-    OverlayButton* pencil_tool;
-    OverlayButton* eraser_tool;
+    DrawingToolButton* pencil_tool;
+    DrawingToolButton* eraser_tool;
     Button* trash_button;
-    Frame* pencil_brush_frame;
-    Frame* eraser_brush_frame;
 
     using Callback = std::function<void()>;
     Callback callback;

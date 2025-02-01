@@ -121,6 +121,20 @@ add_executable(DrawSomething src/client/main.cpp
         src/client/ui/menus/picking/components/Header.h
         src/client/ui/menus/main/components/Settings.cpp
         src/client/ui/menus/main/components/Settings.h
+        src/client/ui/menus/loading/LoadingScreen.cpp
+        src/client/ui/menus/loading/LoadingScreen.h
+        src/client/game/game_info/GameInfo.cpp
+        src/client/game/game_info/GameInfo.h
+        src/client/game/game_info/GameStats.cpp
+        src/client/game/game_info/GameStats.h
+        src/client/ui/menus/ingame/components/tool_selector/DrawingToolButton.cpp
+        src/client/ui/menus/ingame/components/tool_selector/DrawingToolButton.h
+        src/client/ui/menus/confirmation/ConfirmationScreen.cpp
+        src/client/ui/menus/confirmation/ConfirmationScreen.h
+        src/client/ui/particles/Particles.cpp
+        src/client/ui/particles/Particles.h
+        src/client/ui/particles/particle/FlyingParticle.cpp
+        src/client/ui/particles/particle/FlyingParticle.h
 )
 
 add_executable(DrawSomethingServer src/server/main.cpp

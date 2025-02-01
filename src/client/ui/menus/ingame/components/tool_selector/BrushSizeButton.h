@@ -5,19 +5,20 @@
 #pragma once
 
 #include "../../../../components/element/OverlayButton.h"
-#include "../Canvas.h"
 #include "../../../../components/element/Frame.h"
 #include "../../../../cursors/Circular.h"
+#include "../Canvas.h"
 
 namespace Ingame {
 class BrushSizeButton : public OverlayButton {
 private:
+    float brush_size;
     TextureData* brush_texture;
     TextureData* composition_texture;
     Cursors::Circular brush_cursor;
 
 public:
-    explicit BrushSizeButton(Canvas* canvas, Frame* parent, float brush_size);
+    explicit BrushSizeButton(float brush_size);
     ~BrushSizeButton() override;
 
     // Getting

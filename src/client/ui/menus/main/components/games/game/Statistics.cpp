@@ -3,11 +3,52 @@
 //
 
 #include "Statistics.h"
-#include "../../../../../components/element/TextElement.h"
 #include "../../../../../CommonUI.h"
 
 namespace Main {
 static LinkTexture sTextureStatsBody("main_menu.games.game"); // todo: change
+
+void Statistics::SetUsername(const char* username) {
+    name_right->UpdateText(CommonUI::sFontSmall.GetTTFFont(),
+                           username, { 104, 195, 235, 255 });
+}
+
+void Statistics::SetLeftStreak(int longest_streak) {
+    streak_left->UpdateText(CommonUI::sFontBigger.GetTTFFont(),
+                            Strings::FString("%d", longest_streak).c_str(),
+                            { 104, 195, 235, 255 });
+}
+
+void Statistics::SetRightStreak(int longest_streak) {
+    streak_right->UpdateText(CommonUI::sFontBigger.GetTTFFont(),
+                             Strings::FString("%d", longest_streak).c_str(),
+                             { 104, 195, 235, 255 });
+}
+
+void Statistics::SetLeftDistribution(int distribution) {
+    distribution_left->UpdateText(CommonUI::sFontSmall.GetTTFFont(),
+                                  Strings::FString("%d%%", distribution).c_str(),
+                                  { 255, 255, 255, 255 });
+
+}
+
+void Statistics::SetRightDistribution(int distribution) {
+    distribution_right->UpdateText(CommonUI::sFontSmall.GetTTFFont(),
+                                   Strings::FString("%d%%", distribution).c_str(),
+                                   { 255, 255, 255, 255 });
+}
+
+void Statistics::SetAvgGuessSpeed(float guess_speed) {
+    seconds_left->UpdateText(CommonUI::sFontBiggest.GetTTFFont(),
+                             Strings::FString("%.2f", guess_speed).c_str(),
+                             { 104, 195, 235, 255 });
+}
+
+void Statistics::SetAvgDrawSpeed(float draw_speed) {
+    seconds_right->UpdateText(CommonUI::sFontBiggest.GetTTFFont(),
+                              Strings::FString("%.2f", draw_speed).c_str(),
+                              { 104, 195, 235, 255 });
+}
 
 Statistics::Statistics()
     : Frame(Vec2i(0, 0),
@@ -16,12 +57,12 @@ Statistics::Statistics()
                           Vec2d(1.0516473731077471, 1.0),
                           Vec2d(-0.024555461473327687, 0.0))) {
 
-    auto streak_left = (new TextElement(Vec2i(0, 0)))
-        ->UpdateText(CommonUI::sFontBigger.GetTTFFont(), "1", { 104, 195, 235, 255 })
+    streak_left = (TextElement*)(new TextElement(Vec2i(0, 0)))
+        ->UpdateText(CommonUI::sFontBigger.GetTTFFont(), "NaN", { 104, 195, 235, 255 })
         ->SetName("Streak1");
 
-    auto streak_right = (new TextElement(Vec2i(0, 0)))
-        ->UpdateText(CommonUI::sFontBigger.GetTTFFont(), "2", { 104, 195, 235, 255 })
+    streak_right = (TextElement*)(new TextElement(Vec2i(0, 0)))
+        ->UpdateText(CommonUI::sFontBigger.GetTTFFont(), "NaN", { 104, 195, 235, 255 })
         ->SetName("Streak2");
 
     auto streak_frame = (new Frame(Vec2i(0, 0),
@@ -47,13 +88,13 @@ Statistics::Statistics()
         ->SetName("DistributionFrame")
         ->AddChildren({ distribution_text });
 
-    auto distribution_left = (new TextElement(Vec2i(0, 0)))
-        ->UpdateText(CommonUI::sFontSmall.GetTTFFont(), "48%", { 255, 255, 255, 255 })
+    distribution_left = (TextElement*)(new TextElement(Vec2i(0, 0)))
+        ->UpdateText(CommonUI::sFontSmall.GetTTFFont(), "NaN%", { 255, 255, 255, 255 })
         ->SetAlign(Align::LEFT, Align::CENTER)
         ->SetName("Distribution1");
 
-    auto distribution_right = (new TextElement(Vec2i(0, 0)))
-        ->UpdateText(CommonUI::sFontSmall.GetTTFFont(), "52%", { 255, 255, 255, 255 })
+    distribution_right = (TextElement*)(new TextElement(Vec2i(0, 0)))
+        ->UpdateText(CommonUI::sFontSmall.GetTTFFont(), "NaN%", { 255, 255, 255, 255 })
         ->SetAlign(Align::RIGHT, Align::CENTER)
         ->SetName("Distribution1");
 
@@ -71,8 +112,8 @@ Statistics::Statistics()
         ->SetAlign(Align::LEFT, Align::CENTER)
         ->SetName("Username1");
 
-    auto name_right = (new TextElement(Vec2i(0, 0)))
-        ->UpdateText(CommonUI::sFontSmall.GetTTFFont(), "Username S.", { 104, 195, 235, 255 })
+    name_right = (TextElement*)(new TextElement(Vec2i(0, 0)))
+        ->UpdateText(CommonUI::sFontSmall.GetTTFFont(), "NaN", { 104, 195, 235, 255 })
         ->SetAlign(Align::RIGHT, Align::CENTER)
         ->SetName("Username2");
 
@@ -102,8 +143,8 @@ Statistics::Statistics()
         ->SetName("SpeedBar")
         ->AddChildren({ guess_text, draw_text });
 
-    auto seconds_left = (new TextElement(Vec2i(0, 0)))
-        ->UpdateText(CommonUI::sFontBiggest.GetTTFFont(), "76.74", { 104, 195, 235, 255 })
+    seconds_left = (TextElement*)(new TextElement(Vec2i(0, 0)))
+        ->UpdateText(CommonUI::sFontBiggest.GetTTFFont(), "NaN", { 104, 195, 235, 255 })
         ->SetName("Seconds1");
 
     auto seconds_left_description = (new TextElement(Vec2i(0, 0)))
@@ -111,16 +152,16 @@ Statistics::Statistics()
         ->SetName("SecondsDescription1");
 
     auto seconds_left_frame = (new Frame(Vec2i(0, 0),
-                                   Vec2i(0, 0),
-                                   DONT_DRAW))
+                                         Vec2i(0, 0),
+                                         DONT_DRAW))
         ->SetAlign(Align::LEFT, Align::DONT)
         ->SetFlex(Flex::HEIGHT)
         ->SetAdaptive(true, true)
         ->SetName("SecondsFrame1")
         ->AddChildren({ seconds_left, seconds_left_description });
 
-    auto seconds_right= (new TextElement(Vec2i(0, 0)))
-        ->UpdateText(CommonUI::sFontBiggest.GetTTFFont(), "116.22", { 104, 195, 235, 255 })
+    seconds_right = (TextElement*)(new TextElement(Vec2i(0, 0)))
+        ->UpdateText(CommonUI::sFontBiggest.GetTTFFont(), "NaN", { 104, 195, 235, 255 })
         ->SetName("Seconds2");
 
     auto seconds_right_description = (new TextElement(Vec2i(0, 0)))
@@ -128,8 +169,8 @@ Statistics::Statistics()
         ->SetName("SecondsDescription2");
 
     auto seconds_right_frame = (new Frame(Vec2i(0, 0),
-                                         Vec2i(0, 0),
-                                         DONT_DRAW))
+                                          Vec2i(0, 0),
+                                          DONT_DRAW))
         ->SetAlign(Align::RIGHT, Align::DONT)
         ->SetFlex(Flex::HEIGHT)
         ->SetAdaptive(true, true)
@@ -162,14 +203,59 @@ Statistics::Statistics()
         ->SetName("SpeedBar")
         ->AddChildren({ colors_text, difficulty_text });
 
+    auto loading_text = (Frame*)(new Frame(Vec2i(0, 0),
+                                           Vec2i(0, 0),
+                                           VisualTexture(Assets::Get()->GetTexture("loading.text1")->SDLTexture())))
+        ->SetAlign(Align::CENTER, Align::DONT)
+        ->ResizeToTexture()
+        ->SetName("LoadingText");
+
+    auto caption = (new TextElement(Vec2i(0, 0)))
+        ->UpdateText(CommonUI::sFontSmaller.GetTTFFont(),
+                     "Fetching game stats",
+                     { 255, 255, 255, 255 })
+        ->SetAlign(Align::CENTER, Align::DONT)
+        ->SetName("LoadingCaption");
+
+    auto loading_frame = (Frame*)(new Frame())
+        ->SetAlign(Align::CENTER, Align::CENTER)
+        ->SetFlex(Flex::HEIGHT, 10)
+        ->SetAdaptive(true, true)
+        ->SetName("LoadingFrame")
+        ->AddChildren({ loading_text, caption });
+
+    auto loading_screen = (Frame*)(new Frame(Vec2i(0, 0),
+                                             Vec2i(0, 0),
+                                             DRAW_RECT))
+        ->SetColor(0, 0, 0, 255)
+        ->SetFullyOccupy(true, true)
+        ->SetFlexInvolved(false, false)
+        ->SetName("LoadingScreen")
+        ->AddChildren({ loading_frame });
+
     SetEnabled(false);
     SetFlex(Flex::HEIGHT);
     SetAdaptive(false, true);
     SetName("Statistics");
-    AddChildren({ streak_frame, distribution_frame, distribution_bar, names_frame, speed_frame, seconds_frame, chart_frame });
+    AddChildren({ streak_frame, distribution_frame, distribution_bar, names_frame, speed_frame, seconds_frame,
+                  chart_frame, loading_screen });
 }
 
 Statistics::~Statistics() {
 
+}
+
+void Statistics::UpdateInfo(GameInfo* game_info) {
+    if (game_info == nullptr)
+        return;
+
+    GameStats* game_stats = &game_info->game_statistics;
+    SetUsername(game_info->players[1].username.c_str());
+    SetLeftStreak(game_stats->player_stats[0].longest_streak);
+    SetRightStreak(game_stats->player_stats[1].longest_streak);
+    SetLeftDistribution(game_stats->player_stats[0].coin_distribution);
+    SetRightDistribution(game_stats->player_stats[1].coin_distribution);
+    SetAvgGuessSpeed(game_stats->average_guess_speed_seconds);
+    SetAvgDrawSpeed(game_stats->average_draw_speed_seconds);
 }
 }
