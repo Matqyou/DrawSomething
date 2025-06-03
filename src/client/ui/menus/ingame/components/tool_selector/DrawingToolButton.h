@@ -15,15 +15,12 @@ private:
     Frame* brush_frame;
     ToolSelector* tool_selector_;
 
-    TextureData* generated_overlay;
+    Texture* generated_overlay;
 
     void GenerateOverlayColor(const SDL_Color& sdl_color);
 
 public:
-    DrawingToolButton(Canvas* canvas,
-                      ToolSelector* tool_selector,
-                      const Vec2i& pos,
-                      const VisualTexture& texture);
+    DrawingToolButton(Canvas* canvas, ToolSelector* tool_selector);
     ~DrawingToolButton() override;
 
     // Getting

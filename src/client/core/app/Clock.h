@@ -13,7 +13,9 @@ typedef std::chrono::high_resolution_clock::time_point HPoint;
 class Clock {
 protected:
     double Framerate;
-    long long NanoDelay;
+    double InitialFramerate;
+	double IdleFramerate;
+	long long NanoDelay;
 
     long long TotalNanoElapsed;
     long long NanoElapsed;
@@ -24,7 +26,7 @@ protected:
     unsigned long long Ticks;
 
 public:
-    explicit Clock(double framerate);
+    Clock(double framerate, double idle_framerate);
 
     // Getting
     [[nodiscard]] double GetFramerate() const { return Framerate; }
@@ -35,6 +37,8 @@ public:
     [[nodiscard]] unsigned long long CurrentTick() const { return Ticks; }
 
     // Setting
+	void ResetFramerate();
+	void SetIdleFramerate();
     void SetFramerate(double framerate);
 
     // Ticking
@@ -46,7 +50,7 @@ private:
     using Clock::Tick;
 
 public:
-    explicit NonBlockingClock(double framerate);
+    NonBlockingClock(double framerate, double idle_framerate);
 
     // Getting
     [[nodiscard]] long long GetTimeElapsedNanoNow() const {

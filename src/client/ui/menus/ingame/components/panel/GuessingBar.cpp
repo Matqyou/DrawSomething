@@ -5,21 +5,22 @@
 #include "GuessingBar.h"
 #include "../../../../CommonUI.h"
 #include "Letter.h"
+#include "../../../../../network/NetworkClient.h"
+#include "../../../../../game/GameData.h"
 #include <ranges>
 
 namespace Ingame {
-TextureData* sGenerateCompleteText(AssetsClass* assets) {
+Texture* sGenerateCompleteText(AssetsClass* assets) {
     auto drawing = assets->GetDrawing();
 
     const Vec2i text_size = Vec2i(275, 50);
     auto text_render = assets->RenderTextBlended(CommonUI::sFontBiggest.GetTTFFont(),
                                                  "correct!",
                                                  { 255, 255, 255, 255 });
-    auto text_rect = Rectangles::CenterRelative(Vec2i(text_render->GetSize()), text_size);
+    auto text_rect = Rectangles::CenterRelative(Vec2i(text_render->GetOriginalSize()), text_size);
     auto complete_text = assets->CreateTexture(SDL_PIXELFORMAT_RGBA8888,
                                                SDL_TEXTUREACCESS_TARGET,
-                                               text_size.x,
-                                               text_size.y)
+                                               text_size.x, text_size.y)
         ->FlagForAutomaticDeletion();
     drawing->SetRenderTarget(complete_text);
     drawing->SetColor(50, 200, 50, 170);
@@ -27,14 +28,14 @@ TextureData* sGenerateCompleteText(AssetsClass* assets) {
     drawing->RenderTexture(text_render->SDLTexture(), nullptr, text_rect);
     return complete_text;
 }
-TextureData* sGenerateGuessingBar(AssetsClass* assets, SDL_Color sdl_color) {
+Texture* sGenerateGuessingBar(AssetsClass* assets, SDL_Color sdl_color) {
     auto drawing = assets->GetDrawing();
 
     auto original_guessing_bar = assets->GetTexture("game.ingame_panel.guessing_bar");
+    Vec2f guessing_bar_size = original_guessing_bar->GetOriginalSize();
     auto guessing_bar = assets->CreateTexture(SDL_PIXELFORMAT_RGBA8888,
                                               SDL_TEXTUREACCESS_TARGET,
-                                              (int)original_guessing_bar->GetWidth(),
-                                              (int)original_guessing_bar->GetHeight())
+                                              (int)guessing_bar_size.x, (int)guessing_bar_size.y)
         ->SetScaleMode(SDL_SCALEMODE_NEAREST)
         ->FlagForAutomaticDeletion();
     drawing->SetRenderTarget(guessing_bar);
@@ -43,40 +44,40 @@ TextureData* sGenerateGuessingBar(AssetsClass* assets, SDL_Color sdl_color) {
     drawing->RenderTextureFullscreen(original_guessing_bar->SDLTexture(), nullptr);
     return guessing_bar;
 }
-TextureData* sGenerateGuessingBarBlue(AssetsClass* assets) { return sGenerateGuessingBar(assets, { 100, 190, 255 }); }
-TextureData* sGenerateGuessingBarGreen(AssetsClass* assets) { return sGenerateGuessingBar(assets, { 75, 200, 75 }); }
+Texture* sGenerateGuessingBarBlue(AssetsClass* assets) { return sGenerateGuessingBar(assets, { 100, 190, 255 }); }
+Texture* sGenerateGuessingBarGreen(AssetsClass* assets) { return sGenerateGuessingBar(assets, { 75, 200, 75 }); }
 
 PregenerateTexture sTextureGuessingBarBlue("game.ingame_panel.guesing_bar.blue", sGenerateGuessingBarBlue);
 PregenerateTexture sTextureGuessingBarGreen("game.ingame_panel.guesing_bar.green", sGenerateGuessingBarGreen);
 PregenerateTexture sTextureCompleteText("game.ingame_panel.complete_text", sGenerateCompleteText);
 
 GuessingBar::GuessingBar()
-    : Frame(Vec2i(0, 0),
-            Vec2i(0, 90),
-            VisualTexture(sTextureGuessingBarBlue.GetSDLTexture())) {
-    guess_word = "not set";
+    : Frame() {
+    this->name = L"Guessing";
+    this->SetSize(Vec2i(0, 90));
+    this->SetTexture(sTextureGuessingBarBlue.GetTexture());
+    this->SetDraw(DRAW_TEXTURE);
+    this->SetFullyOccupy(true, false);
+    this->SetFlexInvolved(true, false);
+    this->SetAlign(Align::DONT, Align::ABOVE_TOP);
 
-    complete_text = (Frame*)(new Frame(Vec2i(0, 0),
-                                    Vec2i(275, 50),
-                                    VisualTexture(sTextureCompleteText.GetSDLTexture())))
+    this->guess_word = "not set";
+
+    this->complete_text = (Frame*)(new Frame())
+        ->SetSize(Vec2i(275, 50))
+        ->SetTexture(sTextureCompleteText.GetTexture())
+        ->SetDraw(DRAW_TEXTURE)
         ->SetFlexInvolved(false, false)
         ->SetAlign(Align::CENTER, Align::ABOVE_TOP)
         ->SetEnabled(false)
         ->SetName("CompleteText");
 
-    // Guessing letter frame
-    guessing_frame = (Frame*)(new Frame(Vec2i(0, 0),
-                                        Vec2i(0, 0),
-                                        DONT_DRAW))
+    this->guessing_frame = (Frame*)(new Frame())
         ->SetAlign(Align::CENTER, Align::CENTER)
         ->SetAdaptive(true, true)
         ->SetFlex(Flex::WIDTH, 8);
 
-    SetFullyOccupy(true, false);
-    SetFlexInvolved(true, false);
-    SetAlign(Align::DONT, Align::ABOVE_TOP);
-    SetName("Guessing");
-    AddChildren({ complete_text, guessing_frame });
+    this->AddChildren({ complete_text, guessing_frame });
 }
 
 GuessingBar::~GuessingBar() {
@@ -84,20 +85,25 @@ GuessingBar::~GuessingBar() {
 }
 
 bool GuessingBar::IsAnsweredCorrectly() {
-    std::string user_answer;
-    for (auto slot : letter_slots) {
-        auto occupy_letter = slot->GetOccupyLetter();
-        if (occupy_letter != nullptr)
-            user_answer += occupy_letter->GetLetter();
-    }
+    return GetTypedWord() == guess_word;
+}
 
-    return user_answer == guess_word;
+std::string GuessingBar::GetTypedWord()
+{
+	std::string user_answer;
+	for (auto slot : letter_slots) {
+		auto occupy_letter = slot->GetOccupyLetter();
+		if (occupy_letter != nullptr)
+			user_answer += occupy_letter->GetLetter();
+	}
+
+	return user_answer;
 }
 
 void GuessingBar::GenerateForWord(const std::string& word) {
     this->complete_text->SetEnabled(false);
-    SetVisualTexture(VisualTexture(sTextureGuessingBarBlue.GetSDLTexture()));
-    UpdateVisualTexture();
+    SetTexture(sTextureGuessingBarBlue.GetTexture());
+    UpdateTexturePlacement();
 
     for (auto slot : letter_slots)
         delete slot;
@@ -135,8 +141,8 @@ bool GuessingBar::AddLetter(Letter* new_letter) {
 
         this->complete_text->SetEnabled(true);
         this->parent->Refresh();
-        this->SetVisualTexture(VisualTexture(sTextureGuessingBarGreen.GetSDLTexture()));
-        this->UpdateVisualTexture();
+        this->SetTexture(sTextureGuessingBarGreen.GetTexture());
+        this->UpdateTexturePlacement();
 
         for (auto letter_slot : letter_slots) {
             Letter* OccupyLetter = letter_slot->GetOccupyLetter();
@@ -164,12 +170,12 @@ void GuessingBar::RunCallback() const {
         callback();
 }
 
-void GuessingBar::HandleEvent(SDL_Event& event, EventContext& event_summary) {
-    HandleEventChildren(event, event_summary);
+void GuessingBar::HandleEvent(const SDL_Event& sdl_event, EventContext& event_summary) {
+    HandleEventChildren(sdl_event, event_summary);
 
-    switch (event.type) {
+    switch (sdl_event.type) {
         case SDL_EVENT_KEY_DOWN: {
-            if (event.key.scancode == SDL_SCANCODE_BACKSPACE)
+            if (sdl_event.key.scancode == SDL_SCANCODE_BACKSPACE)
                 RemoveLastLetter();
 
             break;

@@ -5,22 +5,20 @@
 #pragma once
 
 #include <utility>
-
+#include <shared/Protocol.h>
 #include "base/Element.h"
 
 class Button : public Element {
 protected:
-    using Callback = std::function<void()>;
     Callback callback;
     bool clickable;
 
-    SDL_Texture* sdl_pressed_texture;
-    VisualTexture pressed_visual_texture;
+    VisualTextureInstance pressed_texture_instance;
     bool pressed_down;
 
 public:
-    Button(const Vec2i& pos, const Vec2i& size, ElementDraw draw);
-    Button(const Vec2i& pos, const Vec2i& size, const VisualTexture& texture, const VisualTexture& pressed_texture);
+    Button();
+    Button(Texture* texture, Texture* pressed_texture);
 
     // Options
     Button* SetCallback(Callback callback) {
@@ -31,8 +29,8 @@ public:
         this->clickable = new_clickable;
         return this;
     }
-    Button* SetPressedVisualTexture(const VisualTexture& visual_texture) {
-        this->pressed_visual_texture = visual_texture;
+    Button* SetPressedTexture(Texture* texture) {
+        this->pressed_texture_instance.ChangeTexture(texture);
         return this;
     }
 
@@ -41,7 +39,7 @@ public:
 
     // Ticking
     void PostRefresh() override;
-    void HandleEvent(SDL_Event& event, EventContext& event_summary) override;
+    void HandleEvent(const SDL_Event& sdl_event, EventContext& event_summary) override;
     void Render() override;
     void UpdatePressedVisualTexture();
 

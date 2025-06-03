@@ -4,32 +4,13 @@
 
 #pragma once
 
-#define APPLICATION_VERSION "1.2.3"
+#define APPLICATION_VERSION "1.2.4"
 #define APPLICATION_NAME "DrawSomething"
 
 #include <cstdint>
+#include <functional>
 
-enum class SimpleAlign {
-    DONT,
-    LEFT,
-    CENTER,
-    RIGHT,
-    TOP = LEFT,
-    BOTTOM = RIGHT,
-};
-
-enum class Align {
-    DONT,
-    BEHIND_LEFT,
-    LEFT,
-    CENTER,
-    RIGHT,
-    BEHIND_RIGHT,
-    ABOVE_TOP = BEHIND_LEFT,
-    TOP = LEFT,
-    BOTTOM = RIGHT,
-    UNDER_BOTTOM = BEHIND_RIGHT,
-};
+using Callback = std::function<void()>;
 
 enum class MessageID : uint32_t {
     SERVER_Accept,

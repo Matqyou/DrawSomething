@@ -6,6 +6,8 @@
 
 #include <iostream>
 
+#define dbg_msg(format, ...) std::cout << Strings::FStringColors(format, ##__VA_ARGS__)
+
 namespace Strings {
 std::wstring FStringColorsW(const wchar_t* format, ...);
 std::string FStringColors(const char* format, ...);

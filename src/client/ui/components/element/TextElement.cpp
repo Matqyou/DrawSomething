@@ -4,22 +4,44 @@
 
 #include "TextElement.h"
 
-TextElement::TextElement(const Vec2i& relative)
-    : Element(relative, Vec2i(60, 40), ElementDraw::DRAW_TEXTURE) {
-    name = L"TextElement";
-    generated_text = nullptr;
+TextElement::TextElement()
+	: Element()
+{
+	this->name = L"TextElement";
+	this->generated_text = nullptr;
+
+	this->SetSize(Vec2i(60, 40));
+	this->SetDraw(ElementDraw::DRAW_TEXTURE);
 }
 
-TextElement::~TextElement() {
-    delete generated_text;
+TextElement::~TextElement()
+{
+	delete generated_text;
 }
 
-TextElement* TextElement::UpdateText(TTF_Font* ttf_font, const char* new_text, SDL_Color sdl_color) {
-    auto assets = Assets::Get();
-    delete generated_text;
-    generated_text = assets->RenderTextBlended(ttf_font, new_text, sdl_color);
-    sdl_texture = generated_text->SDLTexture();
-    size = Vec2i(generated_text->GetSize());
-    visual_size = Vec2i(generated_text->GetSize());
-    return this;
+TextElement *TextElement::UpdateText(TTF_Font *ttf_font, const char *new_text, SDL_Color sdl_color)
+{
+	auto assets = Assets::Get();
+	delete generated_text;
+
+	this->generated_text = assets->RenderTextBlended(ttf_font, new_text, sdl_color);     // TODO: very hacky, extra resources used for no reason
+	Vec2f text_size = generated_text->GetOriginalSize();
+	this->texture_instance.ChangeTexture(generated_text);
+	this->size = Vec2i(text_size);
+	return this;
+}
+
+TextElement *TextElement::UpdateTextOutline(TTF_Font *ttf_font, const char *new_text, int outline_thickness,
+											SDL_Color text_color, SDL_Color outline_color)
+{
+	auto assets = Assets::Get();
+	delete generated_text;
+
+	this->generated_text = assets->RenderTextBlendedOutline(ttf_font, new_text, outline_thickness,
+															text_color, outline_color);     // TODO: very hacky, extra resources used for no reason
+	auto generated_text_visual = (VisualTexture *)generated_text;
+	auto text_hitbox = generated_text_visual->GetHitbox();
+	this->texture_instance.ChangeTexture(generated_text);
+	this->size = Vec2i((int)text_hitbox.w, (int)text_hitbox.h);
+	return this;
 }

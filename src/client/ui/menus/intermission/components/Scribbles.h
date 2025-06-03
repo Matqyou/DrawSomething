@@ -11,8 +11,10 @@
 namespace Intermission {
 class Scribbles : public Frame {
 private:
-    TextureData* generated;
+    Texture* generated;
 
+    Vec2i visual_size;
+    Vec2i visual_offset;
     std::vector<Vec2f> path;
     float path_length, path_progress;
     Vec2f last_pen, pen;
@@ -27,11 +29,12 @@ private:
     bool playing;
 
 public:
-    Scribbles(const Vec2i& pos, const Vec2i& size, int extra);
+    Scribbles(const Vec2i& size, int extra);
     ~Scribbles() override;
 
     // Getting
-    [[nodiscard]] Vec2f GetGlobalPen() const { return Vec2f(pos + visual_offset) + pen; }
+//    [[nodiscard]] Vec2f GetGlobalPen() const { return Vec2f(pos + visual_offset) + pen; }
+    [[nodiscard]] Vec2f GetGlobalPen() const { return Vec2f(pos) + pen; }
     [[nodiscard]] bool IsPlaying() const { return playing; }
 
     // Options
@@ -49,7 +52,7 @@ public:
                               SDL_FColor color);
 
     // Ticking
-    void Tick() override;
+    void Tick(double elapsed_seconds) override;
     void Render() override;
     void RenderDebug() override;
 //    void Draw();

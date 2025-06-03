@@ -4,43 +4,44 @@
 
 #include "IngameMenu.h"
 #include "../../../core/Application.h"
+#include "../../../game/GameData.h"
 
-IngameMenu::IngameMenu(Words* words_list)
+IngameMenu::IngameMenu()
     : FullscreenMenu() {
     name = L"IngameMenu";
-    this->words_list = words_list;
 
     // Header
-    header = new Ingame::Header();
+    this->header = new Ingame::Header();
 
     // Canvas
-    canvas = (Ingame::Canvas*)(new Ingame::Canvas(Vec2i(0, 0), Vec2i(0, 0)))
+    this->canvas = (Ingame::Canvas*)(new Ingame::Canvas())
         ->SetFullyOccupy(true, false)
         ->SetOccupy(false, true)
         ->SetColor(255, 255, 255, 255)
         ->SetName("Canvas");
 
     // Buttons and stuff
-    panel = new Ingame::Panel();
-    tool_selector = new Ingame::ToolSelector(canvas);
-    color_selector = new Ingame::ColorSelector(canvas, tool_selector);
+    this->panel = new Ingame::Panel();
+    this->tool_selector = new Ingame::ToolSelector(canvas);
+    this->color_selector = new Ingame::ColorSelector(canvas, tool_selector);
 
-    SetColor(230, 230, 230, 255);
-    SetFlex(Flex::HEIGHT);
-    AddChildren({ header, canvas });
-    SetName("GuessingMenu");
-    RefreshMenu();
-
-    PrepareDraw();
+    this->SetColor(190, 190, 190, 255);
+    this->SetFlex(Flex::HEIGHT);
+    this->AddChildren({ header, canvas });
+    this->SetName("GuessingMenu");
+    this->RefreshMenu();
 }
 
 void IngameMenu::PrepareGuess() {
-    auto random_word = Strings::ToUpperCase(words_list->GetRandomWord());
-
-    header->SetTitle("You are guessing");
-    header->SetDescription("Matiss B.'s drawing.");
-    header->SetTurnNumber(3);
-    panel->RandomizeWord(random_word);
+	auto current_game = Centralized.GetCurrentGame();
+	if (current_game != nullptr)
+	{
+		header->SetTitle("You are guessing");
+		header->SetDescription("Matiss B.'s drawing.");
+		header->SetTurnNumber(current_game->game_turn);
+		panel->RandomizeWord(current_game->word);
+		dbg_msg("preparing guess\n");
+	}
 
     SetChildren({ header, canvas });
     Refresh();
@@ -55,31 +56,32 @@ void IngameMenu::PrepareGuess() {
 }
 
 void IngameMenu::PrepareWatch() {
-    auto random_word = Strings::ToUpperCase(words_list->GetRandomWord());
-
-    header->SetTitle("You are watching Matiss B.");
-    header->SetDescription(Strings::FString("guess the word %s.", random_word.c_str()));
-    header->SetTurnNumber(4);
-    panel->RandomizeWord(random_word);
-
-    SetChildren({ header, canvas });
-    Refresh();
-    canvas->ClearCanvas();
-    canvas->SetPlaybackMode(Ingame::PlaybackMode::DO_NOTHING);
-    canvas->SetMode(Ingame::CANVAS_WATCH);
-    canvas->SetCallback([this]() {
-        canvas->LoadExample();
-        this->SetChildren({ header, canvas, panel });
-        this->Refresh();
-    });
+//    header->SetTitle("You are watching Matiss B.");
+//    header->SetDescription(Strings::FString("guess the word %s.", random_word.c_str()));
+//    header->SetTurnNumber(4);
+//    panel->RandomizeWord(random_word);
+//
+//    SetChildren({ header, canvas });
+//    Refresh();
+//    canvas->ClearCanvas();
+//    canvas->SetPlaybackMode(Ingame::PlaybackMode::DO_NOTHING);
+//    canvas->SetMode(Ingame::CANVAS_WATCH);
+//    canvas->SetCallback([this]() {
+//        canvas->LoadExample();
+//        this->SetChildren({ header, canvas, panel });
+//        this->Refresh();
+//    });
 }
 
 void IngameMenu::PrepareDraw() {
-    auto random_word = Strings::ToUpperCase(words_list->GetRandomWord());
+	auto current_game = Centralized.GetCurrentGame();
+	if (current_game != nullptr)
+	{
+		header->SetTitle(Strings::FString("You are drawing %s", current_game->word.c_str()));
+		header->SetDescription("for Matiss B.");
+		header->SetTurnNumber(current_game->game_turn);
+	}
 
-    header->SetTitle(Strings::FString("You are drawing %s", random_word.c_str()));
-    header->SetDescription("for Matiss B.");
-    header->SetTurnNumber(5);
     canvas->ClearCanvas();
     canvas->SetPlaybackMode(Ingame::PlaybackMode::DO_NOTHING);
 
@@ -91,4 +93,9 @@ void IngameMenu::PrepareDraw() {
         this->SetChildren({ header, color_selector, canvas, tool_selector });
         this->Refresh();
     });
+}
+
+void IngameMenu::SetDoneDrawingCallback(Callback new_callback)
+{
+	tool_selector->SetDoneCallback(std::move(new_callback));
 }

@@ -36,11 +36,11 @@ private:
     CanvasMode canvas_mode;
     Vec2i resolution;
     SDL_FRect canvas_source, canvas_rect;
-    TextureData* canvas;
+    Texture* canvas;
 
-    TextureData* text_guess;
-    TextureData* text_watch;
-    TextureData* text_draw;
+    Texture* text_guess;
+    Texture* text_watch;
+    Texture* text_draw;
     Vec2i scale_guess;
     Vec2i scale_watch;
     Vec2i scale_draw;
@@ -71,10 +71,13 @@ private:
     static LinkTexture sTextureDraw;
 
 public:
-    Canvas(const Vec2i& pos, const Vec2i& size);
+    Canvas();
 
     // Getting
-    [[nodiscard]] TextureData* GetCanvasTexture() const { return canvas; }
+    [[nodiscard]] Texture* GetCanvasTexture() const { return canvas; }
+
+	// Generating
+	[[nodiscard]] std::string SerializeReplay();
 
     // Options
     Canvas* SetCustomCursor(SDL_Cursor* custom_cursor) {
@@ -111,10 +114,11 @@ public:
     void SetTool(DrawTool tool);
     void SetDrawColor(SDL_Color color);
     void SetCurrentToolSize(float new_size);
+	void LoadReplayData(const std::string& replay_load);
 
     // Ticking
-    void Tick() override;
-    void HandleEvent(SDL_Event& event, EventContext& event_summary) override;
+    void Tick(double elapsed_seconds) override;
+    void HandleEvent(const SDL_Event& sdl_event, EventContext& event_summary) override;
     void Render() override;
     void PostRefresh() override;
 

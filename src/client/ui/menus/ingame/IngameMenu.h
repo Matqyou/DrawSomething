@@ -5,17 +5,15 @@
 #pragma once
 
 #include "../FullscreenMenu.h"
-#include "../../../words/Words.h"
 #include "components/Canvas.h"
 #include "components/panel/Panel.h"
 #include "components/Header.h"
 #include "components/color_selector/ColorSelector.h"
 #include "components/tool_selector/ToolSelector.h"
+#include "../../../game/game_info/GameInfo.h"
 
 class IngameMenu : public FullscreenMenu {
 public:
-    Words* words_list;
-
     Ingame::Header* header;
     Ingame::Panel* panel;
     Ingame::ColorSelector* color_selector;
@@ -27,12 +25,19 @@ public:
     static LinkFont sFontDefaultBigger;
     static LinkFont sFontDefaultSmaller;
 
+	using Callback = std::function<void()>;
+
 public:
-    explicit IngameMenu(Words* words_list);
+    IngameMenu();
+
+	// Sense
+	[[nodiscard]] Ingame::Canvas* GetCanvas() const { return canvas; }
 
     // Manipulation
     void PrepareGuess();
     void PrepareWatch();
     void PrepareDraw();
+
+	void SetDoneDrawingCallback(Callback new_callback);
 
 };

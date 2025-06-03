@@ -28,7 +28,7 @@ public:
         const char* version,
         const char* identifier,
         const Vec2i& resolution,
-        double framerate,
+        double framerate, double idle_framerate,
         const char* renderer_backend = nullptr);
     ~App();
 

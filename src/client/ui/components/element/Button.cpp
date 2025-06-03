@@ -5,29 +5,26 @@
 #include "Button.h"
 #include "../../cursors/Cursors.h"
 
-Button::Button(const Vec2i& pos, const Vec2i& size, ElementDraw draw)
-    : Element(pos, size, draw) {
+Button::Button()
+    : Element(), pressed_texture_instance(nullptr) {
     this->name = L"Button";
     this->callback = nullptr;
     this->clickable = true;
-    this->sdl_pressed_texture = nullptr;
     this->pressed_down = false;
+
+    this->SetDraw(DRAW_RECT);
 }
 
-Button::Button(const Vec2i& pos,
-               const Vec2i& size,
-               const VisualTexture& texture,
-               const VisualTexture& pressed_texture)
-    : Element(pos, size, texture) {
+Button::Button(Texture* texture, Texture* pressed_texture)
+    : Element(), pressed_texture_instance(pressed_texture) {
     this->name = L"Button";
     this->callback = nullptr;
     this->clickable = true;
-    this->sdl_pressed_texture = nullptr;
     this->pressed_down = false;
 
-    SetDraw(DRAW_VISUAL_TEXTURE);
-    SetVisualTexture(texture);
-    SetPressedVisualTexture(pressed_texture);
+    this->SetDraw(DRAW_TEXTURE);
+    this->SetTexture(texture);
+	this->SetPressedTexture(pressed_texture);
 }
 
 void Button::RunCallback() const {
@@ -36,20 +33,20 @@ void Button::RunCallback() const {
 }
 
 void Button::PostRefresh() {
-    if (draw == DRAW_VISUAL_TEXTURE) {
-        UpdateVisualTexture();
+    if (draw == DRAW_TEXTURE) {
+        UpdateTexturePlacement();
         UpdatePressedVisualTexture();
     }
 }
 
-void Button::HandleEvent(SDL_Event& event, EventContext& event_summary) {
-    HandleEventChildren(event, event_summary);
+void Button::HandleEvent(const SDL_Event& sdl_event, EventContext& event_summary) {
+    HandleEventChildren(sdl_event, event_summary);
 
     if (!event_summary.rapid_context.event_captured && clickable) { // For the buttons it's pretty easy
-        switch (event.type) {
+        switch (sdl_event.type) {
             case SDL_EVENT_MOUSE_MOTION: {
                 if (event_summary.cursor_changed == CursorChange::NO_CHANGE &&
-                    PointCollides((int)event.motion.x, (int)event.motion.y)) {
+                    PointCollides((int)sdl_event.motion.x, (int)sdl_event.motion.y)) {
                     event_summary.cursor_changed = CursorChange::TO_POINTER;
                     SDL_SetCursor(Cursors::sCursorSystemPointer);
                     break;
@@ -58,8 +55,8 @@ void Button::HandleEvent(SDL_Event& event, EventContext& event_summary) {
                 break;
             }
             case SDL_EVENT_MOUSE_BUTTON_DOWN: {
-                if (event.button.button == SDL_BUTTON_LEFT &&
-                    !event_summary.rapid_context.event_captured && PointCollides((int)event.button.x, (int)event.button.y)) {
+                if (sdl_event.button.button == SDL_BUTTON_LEFT &&
+                    !event_summary.rapid_context.event_captured && PointCollides((int)sdl_event.button.x, (int)sdl_event.button.y)) {
                     event_summary.rapid_context.event_captured = true;
                     RunCallback();
                     pressed_down = true;
@@ -68,7 +65,7 @@ void Button::HandleEvent(SDL_Event& event, EventContext& event_summary) {
                 break;
             }
             case SDL_EVENT_MOUSE_BUTTON_UP: {
-                if (event.button.button == SDL_BUTTON_LEFT)
+                if (sdl_event.button.button == SDL_BUTTON_LEFT)
                     pressed_down = false;
                 break;
             }
@@ -85,18 +82,16 @@ void Button::Render() {
             drawing->SetColor(fill_color);
             drawing->FillRect(GetRect());
         } else if (draw == ElementDraw::DRAW_TEXTURE) {
-            if (pressed_down && sdl_pressed_texture != nullptr) {
-                drawing->RenderTexture(sdl_pressed_texture, nullptr, GetVisualRect());
+            SDL_Texture* pressed_sdl_texture = nullptr;
+            if (pressed_texture_instance.GetTexture() != nullptr)
+                pressed_sdl_texture = pressed_texture_instance.GetTexture()->SDLTexture();
+
+            if (pressed_down && pressed_sdl_texture != nullptr) {
+                drawing->RenderTexture(pressed_texture_instance.GetTexture()->SDLTexture(),
+                                       nullptr, pressed_texture_instance.GetResultingFRect());
             } else {
-                drawing->RenderTexture(sdl_texture, nullptr, GetVisualRect());
-            }
-        } else if (draw == ElementDraw::DRAW_VISUAL_TEXTURE) {
-            if (pressed_down && pressed_visual_texture.SDLTexture() != nullptr) {
-                drawing->RenderTexture(pressed_visual_texture.SDLTexture(),
-                                       nullptr,
-                                       pressed_visual_texture.GetVisualRect());
-            } else {
-                drawing->RenderTexture(visual_texture.SDLTexture(), nullptr, visual_texture.GetVisualRect());
+                drawing->RenderTexture(texture_instance.GetTexture()->SDLTexture(),
+                                       nullptr, texture_instance.GetResultingFRect());
             }
         }
     }
@@ -105,5 +100,5 @@ void Button::Render() {
 }
 
 void Button::UpdatePressedVisualTexture() {
-    pressed_visual_texture.UpdateRect(GetRect());
+    pressed_texture_instance.UpdateWithNewPlacement(GetRect());
 }

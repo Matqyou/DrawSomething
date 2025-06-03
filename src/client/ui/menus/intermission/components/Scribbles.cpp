@@ -12,21 +12,25 @@ static LinkTexture sTextureStar("particles.star");
 static LinkTexture sTexturePencil("pencil2");
 static const Vec2f sPencilTip(222, 918);
 
-Scribbles::Scribbles(const Vec2i& pos, const Vec2i& size, int extra)
-    : Frame(pos, size, size + extra, Vec2i(-extra / 2, -extra / 2), nullptr) {
+Scribbles::Scribbles(const Vec2i& size, int extra)
+    : Frame() {
+    auto extra2 = extra / 2;
+
     this->name = L"Scribbles";
     this->pos = pos;
     this->size = size;
+    this->visual_size = size + extra;
+    this->visual_offset = Vec2i(extra2, extra2);
     this->thickness = 0;
     this->speed = 10;
     this->draw_color = { 0, 0, 0, 255 };
 
     auto drawing = Application::Get()->GetDrawing();
-    this->generated = (new TextureData(SDL_CreateTexture(drawing->Renderer(),
-                                                         SDL_PIXELFORMAT_RGBA8888,
-                                                         SDL_TEXTUREACCESS_TARGET,
-                                                         this->visual_size.x,
-                                                         this->visual_size.y)))
+    this->generated = (new VisualTexture(SDL_CreateTexture(drawing->Renderer(),
+                                                           SDL_PIXELFORMAT_RGBA8888,
+                                                           SDL_TEXTUREACCESS_TARGET,
+                                                           this->visual_size.x, this->visual_size.y),
+                                         Rect4f((float)extra2, (float)extra2, (float)size.x, (float)size.y)))
         ->SetBlendMode(SDL_BLENDMODE_BLEND);
 
     this->path_length = 0.0;
@@ -36,6 +40,10 @@ Scribbles::Scribbles(const Vec2i& pos, const Vec2i& size, int extra)
     this->segment_length = 0.0;
     this->segment_progress = 0.0;
     this->playing = false;
+
+    this->texture_instance.ChangeTexture(generated);
+
+    this->SetDraw(DRAW_TEXTURE);
 }
 
 Scribbles::~Scribbles() {
@@ -64,7 +72,7 @@ Scribbles* Scribbles::GenerateZigZag(float minimum,
     auto current_pos = Vec2f(40.0, 0.0);
     float radians = float(130 + rand() % 20) / 180.0f * (float)M_PI;
 
-    path.push_back(current_pos - Vec2f(visual_offset));
+    path.push_back(current_pos + Vec2f(visual_offset));
     bool side = true;
     for (int j = 0; j < 200; j++) {
         auto direction = AngleVec2f(radians);
@@ -83,7 +91,7 @@ Scribbles* Scribbles::GenerateZigZag(float minimum,
             }
         }
 
-        path.push_back(end_position - Vec2f(visual_offset));
+        path.push_back(end_position + Vec2f(visual_offset));
         path_length += DistanceVec2f(current_pos, end_position);
         current_pos = end_position;
 
@@ -109,7 +117,7 @@ Scribbles* Scribbles::GenerateZigZag(float minimum,
     return this;
 }
 
-void Scribbles::Tick() {
+void Scribbles::Tick(double elapsed_seconds) {
     path_progress += speed;
     segment_progress += speed;
 
@@ -143,46 +151,47 @@ void Scribbles::Render() {
     }
 
     drawing->SetRenderTarget(nullptr);
-    drawing->RenderTexture(generated->SDLTexture(), nullptr, GetVisualRect());
+    drawing->RenderTexture(generated->SDLTexture(), nullptr, texture_instance.GetResultingFRect());
 
     if (IsPlaying()) {
         auto global_pen = GetGlobalPen();
-        auto pen_position = global_pen - Intermission::sPencilTip * 0.3;
+        auto pen_position = global_pen - sPencilTip * 0.2;
+        Vec2f pencil_size = sTexturePencil.GetTexture()->GetOriginalSize();
         SDL_FRect pencil_rect = {
             (float)pen_position.x,
             (float)pen_position.y,
-            (float)(Intermission::sTexturePencil.GetTexture()->GetWidth() * 0.3),
-            (float)(Intermission::sTexturePencil.GetTexture()->GetHeight() * 0.3),
+            (float)(pencil_size.x * 0.2),
+            (float)(pencil_size.y * 0.2),
         };
-        SDL_FPoint center = { (float)(Intermission::sPencilTip.x * 0.3), (float)(Intermission::sPencilTip.y * 0.3) };
-        drawing->RenderTextureEx(Intermission::sTexturePencil.GetTexture()->SDLTexture(),
+        SDL_FPoint center = { (float)(sPencilTip.x * 0.2), (float)(sPencilTip.y * 0.2) };
+        drawing->RenderTextureEx(sTexturePencil.GetTexture()->SDLTexture(),
                                  nullptr,
                                  pencil_rect,
                                  35,
                                  &center,
                                  SDL_FLIP_NONE);
 
-        auto yellowness = rand() % 25;
-        auto particle_texture = assets->CopyTexture(sTextureStar.GetSDLTexture(), SDL_TEXTUREACCESS_TARGET)
-            ->SetScaleMode(SDL_SCALEMODE_NEAREST)
-            ->SetColorMod(Colors::HSLtoRGB(Colors::ColorHSL(35 + yellowness, 100, 100)))
-            ->SetAlphaMod((Uint8)(175 + yellowness * 2.5))
-            ->FlagForAutomaticDeletion();
+//        auto yellowness = rand() % 25;
+//        Texture* particle_texture = assets->CopyTexture(sTextureStar.GetSDLTexture(), SDL_TEXTUREACCESS_TARGET)
+//            ->SetScaleMode(SDL_SCALEMODE_NEAREST)
+//            ->SetColorMod(Colors::HSLtoRGB(Colors::ColorHSL(35 + yellowness, 100, 100)))
+//            ->SetAlphaMod((Uint8)(175 + yellowness * 2.5))
+//            ->FlagForAutomaticDeletion();
 
-        Particles.PlayParticle(
-            FlyingParticle(
-                global_pen,
-                Vec2f(90.0f, 90.0f) * (float)(50 + rand() % 50) / 100.0f,
-                0.35f,
-                Vec2f((float)(std::rand() % 100 - 50) / 5.0f, (float)(std::rand() % 100 - 50) / 5.0f),
-                Vec2f(0.2f, -0.15f),
-                0.96f,
-                0.0f,
-                (float)(std::rand() % 30) - 15.0f,
-                0.99f,
-                particle_texture
-            )
-        );
+//        Particles.PlayParticle(
+//            FlyingParticle(
+//                global_pen,
+//                Vec2f(90.0f, 90.0f) * (float)(50 + rand() % 50) / 100.0f,
+//                0.35f,
+//                Vec2f((float)(std::rand() % 100 - 50) / 5.0f, (float)(std::rand() % 100 - 50) / 5.0f),
+//                Vec2f(0.2f, -0.15f),
+//                0.96f,
+//                0.0f,
+//                (float)(std::rand() % 30) - 15.0f,
+//                0.99f,
+//                particle_texture
+//            )
+//        );
         drawing->SetRenderTarget(nullptr);
 
     }
@@ -193,7 +202,7 @@ void Scribbles::Render() {
 void Scribbles::RenderDebug() {
     auto drawing = Application::Get()->GetDrawing();
     drawing->SetColor(0, 255, 0, 255);
-    drawing->DrawRect(GetVisualRect());
+    drawing->DrawRect(texture_instance.GetResultingFRect());
     drawing->SetColor(255, 0, 0, 255);
     drawing->DrawRect(GetRect());
 

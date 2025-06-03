@@ -104,6 +104,7 @@ WrappedText::WrappedText(TTF_Font* font, SDL_Color text_color) {
     this->text_lines = { };
     this->text_lines_size = Vec2i(0, 0);
     this->text_color = text_color;
+    this->filter = nullptr;
 }
 
 WrappedText::~WrappedText() {
@@ -116,10 +117,13 @@ void WrappedText::UpdateRender() {
         delete line_render;
     text_lines.clear();
 
-    auto lines = WrapText(text, font, 200, &text_lines_size);
+    std::string draw_text = text;
+    if (filter != nullptr) draw_text = filter(text);
+
+    auto lines = WrapText(draw_text, font, 200, &text_lines_size);
     for (const auto & line : lines) {
         SDL_Surface* surface = TTF_RenderText_Blended(font, line.c_str(), line.size(), text_color);
-        TextureData* line_render = Assets::Get()->TextureFromSurface(surface);
+        Texture* line_render = Assets::Get()->TextureFromSurface(surface);
         SDL_DestroySurface(surface);
         text_lines.push_back(line_render);
     }

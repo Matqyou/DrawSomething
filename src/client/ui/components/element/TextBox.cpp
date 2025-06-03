@@ -9,40 +9,23 @@
 #include <string>
 #include <SDL3_ttf/SDL_ttf.h>
 
-TextBox::TextBox(const Vec2i& pos, const Vec2i& size)
-    : Element(pos, size, DRAW_RECT),
+TextBox::TextBox()
+    : Element(),
       text(nullptr, { 0, 0, 0, 255 }),
       placeholder(nullptr, { 200, 200, 200, 255 }) {
-    name = L"TextBox";
+    this->name = L"TextBox";
+	this->max_length = 100;
 
     // Core
-    callback = [](std::string&) { };
+    this->callback = [](std::string&) { };
 
     // Visual
-    text_pos = pos;
-    placeholder_pos = pos;
-    update_text = true;
-    update_placeholder = true;
-    text_align_horizontally = SimpleAlign::DONT;
-    text_align_vertically = SimpleAlign::DONT;
-}
-
-TextBox::TextBox(const Vec2i& pos, const Vec2i& size, const Vec2i& visual, const Vec2i& offset, SDL_Texture* sdl_texture)
-    : Element(pos, size, visual, offset, sdl_texture),
-      text(nullptr, { 0, 0, 0, 255 }),
-      placeholder(nullptr, { 200, 200, 200, 255 }) {
-    name = L"TextBox";
-
-    // Core
-    callback = [](std::string&) { };
-
-    // Visual
-    text_pos = pos;
-    placeholder_pos = pos;
-    update_text = true;
-    update_placeholder = true;
-    text_align_horizontally = SimpleAlign::DONT;
-    text_align_vertically = SimpleAlign::DONT;
+    this->text_pos = pos;
+    this->placeholder_pos = pos;
+    this->update_text = true;
+    this->update_placeholder = true;
+    this->text_align_horizontally = SimpleAlign::DONT;
+    this->text_align_vertically = SimpleAlign::DONT;
 }
 
 TextBox::~TextBox() {
@@ -84,14 +67,14 @@ void TextBox::UpdateTextPosition(WrappedText& update_text, Vec2i* out_pos) {
 }
 
 // Ticking
-void TextBox::HandleEvent(SDL_Event& event, EventContext& event_summary) {
+void TextBox::HandleEvent(const SDL_Event& sdl_event, EventContext& event_summary) {
     if (event_summary.rapid_context.event_captured)
         return;
 
-    switch (event.type) {
+    switch (sdl_event.type) {
         case SDL_EVENT_MOUSE_MOTION: {
             if (event_summary.cursor_changed == CursorChange::NO_CHANGE &&
-                PointCollides(event.motion.x, event.motion.y)) {
+                PointCollides(sdl_event.motion.x, sdl_event.motion.y)) {
                 event_summary.cursor_changed = CursorChange::TO_IBEAM;
                 SDL_SetCursor(Cursors::sCursorSystemText);
             }
@@ -99,25 +82,40 @@ void TextBox::HandleEvent(SDL_Event& event, EventContext& event_summary) {
             break;
         }
         case SDL_EVENT_MOUSE_BUTTON_DOWN: {
-            if (PointCollides(event.button.x, event.button.y))
+            if (PointCollides(sdl_event.button.x, sdl_event.button.y))
                 parent->SetFocus(this);
 
             break;
         }
-        case SDL_EVENT_TEXT_INPUT: {
-            if (!has_focus) break;
+		case SDL_EVENT_TEXT_INPUT: {
+			if (!has_focus) break;
 
-            text.AppendText(event.text.text);
-            update_text = true;
-            break;
-        }
+			const char* input = sdl_event.text.text;
+			size_t currentLength = text.GetText().length();
+			size_t inputLength = strlen(input);
+
+			if (currentLength < max_length) {
+				size_t availableSpace = max_length - currentLength;
+
+				if (inputLength <= availableSpace) {
+					text.AppendText(input);
+				} else {
+					text.AppendText(std::string(input, availableSpace).c_str());
+				}
+
+				update_text = true;
+			}
+
+			break;
+		}
+
         case SDL_EVENT_KEY_DOWN: {
             if (!has_focus) break;
 
-            if (event.key.key == SDLK_BACKSPACE) {
+            if (sdl_event.key.key == SDLK_BACKSPACE) {
                 text.Backspace();
                 update_text = true;
-            } else if (event.key.key == SDLK_RETURN) { callback(text.GetText()); }
+            } else if (sdl_event.key.key == SDLK_RETURN) { callback(text.GetText()); }
 
             break;
         }
@@ -139,16 +137,7 @@ void TextBox::PostEvent() {
 
 void TextBox::Render() {
     auto drawing = Application::Get()->GetDrawing();
-    if (draw != ElementDraw::DONT_DRAW) {
-        auto& fill_color = has_focus ? focus_color : color;
-
-        if (draw == ElementDraw::DRAW_RECT) {
-            drawing->SetColor(fill_color);
-            drawing->FillRect(GetRect());
-        } else if (draw == ElementDraw::DRAW_TEXTURE) {
-            drawing->RenderTexture(sdl_texture, nullptr, GetVisualRect());
-        }
-    }
+    BaseRender();
 
     if (!text.GetText().empty() || has_focus) {
         SDL_FRect render_rect = {
@@ -160,8 +149,9 @@ void TextBox::Render() {
         auto render_height = (float)text.GetLineHeight();
         auto& lines = text.GetRenderLines();
         for (const auto& line_render : lines) {
-            render_width = line_render->GetWidth();
-            render_height = line_render->GetHeight();
+            Vec2f render_size = line_render->GetOriginalSize();
+            render_width = render_size.x;
+            render_height = render_size.y;
 
             render_rect.w = render_width;
             render_rect.h = render_height;
@@ -174,7 +164,7 @@ void TextBox::Render() {
             auto cursor_y = lines.empty() ? render_rect.y : render_rect.y - render_height;
             auto cursor_top = Vec2f(render_rect.x + render_width, cursor_y);
             auto cursor_bottom = cursor_top + Vec2f(0, render_height);
-            drawing->SetColor(255, 255, 255, 255);
+            drawing->SetColor(text.GetTextColor());
             drawing->DrawLine(cursor_top, cursor_bottom);
         }
     } else {
@@ -184,8 +174,9 @@ void TextBox::Render() {
             0, 0
         };
         for (const auto& line_render : placeholder.GetRenderLines()) {
-            auto render_height = line_render->GetHeight();
-            render_rect.w = line_render->GetWidth();
+            Vec2f render_size = line_render->GetOriginalSize();
+            auto render_height = render_size.y;
+            render_rect.w = render_size.x;
             render_rect.h = render_height;
 
             drawing->RenderTexture(line_render->SDLTexture(), nullptr, render_rect);
@@ -195,6 +186,9 @@ void TextBox::Render() {
 }
 
 void TextBox::PostRefresh() {
+    if (draw == DRAW_TEXTURE) // todo: weird
+        UpdateTexturePlacement();
+
     UpdateTextPosition(text, &text_pos);
     UpdateTextPosition(placeholder, &placeholder_pos);
 }

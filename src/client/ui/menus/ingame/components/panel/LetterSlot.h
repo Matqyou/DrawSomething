@@ -10,7 +10,7 @@ namespace Ingame {
 class Letter;
 class LetterSlot : public Button {
 private:
-    TextureData* generated;
+    Texture* generated;
     Letter* occupied;
 
 public:

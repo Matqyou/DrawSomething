@@ -13,8 +13,8 @@ namespace Ingame {
 class BrushSizeButton : public OverlayButton {
 private:
     float brush_size;
-    TextureData* brush_texture;
-    TextureData* composition_texture;
+    Texture* brush_texture;
+    Texture* composition_texture;
     Cursors::Circular brush_cursor;
 
 public:

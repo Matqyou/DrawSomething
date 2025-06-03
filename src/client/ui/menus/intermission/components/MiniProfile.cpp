@@ -7,28 +7,31 @@
 
 namespace Intermission {
 MiniProfile::MiniProfile()
-    : Frame(Vec2i(0, 0), Vec2i(0, 0), DONT_DRAW) {
-    text = nullptr;
-    profile_picture = nullptr;
-    profile_picture_composition = nullptr;
+    : Frame() {
+   this->text = nullptr;
+   this->profile_picture = nullptr;
+   this->profile_picture_composition = nullptr;
+
     auto assets = Assets::Get();
 
-    text = (TextElement*)(new TextElement(Vec2i(0, 0)))
+    this->text = (TextElement*)(new TextElement())
         ->SetAlign(Align::CENTER, Align::DONT)
         ->SetName("MiniProfileText");
 
-    profile_picture = (Frame*)(new Frame(Vec2i(0, 0), Vec2i(82, 82), DRAW_TEXTURE))
+    this->profile_picture = (Frame*)(new Frame())
+        ->SetSize(Vec2i(82, 82))
+        ->SetDraw(DRAW_TEXTURE)
         ->SetColor(255, 255, 255, 255)
         ->SetAlign(Align::CENTER, Align::DONT)
         ->SetName("MiniProfilePicture");
 
-    SetText("Username");
-    SetProfilePicture(assets->GetTexture(Strings::FString("profile_pictures.cat%d", 1 + rand() % 12)));
+    this->SetText("Username");
+    this->SetProfilePicture(assets->GetTexture(Strings::FString("profile_pictures.cat%d", 1 + rand() % 12)));
 
-    SetFlex(Flex::HEIGHT, 6);
-    SetAdaptive(true, true);
-    SetName("MiniProfile");
-    AddChildren({ text, profile_picture });
+    this->SetFlex(Flex::HEIGHT, 6);
+    this->SetAdaptive(true, true);
+    this->SetName("MiniProfile");
+    this->AddChildren({ text, profile_picture });
 }
 
 MiniProfile::~MiniProfile() {
@@ -40,7 +43,7 @@ void MiniProfile::SetText(const std::string& new_text) {
                      new_text.c_str(), { 255, 255, 255, 255 });
 }
 
-void MiniProfile::SetProfilePicture(TextureData* new_profilepicture) {
+void MiniProfile::SetProfilePicture(Texture* new_profilepicture) {
     auto assets = Assets::Get();
     auto drawing = assets->GetDrawing();
 
@@ -62,6 +65,6 @@ void MiniProfile::SetProfilePicture(TextureData* new_profilepicture) {
     drawing->FillAll();
     drawing->RenderTexture(new_profilepicture->SDLTexture(), nullptr, profilepicture_rect);
 
-    profile_picture->sdl_texture = profile_picture_composition->SDLTexture();
+    profile_picture->SetTexture(profile_picture_composition);
 }
 }

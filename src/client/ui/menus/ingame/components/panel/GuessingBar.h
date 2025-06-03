@@ -31,6 +31,7 @@ public:
 
     // Generating
     [[nodiscard]] bool IsAnsweredCorrectly();
+	[[nodiscard]] std::string GetTypedWord();
 
     // Manipulation
     void GenerateForWord(const std::string& word);
@@ -39,7 +40,7 @@ public:
     void RunCallback() const;
 
     // Ticking
-    void HandleEvent(SDL_Event& event, EventContext& event_summary) override;
+    void HandleEvent(const SDL_Event& sdl_event, EventContext& event_summary) override;
 
 };
 }

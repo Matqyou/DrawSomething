@@ -12,7 +12,7 @@ class LetterSlot;
 class Letter : public Button {
 private:
     char letter;
-    TextureData* generated;
+    Texture* generated;
     LetterSlot* occupy_slot;
 
 public:

@@ -5,6 +5,7 @@
 #include "Element.h"
 
 #include <ranges>
+#include <codecvt>
 #include "../../../../core/Application.h"
 
 std::vector<Element*> Element::sDestroyElements = { };
@@ -27,13 +28,14 @@ void Element::DestroyElements() {
     sDestroyElements.clear();
 }
 
-Element::Element(const Vec2i& relative, const Vec2i& size, ElementDraw draw)
-    : name(L"Element") {
+Element::Element()
+    : name(L"Element"),
+      texture_instance(nullptr) {
     this->parent = nullptr;
-    this->relative = relative;
-    this->pos = relative;
-    this->size = size;
-    this->draw = draw;
+    this->relative = Vec2i(0, 0);
+    this->pos = Vec2i(0, 0);
+    this->size = Vec2i(0, 0);;
+    this->draw = DONT_DRAW;
 
     // Calculated
     this->edge = pos + size;
@@ -41,10 +43,6 @@ Element::Element(const Vec2i& relative, const Vec2i& size, ElementDraw draw)
     // Default
     this->enabled = true;
     this->composition_pos = Vec2i(0, 0);
-    this->visual_size = size;
-    this->visual_offset = Vec2i(0, 0);
-    this->sdl_texture = Assets::Get()->GetInvalidTexture()->SDLTexture(); // todo: might optimize
-    this->fullscreen_element = false;
     this->flex_involved_horizontal = true;
     this->flex_involved_vertical = true;
     this->occupy_width = false;
@@ -58,26 +56,10 @@ Element::Element(const Vec2i& relative, const Vec2i& size, ElementDraw draw)
     this->flex = Flex::DONT;
     this->flex_gap = 0;
     this->has_focus = false;
-    this->color = { 150, 150, 150, 255 };
-    this->focus_color = { 255, 255, 255, 255 };
+    this->color = { 200, 150, 150, 255 };
+    this->focus_color = { 200, 255, 200, 255 };
 
     this->flagged_to_destroy = false;
-}
-
-Element::Element(const Vec2i& pos,
-                 const Vec2i& size,
-                 const Vec2i& visual,
-                 const Vec2i& offset,
-                 SDL_Texture* sdl_texture)
-    : Element(pos, size, DRAW_TEXTURE) {
-    this->visual_size = visual;
-    this->visual_offset = offset;
-    this->sdl_texture = sdl_texture;
-}
-
-Element::Element(const Vec2i& relative, const Vec2i& size, const VisualTexture& visual_texture)
-    : Element(relative, size, DRAW_VISUAL_TEXTURE) {
-    this->visual_texture = visual_texture;
 }
 
 Element::~Element() {
@@ -92,9 +74,12 @@ bool Element::PointCollides(int x, int y) const {
 
 Element* Element::SetChildren(const std::vector<Element*>& children) {
     this->children.clear();
-    for (auto newChild : children) {
-        newChild->SetParent(this);
-        this->children.push_back(newChild);
+    for (auto new_child : children) {
+		if (new_child == nullptr)
+			continue;
+
+        new_child->SetParent(this);
+        this->children.push_back(new_child);
     }
 
     return this;
@@ -102,6 +87,9 @@ Element* Element::SetChildren(const std::vector<Element*>& children) {
 
 Element* Element::AddChildren(const std::vector<Element*>& children) {
     for (auto child : children) {
+		if (child == nullptr)
+			continue;
+
         child->SetParent(this);
         this->children.push_back(child);
     }
@@ -124,12 +112,10 @@ void Element::SetFocus(Element* focus_element) {
         focus_element->has_focus = true;
 }
 
-void Element::UpdateElement(const Vec2i& new_pos, const Vec2i& new_size, const Vec2i& new_visual) {
-    // Only use case I know is for the menu element
-
+void Element::UpdateElement(const Vec2i& new_pos, const Vec2i& new_size) {
     pos = new_pos;
     size = new_size;
-    visual_size = new_visual;
+    edge = pos + size;
 
     Refresh();
 }
@@ -224,7 +210,6 @@ void Element::FlexChildHorizontal_(Element* child, int flex_slice, int& current_
         if (child->occupy_width) {
             child->composition_pos.x = current_flex;
             child->size.x = flex_slice;
-            child->visual_size.x = flex_slice;
             current_flex += flex_slice;
         } else {
             child->composition_pos.x = current_flex;
@@ -241,7 +226,6 @@ void Element::FlexChildVertical_(Element* child, int flex_slice, int& current_fl
         if (child->occupy_height) {
             child->composition_pos.y = current_flex;
             child->size.y = flex_slice;
-            child->visual_size.y = flex_slice;
             current_flex += flex_slice;
         } else {
             child->composition_pos.y = current_flex;
@@ -263,11 +247,9 @@ void Element::Refresh(int child_generation) {
 
             if (child->occupy_fully_width) {
                 child->size.x = size.x;
-                child->visual_size.x = size.x;
             }
             if (child->occupy_fully_height) {
                 child->size.y = size.y;
-                child->visual_size.y = size.y;
             }
             child->Refresh(child_generation + 1);
 
@@ -294,12 +276,10 @@ void Element::Refresh(int child_generation) {
         if (adaptive_width) {
             adaptive_w += flex == Flex::WIDTH ? (num_children - 1) * flex_gap : 0;
             size.x = adaptive_w;
-            visual_size.x = adaptive_w;
         }
         if (adaptive_height) {
             adaptive_h += flex == Flex::HEIGHT ? (num_children - 1) * flex_gap : 0;
             size.y = adaptive_h;
-            visual_size.y = adaptive_h;
         }
     }
     { // 1st gen - flex and align
@@ -359,15 +339,21 @@ void Element::Refresh(int child_generation) {
 }
 
 void Element::UpdateComposition() {
+    PreComposition();
     if (parent != nullptr) {
         pos = parent->pos + composition_pos + relative;
         edge = pos + size;
     }
 
-    for (auto child : children) {
+    // Update positions for objects using gathered composition_pos and parents coordinates
+    for (auto child : children)
         child->UpdateComposition();
-        child->PostRefresh();
-    }
+    PostRefresh();
+}
+
+std::string WStringToUTF8(const std::wstring& wstr) {
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+    return converter.to_bytes(wstr);
 }
 
 void Element::DebugPrint(std::vector<bool> level, bool last_child) {
@@ -417,22 +403,22 @@ void Element::DebugPrint(std::vector<bool> level, bool last_child) {
         Strings::FStringColorsW(L"(%ls%iw&r,%ls%ih&r)", width_color.c_str(), size.x, height_color.c_str(), size.y);
 
     const wchar_t* output_draw = draw == DRAW_RECT ? L"&aRECT □" :
-                                 draw == DRAW_TEXTURE ? L"&aTEXTURE ■" :
-                                 draw == DRAW_VISUAL_TEXTURE ? L"&aVISUAL ■" :
-                                 L"&c□";
+								 draw == DRAW_TEXTURE ? L"&aVISUAL ■" :
+								 L"&c□";
     output_element += Strings::FStringColorsW(L" %ls", output_draw);
 
 //    output_element += Strings::FStringColorsW(L" (&b%d&r, &b%d&r)", edge.x, edge.y);
 
     output_element += Strings::FStringColorsW(L"%s", has_focus ? " &bFOCUSED" : "");
 
-
 //    std::wstring level_output;
 //    for (auto num : level)
 //        level_output += num ? L"1" : L"0";
 //    output_element = level_output + L"\t" + output_element;
 
-    std::wcout << output_element << L"\n";
+//    std::wcout << output_element << L"\n";
+    std::string utf8_output = WStringToUTF8(output_element);
+    std::cout << utf8_output << "\n"; // Output as UTF-8
 
     // Recurse into children
     int index = 0;
@@ -442,15 +428,7 @@ void Element::DebugPrint(std::vector<bool> level, bool last_child) {
     }
 }
 
-void Element::Tick() {
-    TickChildren();
-}
-
-void Element::HandleEvent(SDL_Event& event, EventContext& event_summary) {
-    HandleEventChildren(event, event_summary);
-}
-
-void Element::Render() {
+void Element::BaseRender() {
     if (draw != ElementDraw::DONT_DRAW) {
         auto drawing = Application::Get()->GetDrawing();
 
@@ -459,12 +437,27 @@ void Element::Render() {
             drawing->SetColor(fill_color);
             drawing->FillRect(GetRect());
         } else if (draw == ElementDraw::DRAW_TEXTURE) {
-            drawing->RenderTexture(sdl_texture, nullptr, GetVisualRect());
-        } else if (draw == ElementDraw::DRAW_VISUAL_TEXTURE) {
-            drawing->RenderTexture(visual_texture.SDLTexture(), nullptr, visual_texture.GetVisualRect());
+            if (texture_instance.GetTexture() == nullptr) {
+                drawing->RenderTexture(Assets::Get()->GetInvalidTexture()->SDLTexture(),
+                                       nullptr, texture_instance.GetResultingFRect());
+            } else {
+                drawing->RenderTexture(texture_instance.GetTexture()->SDLTexture(),
+                                       nullptr, texture_instance.GetResultingFRect());
+            }
         }
     }
+}
 
+void Element::Tick(double elapsed_seconds) {
+    TickChildren(elapsed_seconds);
+}
+
+void Element::HandleEvent(const SDL_Event& sdl_event, EventContext& event_summary) {
+    HandleEventChildren(sdl_event, event_summary);
+}
+
+void Element::Render() {
+    BaseRender();
     RenderChildren();
 }
 
@@ -480,8 +473,10 @@ void Element::RenderDebug() {
     auto drawing = Application::Get()->GetDrawing();
 
     drawing->SetDrawBlendMode(SDL_BLENDMODE_BLEND);
-    drawing->SetColor(0, 255, 0, 255);
-    drawing->DrawRect(GetVisualRect());
+    if (draw == DRAW_TEXTURE) {
+        drawing->SetColor(0, 255, 0, 255);
+        drawing->DrawRect(texture_instance.GetResultingFRect());
+    }
 
     SDL_Color debug_color;
     if (occupy_width || occupy_height) debug_color = { 128, 0, 255 };
@@ -499,9 +494,13 @@ void Element::PostEvent() {
     PostEventChildren();
 }
 
+void Element::PreComposition() {
+
+}
+
 void Element::PostRefresh() {
-    if (draw == DRAW_VISUAL_TEXTURE)
-        UpdateVisualTexture();
+    if (draw == DRAW_TEXTURE)
+        UpdateTexturePlacement();
 }
 
 void Element::PostEventChildren() const {
@@ -513,21 +512,21 @@ void Element::PostEventChildren() const {
     }
 }
 
-void Element::TickChildren() const {
+void Element::TickChildren(double elapsed_seconds) const {
     for (auto child : children) {
         if (!child->enabled)
             continue;
 
-        child->Tick();
+        child->Tick(elapsed_seconds);
     }
 }
 
-void Element::HandleEventChildren(SDL_Event& event, EventContext& event_summary) {
+void Element::HandleEventChildren(const SDL_Event& sdl_event, EventContext& event_summary) {
     for (auto child : std::ranges::reverse_view(children)) {
         if (!child->enabled)
             continue;
 
-        child->HandleEvent(event, event_summary);
+        child->HandleEvent(sdl_event, event_summary);
     }
 }
 
@@ -549,6 +548,6 @@ void Element::RenderDebugChildren() const {
     }
 }
 
-void Element::UpdateVisualTexture() {
-    visual_texture.UpdateRect(GetRect());
+void Element::UpdateTexturePlacement() {
+    texture_instance.UpdateWithNewPlacement(GetRect());
 }

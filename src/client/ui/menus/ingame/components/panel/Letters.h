@@ -27,7 +27,7 @@ public:
     void BlowUp();
 
     // Ticking
-    void HandleEvent(SDL_Event& event, EventContext& event_summary) override;
+    void HandleEvent(const SDL_Event& sdl_event, EventContext& event_summary) override;
 
 };
 }

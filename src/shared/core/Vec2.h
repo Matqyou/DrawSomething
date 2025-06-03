@@ -18,7 +18,6 @@ public:
     template<class U>
     explicit Vec2(const Vec2<U>& other);
 
-
     // Returned math operations
     [[nodiscard]] Vec2 operator+(const Vec2& v) const;
     [[nodiscard]] Vec2 operator-(const Vec2& v) const;

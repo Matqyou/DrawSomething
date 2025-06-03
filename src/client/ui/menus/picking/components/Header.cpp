@@ -5,19 +5,22 @@
 #include "Header.h"
 
 namespace Picking {
-static void sHeaderRecoloring(TextureData* header) {
-    header->SetColorMod(100, 190, 255);
-}
-
-static LinkTexture sTextureHeader("header", sHeaderRecoloring);
+static PregenerateTexture sTextureHeader("picking_menu_header", [](AssetsClass *assets) -> Texture *
+{
+	auto header_texture = assets->GetTexture("header");
+	return header_texture->CopyTexture(SDL_TEXTUREACCESS_TARGET)
+		->SetColorMod(216, 112, 43);
+});
+static LinkTexture sTextureCard("picking.card");
 
 Header::Header() :
-    Frame(Vec2i(0, 0),
-          Vec2i(0, 80),
-          VisualTexture(sTextureHeader.GetSDLTexture())) {
+    Frame() {
 
-    SetFullyOccupy(true, false);
-    SetName("Header");
+    this->SetSize(Vec2i(0, 58));
+    this->SetTexture(sTextureHeader.GetTexture()->SetColorMod(216, 112, 43));
+    this->SetDraw(DRAW_TEXTURE);
+    this->SetFullyOccupy(true, false);
+    this->SetName("Header");
 }
 
 Header::~Header() {

@@ -29,7 +29,7 @@ private:
 
 public:
     Statistics();
-    ~Statistics();
+    ~Statistics() override;
 
     // Manipulating
     void UpdateInfo(GameInfo* game_info);

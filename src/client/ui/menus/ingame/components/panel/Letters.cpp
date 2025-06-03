@@ -10,11 +10,9 @@
 
 namespace Ingame {
 Letters::Letters(GuessingBar* guessing_bar)
-    : Frame(Vec2i(0, 0),
-            Vec2i(0, 0),
-            DONT_DRAW) {
-    guess_word = "not set";
-    guessing_bar_ = guessing_bar;
+    : Frame() {
+    this->guess_word = "not set";
+    this->guessing_bar_ = guessing_bar;
 
     for (int i = 0; i < 12; i++) {
         auto new_letter = new Letter();
@@ -33,9 +31,8 @@ Letters::Letters(GuessingBar* guessing_bar)
     std::vector<Element*> top_row_letters(all_letters.begin() + letters_midpoint, all_letters.end());
 
     // Top row
-    top_row = (Frame*)(new Frame(Vec2i(0, 0),
-                                 Vec2i(66, 66),
-                                 DONT_DRAW))
+    top_row = (Frame*)(new Frame())
+        ->SetSize(Vec2i(66, 66))
         ->SetAlign(Align::CENTER, Align::DONT)
         ->SetFlex(Flex::WIDTH, 5)
         ->SetAdaptive(true, true)
@@ -43,22 +40,19 @@ Letters::Letters(GuessingBar* guessing_bar)
         ->AddChildren(top_row_letters);
 
     // Bottom row
-    bottom_row = (Frame*)(new Frame(Vec2i(0, 0),
-                                    Vec2i(66, 66),
-                                    DONT_DRAW))
+    bottom_row = (Frame*)(new Frame())
+        ->SetSize(Vec2i(66, 66))
         ->SetAlign(Align::CENTER, Align::DONT)
         ->SetFlex(Flex::WIDTH, 5)
         ->SetAdaptive(true, true)
         ->SetName("BottomRow")
         ->AddChildren(bottom_row_letters);
 
-//    RandomizeWord("TESTING");
-
-    SetAlign(Align::CENTER, Align::CENTER);
-    SetAdaptive(true, true);
-    SetFlex(Flex::HEIGHT, 5);
-    SetName("AllRows");
-    AddChildren({ top_row, bottom_row });
+    this->SetAlign(Align::CENTER, Align::CENTER);
+    this->SetAdaptive(true, true);
+    this->SetFlex(Flex::HEIGHT, 5);
+    this->SetName("AllRows");
+    this->AddChildren({ top_row, bottom_row });
 }
 
 Letters::~Letters() {
@@ -130,12 +124,12 @@ void Letters::BlowUp() {
     }
 }
 
-void Letters::HandleEvent(SDL_Event& event, EventContext& event_summary) {
-    HandleEventChildren(event, event_summary);
+void Letters::HandleEvent(const SDL_Event& sdl_event, EventContext& event_summary) {
+    HandleEventChildren(sdl_event, event_summary);
 
-    switch (event.type) {
+    switch (sdl_event.type) {
         case SDL_EVENT_TEXT_INPUT: {
-            char pressed_character = (char)std::toupper((int)event.text.text[0]);
+            char pressed_character = (char)std::toupper((int)sdl_event.text.text[0]);
             for (auto letter : all_letters) {
                 if (letter->GetOccupySlot() != nullptr || letter->draw == ElementDraw::DONT_DRAW)
                     continue;

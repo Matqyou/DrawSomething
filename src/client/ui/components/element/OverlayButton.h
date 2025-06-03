@@ -8,24 +8,20 @@
 
 class OverlayButton : public Button {
 protected:
-    VisualTexture overlay_visual_texture;
+    VisualTextureInstance overlay_texture_instance;
 
 public:
-    OverlayButton(const Vec2i& pos,
-                  const Vec2i& size,
-                  const VisualTexture& texture,
-                  const VisualTexture& pressed_texture,
-                  const VisualTexture& overlay_texture);
+    OverlayButton(Texture* texture, Texture* pressed_texture, Texture* overlay_texture);
 
     // Options
-    Button* SetOverlayVisualTexture(const VisualTexture& visual_texture) {
-        this->overlay_visual_texture = visual_texture;
+    Button* SetOverlayTexture(Texture* texture) {
+        this->overlay_texture_instance.ChangeTexture(texture);
         return this;
     }
 
     // Ticking
     void PostRefresh() override;
     void Render() override;
-    void UpdateOverlayVisualTexture();
+    void UpdateOverlayTexture();
 
 };

@@ -5,10 +5,9 @@
 #pragma once
 
 #include "SDL3/SDL.h"
-#include "../../../../../shared/Protocol.h"
 #include "../../../../core/app/Drawing.h"
 #include "../../../../core/Rectangles.h"
-#include "../../../structures/VisualTexture.h"
+#include "../../../structures/visual_texture/VisualTexture.h"
 #include "../../event/EventContext.h"
 
 enum class Flex {
@@ -17,33 +16,56 @@ enum class Flex {
     HEIGHT,
 };
 
+enum class Orientation {
+    VERTICAL,
+    HORIZONTAL,
+};
+
 enum ElementDraw {
     DONT_DRAW,
     DRAW_RECT,
     DRAW_TEXTURE,
-    DRAW_VISUAL_TEXTURE,
+};
+
+enum class SimpleAlign {
+    DONT,
+    LEFT,
+    CENTER,
+    RIGHT,
+    TOP = LEFT,
+    BOTTOM = RIGHT,
+};
+
+enum class Align {
+    DONT,
+    BEHIND_LEFT,
+    LEFT,
+    CENTER,
+    RIGHT,
+    BEHIND_RIGHT,
+    ABOVE_TOP = BEHIND_LEFT,
+    TOP = LEFT,
+    BOTTOM = RIGHT,
+    UNDER_BOTTOM = BEHIND_RIGHT,
 };
 
 struct Element {
 protected:
-    Vec2i composition_pos;
-    void UpdateComposition();
-
     static std::vector<Element*> sDestroyElements;
 
 public:
     Element* parent;
     std::vector<Element*> children;
 
+    Vec2i composition_pos;
+    void UpdateComposition();
+
     Vec2i relative, pos, size, edge;
-    Vec2i visual_size, visual_offset;
     ElementDraw draw;
-    SDL_Texture* sdl_texture;
-    VisualTexture visual_texture;
+    VisualTextureInstance texture_instance;
     std::wstring name;
 
     bool enabled;
-    bool fullscreen_element;
     bool flex_involved_horizontal, flex_involved_vertical;
     bool occupy_width, occupy_height;
     bool occupy_fully_width, occupy_fully_height;
@@ -68,28 +90,17 @@ private:
     void FlexChildVertical_(Element* child, int flex_slice, int& current_flex) const;
 
 public:
-    Element(const Vec2i& relative, const Vec2i& size, ElementDraw draw);
-    Element(const Vec2i& relative,
-            const Vec2i& size,
-            const Vec2i& visual,
-            const Vec2i& offset,
-            SDL_Texture* sdl_texture);
-    Element(const Vec2i& relative, const Vec2i& size, const VisualTexture& visual_texture);
+    Element();
     virtual ~Element();
 
     // Getting
-    [[nodiscard]] SDL_Texture* SDLTexture() const { return sdl_texture; }
+    [[nodiscard]] VisualTextureInstance& GetVisualTexture() { return texture_instance; }
+    [[nodiscard]] Vec2f GetSize() const { return Vec2f(size); }
     [[nodiscard]] SDL_FRect GetRect() const {
         return SDL_FRect((float)pos.x,
                          (float)pos.y,
                          (float)size.x,
                          (float)size.y);
-    }
-    [[nodiscard]] SDL_FRect GetVisualRect() const {
-        return SDL_FRect((float)(pos.x + visual_offset.x),
-                         (float)(pos.y + visual_offset.y),
-                         (float)visual_size.x,
-                         (float)visual_size.y);
     }
 
     // Generating
@@ -100,6 +111,14 @@ public:
     Element* AddChildren(const std::vector<Element*>& children);
     Element* SetEnabled(bool enabled) {
         this->enabled = enabled;
+        return this;
+    }
+    Element* SetRelative(const Vec2i& relative) {
+        this->relative = relative;
+        return this;
+    }
+    Element* SetSize(const Vec2i& size) {
+        this->size = size;
         return this;
     }
     Element* SetDraw(ElementDraw new_draw) {
@@ -156,21 +175,13 @@ public:
         this->focus_color = { r, g, b, a };
         return this;
     }
-    Element* SetSDLTexture(SDL_Texture* sdl_texture) {
-        this->sdl_texture = sdl_texture;
-        return this;
-    }
-    Element* SetVisualTexture(const VisualTexture& visual_texture) {
-        this->visual_texture = visual_texture;
+    Element* SetTexture(Texture* texture) {
+        this->texture_instance.ChangeTexture(texture);
         return this;
     }
     Element* ResizeToTexture() {
-        this->size = Vec2i(visual_texture.GetOriginalTextureSize());
+        this->size = Vec2i(texture_instance.GetTexture()->GetOriginalSize());
         this->edge = pos + size;
-        return this;
-    }
-    Element* SetFullscreenElement() {
-        this->fullscreen_element = true;
         return this;
     }
 
@@ -180,24 +191,27 @@ public:
     // Manipulating
     void UnfocusChildren();
     void SetFocus(Element* focus_element);
-    void UpdateElement(const Vec2i& new_pos, const Vec2i& new_size, const Vec2i& new_visual);
+    void UpdateElement(const Vec2i& new_pos, const Vec2i& new_size);
     void Refresh(int child_generation = 0);
     void DebugPrint(std::vector<bool> level = { }, bool last_child = true);
     void FlagToDestroy();
 
     // Ticking
-    virtual void Tick();
-    virtual void HandleEvent(SDL_Event& event, EventContext& event_summary);
+    void BaseRender();
+
+    virtual void Tick(double elapsed_seconds);
+    virtual void HandleEvent(const SDL_Event& sdl_event, EventContext& event_summary);
     virtual void Render();
     virtual void RenderDebug();
     virtual void PostEvent();
+    virtual void PreComposition();
     virtual void PostRefresh();
 
     void PostEventChildren() const;
-    void TickChildren() const;
-    void HandleEventChildren(SDL_Event& event, EventContext& event_summary);
+    void TickChildren(double elapsed_seconds) const;
+    void HandleEventChildren(const SDL_Event& sdl_event, EventContext& event_summary);
     void RenderChildren() const;
     void RenderDebugChildren() const;
-    void UpdateVisualTexture();
+    void UpdateTexturePlacement();
 
 };

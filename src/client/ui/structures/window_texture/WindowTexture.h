@@ -10,7 +10,7 @@
 class WindowTexture {
 private:
     Sheet* sheet;
-    TextureData* generated;
+    Texture* generated;
     Vec2f generate_size;
 
     float left_scaling;
@@ -23,10 +23,10 @@ public:
     ~WindowTexture();
 
     // Getting
-    [[nodiscard]] TextureData* GetGenerated() const { return generated; }
+    [[nodiscard]] Texture* GetGenerated() const { return generated; }
     [[nodiscard]] Vec2f GetSize() const { return generate_size; }
 
     // Manipulation
-    TextureData* Generate(AssetsClass* assets, const Vec2f& new_size);
+    Texture* Generate(AssetsClass* assets, const Vec2f& new_size);
 
 };

@@ -19,7 +19,7 @@ FlyingParticle::FlyingParticle(const Vec2f& pos,
                                float angle,
                                float angular_momentum,
                                float angular_decay,
-                               TextureData* texture_data) {
+                               Texture* texture_data) {
     this->pos = pos;
     this->size = size;
     this->size_decay = size_decay;
@@ -29,7 +29,7 @@ FlyingParticle::FlyingParticle(const Vec2f& pos,
     this->angle = angle;
     this->angular_momentum = angular_momentum;
     this->angular_decay = angular_decay;
-    this->texture_data = texture_data;
+    this->texture = texture_data;
     this->active = true;
 }
 
@@ -57,7 +57,7 @@ void FlyingParticle::Tick() {
 
 void FlyingParticle::Render() {
 #ifndef NDEBUG
-    if (texture_data->SDLTexture() == nullptr)
+    if (texture->SDLTexture() == nullptr)
         throw std::runtime_error("sdl_texture of Particle was nullptr");
 #endif
 
@@ -69,5 +69,5 @@ void FlyingParticle::Render() {
         size.x,
         size.y,
     };
-    drawing->RenderTextureEx(texture_data->SDLTexture(), nullptr, particle_rect, angle, nullptr, SDL_FLIP_NONE);
+    drawing->RenderTextureEx(texture->SDLTexture(), nullptr, particle_rect, angle, nullptr, SDL_FLIP_NONE);
 }

@@ -14,10 +14,12 @@
 class TextBox : public Element {
 private:
     using Callback = std::function<void(std::string&)>;
+    using FilterCallback = std::function<std::string(std::string&)>;
 
     // Core
     WrappedText text;
     WrappedText placeholder;
+	int max_length;
     Callback callback;
 
     // Visual
@@ -29,8 +31,7 @@ private:
     void UpdateTextPosition(WrappedText& text, Vec2i* out_pos);
 
 public:
-    TextBox(const Vec2i& pos, const Vec2i& size);
-    TextBox(const Vec2i& pos, const Vec2i& size, const Vec2i& visual, const Vec2i& offset, SDL_Texture* sdl_texture);
+    TextBox();
     ~TextBox() override;
 
     // Getting
@@ -62,7 +63,11 @@ public:
         return this;
     }
     TextBox* SetCallback(Callback callback) {
-        this->callback = callback;
+        this->callback = std::move(callback);
+        return this;
+    }
+    TextBox* SetFilter(const FilterCallback& filter_callback) {
+        this->text.SetFilter(filter_callback);
         return this;
     }
     TextBox* SetTextAlign(SimpleAlign horizontal, SimpleAlign vertical) {
@@ -70,9 +75,13 @@ public:
         this->text_align_vertically = vertical;
         return this;
     }
+	TextBox* SetMaxLength(int new_max_length) {
+		this->max_length = new_max_length;
+		return this;
+	}
 
     // Ticking
-    void HandleEvent(SDL_Event& event, EventContext& event_summary) override;
+    void HandleEvent(const SDL_Event& sdl_event, EventContext& event_summary) override;
     void PostEvent() override;
     void Render() override;
     void PostRefresh() override;

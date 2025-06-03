@@ -5,9 +5,11 @@
 #include "Clock.h"
 #include <stdexcept>
 
-Clock::Clock(double framerate) {
+Clock::Clock(double framerate, double idle_framerate) {
     Framerate = 1.0;
-    NanoDelay = 1e9;
+	InitialFramerate = framerate;
+	IdleFramerate = idle_framerate;
+	NanoDelay = 1e9;
     TotalNanoElapsed = 0;
     NanoElapsed = 0;
     VeryBeginning = HNow();
@@ -29,6 +31,16 @@ void Clock::Tick() {
     Ticks++;
 }
 
+void Clock::ResetFramerate()
+{
+	SetFramerate(InitialFramerate);
+}
+
+void Clock::SetIdleFramerate()
+{
+	SetFramerate(IdleFramerate);
+}
+
 void Clock::SetFramerate(double framerate) {
     if (framerate <= 0.0)
         throw std::invalid_argument("Invalid clock framerate was set");
@@ -37,8 +49,8 @@ void Clock::SetFramerate(double framerate) {
     NanoDelay = (long long)(1e9 / framerate);
 }
 
-NonBlockingClock::NonBlockingClock(double framerate)
-    : Clock(framerate) {
+NonBlockingClock::NonBlockingClock(double framerate, double idle_framerate)
+    : Clock(framerate, idle_framerate) {
 
 }
 

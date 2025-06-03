@@ -6,26 +6,31 @@
 #include "../../core/Application.h"
 
 FullscreenMenu::FullscreenMenu()
-    : Frame(Vec2i(0, 0), Vec2i(0, 0), DRAW_RECT) {
-    name = L"FullscreenMenu";
+    : Frame() {
+    this->name = L"FullscreenMenu";
+
+    this->SetDraw(DRAW_RECT);
 }
 
-void FullscreenMenu::HandleEvent(SDL_Event& sdl_event, EventContext& event_summary) {
-    HandleEventChildren(sdl_event, event_summary);
-
+void FullscreenMenu::FullscreenEvent(const SDL_Event& sdl_event, EventContext& event_summary) {
     // When multiple menus are stacked, the oldest one will prevent events from passing onto lower menus
     event_summary.rapid_context.event_captured = true;
 
     switch (sdl_event.type) {
         case SDL_EVENT_WINDOW_RESIZED: {
-            RefreshMenu();
+            this->RefreshMenu();
             break;
         }
     }
 }
 
+void FullscreenMenu::HandleEvent(const SDL_Event& sdl_event, EventContext& event_summary) {
+    this->HandleEventChildren(sdl_event, event_summary);
+
+    this->FullscreenEvent(sdl_event, event_summary);
+}
+
 void FullscreenMenu::RefreshMenu() {
-    UpdateElement(Vec2i(0, 0),
-                  Application::Get()->GetResolution(),
-                  Application::Get()->GetResolution());
+    this->UpdateElement(Vec2i(0, 0), Application::Get()->GetResolution());
+    this->UpdateElement(Vec2i(0, 0), Application::Get()->GetResolution()); // temporary fix for adaptive elements :/
 }

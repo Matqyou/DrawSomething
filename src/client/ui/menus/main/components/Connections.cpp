@@ -10,32 +10,29 @@ static LinkTexture sTextureConnectionsHeader("main_menu.friends.header");
 static LinkTexture sTextureConnectionsDiscord("main_menu.friends.button");
 
 Connections::Connections()
-    : Frame(Vec2i(25, -25),
-            Vec2i(0, 0),
-            DONT_DRAW) {
+    : Frame() {
     // Friends title
-    auto friends_title = (new Frame(Vec2i(0, 0),
-                                    Vec2i(560, 60),
-                                    Vec2i(590, 75),
-                                    Vec2i(-15, -15),
-                                    sTextureConnectionsHeader.GetSDLTexture()))
+    auto friends_title = (new Frame())
+        ->SetSize(Vec2i(560, 60))
+        ->SetTexture(sTextureConnectionsHeader.GetTexture())
+        ->SetDraw(DRAW_TEXTURE)
         ->SetName("Title");
 
     // Games create
-    auto friends_link = (new Button(Vec2i(0, 0),
-                                    Vec2i(560, 60),
-                                    VisualTexture(sTextureConnectionsDiscord.GetSDLTexture(),
-                                                  Vec2d(1.0516473731077471, 1.2396694214876034),
-                                                  Vec2d(-0.024555461473327687, 0.0)),
-                                    VisualTexture(nullptr, Vec2d(1.0, 1.0), Vec2d(0.0, 0.0))))
+    auto friends_link = (new Button(sTextureConnectionsDiscord.GetTexture(),
+//                                                  Vec2d(1.0516473731077471, 1.2396694214876034),
+//                                                  Vec2d(-0.024555461473327687, 0.0)),
+                                    nullptr))
+        ->SetSize(Vec2i(560, 60))
         ->SetName("Link");
 
     // Friends window
-    SetAlign(Align::DONT, Align::BOTTOM);
-    SetFlex(Flex::HEIGHT);
-    SetAdaptive(true, true);
-    SetName("Friends");
-    AddChildren({ friends_title, friends_link });
+    this->SetRelative(Vec2i(25, -25));
+    this->SetAlign(Align::DONT, Align::BOTTOM);
+    this->SetFlex(Flex::HEIGHT);
+    this->SetAdaptive(true, true);
+    this->SetName("Friends");
+    this->AddChildren({ friends_title, friends_link });
 }
 
 Connections::~Connections() {

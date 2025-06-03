@@ -14,8 +14,8 @@ void DrawingToolButton::GenerateOverlayColor(const SDL_Color& sdl_color) {
     auto assets = Assets::Get();
     auto drawing = assets->GetDrawing();
 
-    TextureData* overlay_texture = sTextureOutlineSelected.GetTexture();
-    Vec2i overlay_size = Vec2i(overlay_texture->GetSize());
+    Texture* overlay_texture = sTextureOutlineSelected.GetTexture();
+    Vec2i overlay_size = Vec2i(overlay_texture->GetOriginalSize());
 
     delete generated_overlay;
     generated_overlay = assets->CreateTexture(SDL_PIXELFORMAT_RGBA8888,
@@ -27,24 +27,20 @@ void DrawingToolButton::GenerateOverlayColor(const SDL_Color& sdl_color) {
     overlay_texture->SetColorMod(sdl_color);
     drawing->RenderTextureFullscreen(overlay_texture->SDLTexture(), nullptr);
 
-    SetOverlayVisualTexture(VisualTexture(generated_overlay->SDLTexture()));
-    UpdateOverlayVisualTexture();
+    SetOverlayTexture(generated_overlay);
+    UpdateOverlayTexture();
 }
 
-DrawingToolButton::DrawingToolButton(Canvas* canvas,
-                                     ToolSelector* tool_selector,
-                                     const Vec2i& pos,
-                                     const VisualTexture& texture)
-    : OverlayButton(pos, Vec2i(54, 54),
-                    texture,
-                    VisualTexture(nullptr),
-                    VisualTexture(nullptr)) {
-    tool_selector_ = tool_selector;
-    generated_overlay = nullptr;
+DrawingToolButton::DrawingToolButton(Canvas* canvas, ToolSelector* tool_selector)
+    : OverlayButton(nullptr, nullptr, nullptr) {
+    this->name = L"DrawingTool";
+    this->SetSize(Vec2i(54, 54));
+    this->SetAlign(Align::DONT, Align::CENTER);
 
-    brush_frame = (Frame*)(new Frame(Vec2i(0, 0),
-                                     Vec2i(0, 0),
-                                     DONT_DRAW))
+    this->tool_selector_ = tool_selector;
+    this->generated_overlay = nullptr;
+
+    this->brush_frame = (Frame*)(new Frame())
         ->SetAdaptive(true, true)
         ->SetFlex(Flex::HEIGHT)
         ->SetAlign(Align::DONT, Align::ABOVE_TOP)
@@ -53,7 +49,7 @@ DrawingToolButton::DrawingToolButton(Canvas* canvas,
 
     std::vector<Element*> brush_sizes;
     for (int i = 0; i < 4; i++) {
-        auto brush_size = 50.0f - (float)i * 15.0f;
+        auto brush_size = 65.0f - (float)i * 20.0f;
         auto brush_size_button = (new BrushSizeButton(brush_size));
 
         brush_size_button->SetCallback([canvas, brush_size, this, brush_size_button]() {
@@ -65,14 +61,11 @@ DrawingToolButton::DrawingToolButton(Canvas* canvas,
 
         brush_sizes.push_back(brush_size_button);
     }
-    brush_frame->AddChildren(brush_sizes);
-    brush_frame->SetFocus(brush_frame->children.back());
+    this->brush_frame->AddChildren(brush_sizes);
+    this->brush_frame->SetFocus(brush_frame->children.back());
 
-    GenerateBrushesColor(SDL_Color(0, 0, 0, 255));
-
-    SetAlign(Align::DONT, Align::CENTER);
-    SetName("DrawingTool");
-    AddChildren({ brush_frame });
+    this->AddChildren({ brush_frame });
+    this->GenerateBrushesColor(SDL_Color(0, 0, 0, 255));
 }
 
 DrawingToolButton::~DrawingToolButton() {
@@ -95,8 +88,9 @@ void DrawingToolButton::GenerateBrushesColor(const SDL_Color& sdl_color) {
     for (auto brush_size_button : brush_frame->children) {
         auto button = (BrushSizeButton*)brush_size_button;
         button->UpdateColor(sdl_color);
-        button->SetOverlayVisualTexture(overlay_visual_texture);
-        button->UpdateOverlayVisualTexture();
+        // TODO: no idea what i did here
+        button->SetOverlayTexture(generated_overlay);
+//        button->UpdateOverlayTexture();
     }
 }
 

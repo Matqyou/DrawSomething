@@ -5,21 +5,17 @@
 #include "OverlayButton.h"
 #include "../../../core/Application.h"
 
-OverlayButton::OverlayButton(const Vec2i& pos,
-                             const Vec2i& size,
-                             const VisualTexture& texture,
-                             const VisualTexture& pressed_texture,
-                             const VisualTexture& overlay_texture)
-    : Button(pos, size, texture, pressed_texture) {
-    name = L"OverlayButton";
-    this->overlay_visual_texture = overlay_texture;
+OverlayButton::OverlayButton(Texture* texture, Texture* pressed_texture, Texture* overlay_texture)
+    : Button(texture, pressed_texture),
+      overlay_texture_instance(overlay_texture) {
+    this->name = L"OverlayButton";
 }
 
 void OverlayButton::PostRefresh() {
-    if (draw == DRAW_VISUAL_TEXTURE) {
-        UpdateVisualTexture();
+    if (draw == DRAW_TEXTURE) {
+        UpdateTexturePlacement();
         UpdatePressedVisualTexture();
-        UpdateOverlayVisualTexture();
+        UpdateOverlayTexture();
     }
 }
 
@@ -32,23 +28,26 @@ void OverlayButton::Render() {
             drawing->SetColor(fill_color);
             drawing->FillRect(GetRect());
         } else if (draw == ElementDraw::DRAW_TEXTURE) {
-            drawing->RenderTexture(sdl_texture, nullptr, GetVisualRect());
-            if (has_focus)
-                drawing->RenderTexture(overlay_visual_texture.SDLTexture(), nullptr, GetVisualRect());
-        } else if (draw == ElementDraw::DRAW_VISUAL_TEXTURE) {
-            if (pressed_down && pressed_visual_texture.SDLTexture() != nullptr) {
-                drawing->RenderTexture(pressed_visual_texture.SDLTexture(), nullptr, pressed_visual_texture.GetVisualRect());
+            SDL_Texture* pressed_sdl_texture = nullptr;
+            if (pressed_texture_instance.GetTexture() != nullptr)
+                pressed_sdl_texture = pressed_texture_instance.GetTexture()->SDLTexture();
+
+            if (pressed_down && pressed_sdl_texture != nullptr) {
+                drawing->RenderTexture(pressed_sdl_texture,
+                                       nullptr, pressed_texture_instance.GetResultingFRect());
             } else {
-                drawing->RenderTexture(visual_texture.SDLTexture(), nullptr, visual_texture.GetVisualRect());
+                drawing->RenderTexture(texture_instance.GetTexture()->SDLTexture(),
+                                       nullptr, texture_instance.GetResultingFRect());
             }
             if (has_focus)
-                drawing->RenderTexture(overlay_visual_texture.SDLTexture(), nullptr, overlay_visual_texture.GetVisualRect());
+                drawing->RenderTexture(overlay_texture_instance.GetTexture()->SDLTexture(),
+                                       nullptr, overlay_texture_instance.GetResultingFRect());
         }
     }
 
     RenderChildren();
 }
 
-void OverlayButton::UpdateOverlayVisualTexture() {
-    overlay_visual_texture.UpdateRect(GetRect());
+void OverlayButton::UpdateOverlayTexture() {
+    overlay_texture_instance.UpdateWithNewPlacement(GetRect());
 }

@@ -31,9 +31,9 @@ App::App(const char* title,
          const char* version,
          const char* identifier,
          const Vec2i& resolution,
-         double framerate,
+         double framerate, double idle_framerate,
          const char* renderer_backend)
-    : clock(framerate) {
+    : clock(framerate, idle_framerate) {
     system("");
     Strings::PrintDivider(title);
 
@@ -44,6 +44,8 @@ App::App(const char* title,
         std::wcout << Strings::FStringColorsW(L"[Application] &cCould not set SDL Metadata\n");
         std::wcout << Strings::FStringColorsW(L"[Application] &cReason: %s\n", SDL_GetError());
     }
+
+	SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
 
     bool init_sdl = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS);
     if (!init_sdl)

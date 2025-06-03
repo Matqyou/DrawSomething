@@ -12,7 +12,7 @@ class MiniProfile : public Frame {
 private:
     TextElement* text;
     Frame* profile_picture;
-    TextureData* profile_picture_composition;
+    Texture* profile_picture_composition;
 
 public:
     MiniProfile();
@@ -20,7 +20,7 @@ public:
 
     // Manipulation
     void SetText(const std::string& new_text);
-    void SetProfilePicture(TextureData* new_profilepicture);
+    void SetProfilePicture(Texture* new_profilepicture);
 
 };
 }

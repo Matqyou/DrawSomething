@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "SDL3_image/SDL_image.h"
-#include <cmath>
-#include "Assets.h"
 #include "../../../shared/core/Vec2.h"
+#include "SDL3_image/SDL_image.h"
+#include "Assets.h"
+#include <cmath>
 
 class Drawing {
 private:
@@ -23,7 +23,7 @@ public:
     [[nodiscard]] SDL_Renderer* Renderer() const { return m_Renderer; }
 
     // Setting
-    void SetRenderTarget(TextureData* target);
+    void SetRenderTarget(Texture* target);
     void SetRenderTargetSDL(SDL_Texture* target);
     void SetDrawBlendMode(SDL_BlendMode blend_mode) { SDL_SetRenderDrawBlendMode(m_Renderer, blend_mode); }
     void SetColor(Uint8 r, Uint8 g, Uint8 b, Uint8 a) { SDL_SetRenderDrawColor(m_Renderer, r, g, b, a); }
@@ -44,7 +44,7 @@ public:
                        double radius,
                        SDL_Color text_color = { 255, 255, 255, 255 });
     void RenderTexture(SDL_Texture* texture, SDL_FRect* srcrect, const SDL_FRect& dstrect);
-    void RenderTextureFullscreen(SDL_Texture*, SDL_FRect* srcrect);
+    void RenderTextureFullscreen(SDL_Texture*, SDL_FRect* srcrect = nullptr);
     void RenderTextureEx(SDL_Texture* texture,
                          SDL_FRect* srcrect,
                          const SDL_FRect& dstrect,

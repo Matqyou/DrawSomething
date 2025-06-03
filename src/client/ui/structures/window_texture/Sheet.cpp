@@ -41,16 +41,16 @@ Sheet::~Sheet() {
     delete bottom_right;
 }
 
-void Sheet::Generate(AssetsClass* assets, TextureData* sheet) {
+void Sheet::Generate(AssetsClass* assets, Texture* sheet) {
     auto drawing = assets->GetDrawing();
 
     this->sheet = sheet;
 
-    auto resolution = Vec2i(sheet->GetSize());
+    auto resolution = Vec2i(sheet->GetOriginalSize());
     if (resolution.x != resolution.y || resolution.x % 3 != 0)
         std::wcout << Strings::FStringColorsW(L"[Warning] &cSheet.h Sheet() resolution is not split equally\n");
 
-    std::pair<TextureData**, SDL_Texture**> sheet_order[9] = {
+    std::pair<Texture**, SDL_Texture**> sheet_order[9] = {
         std::pair(&top_left, &top_left_sdl),
         std::pair(&top, &top_sdl),
         std::pair(&top_right, &top_right_sdl),

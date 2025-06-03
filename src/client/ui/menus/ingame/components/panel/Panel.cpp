@@ -5,77 +5,129 @@
 #include "Panel.h"
 #include "../../../../../core/Application.h"
 #include "../../../../components/element/Button.h"
+#include "../../../../../network/NetworkClient.h"
+#include "../../../../../game/GameData.h"
+#include "client/ui/menus/main/MainMenu.h"
+#include "client/ui/menus/intermission/IntermissionMenu.h"
 
-namespace Ingame {
+namespace Ingame
+{
 LinkTexture Panel::game_palette_background("game.ingame_panel.letter_palette.background");
 LinkTexture Panel::game_palette_bomba("game.ingame_panel.letter_palette.bomba");
 
-void Panel::ResetBomba() {
-    bomba_button->SetClickable(true);
+void Panel::ResetBomba()
+{
+	bomba_button->SetClickable(true);
 }
 
 Panel::Panel()
-    : Frame(Vec2i(0, 0), Vec2i(0, 0), DONT_DRAW) {
-    // Guessing bar
-    guessing_bar = new GuessingBar();
-    guessing_bar->SetCallback([]() { std::wcout << Strings::FStringColorsW(L"&aWord guessed correctly!\n"); });
+	: Frame()
+{
+	// Guessing bar
+	this->guessing_bar = new GuessingBar();
+	this->guessing_bar->SetCallback([this]()
+									{
+										json guess_data;
+										guess_data["game_id"] = Centralized.GetCurrentGame()->game_id;
+										guess_data["guess"] = guessing_bar->GetTypedWord();
+										auto packet = (new Packet("/guess_word", "POST", &guess_data));
+										packet->SetErroredCallback([packet]()
+																   {
+																	   delete packet;
+																   });
+										packet->SetResponseCallback([packet](const NetworkResponse& server_response)
+																	{
+																		std::string code = server_response.GetCode();
+																		std::string message = server_response.GetMsg();
 
-    // Rows frame
-    letters = new Letters(guessing_bar);
+																		if (code == "guess_success")
+																		{
+																			if (server_response.response_json.contains("user") && server_response.response_json["user"].is_object())
+																			{
+																				json user_data = server_response.response_json["user"];
+																				auto account = Centralized.GetAccount().ParseFromJson(user_data);
+																				Centralized.main_menu->Header()->RefreshData();
+																			}
 
-    // Rows side
-    auto rows = (new Frame(Vec2i(0, 0),
-                           Vec2i(0, 0),
-                           DONT_DRAW))
-        ->SetOccupy(true, false)
-        ->SetFullyOccupy(false, true)
-        ->SetName("Rows")
-        ->AddChildren({ letters });
+																			if (server_response.response_json.contains("game") && server_response.response_json["game"].is_object())
+																			{
+																				json game_data = server_response.response_json["game"];
+																				int game_id = game_data.value("game_id", -1);
+																				Centralized.GetGame(game_id)->ParseFromJson(game_data, true);
+																				Centralized.SortGames();
+																			}
 
-    // Bomba
-    bomba_button = (Button*)(new Button(Vec2i(0, 0),
-                                        Vec2i(98, 147),
-                                        VisualTexture(game_palette_bomba.GetSDLTexture(), Vec2d(1.0, 1.0), Vec2d(0.0, 0.0)),
-                                        VisualTexture(nullptr, Vec2d(1.0, 1.0), Vec2d(0.0, 0.0))))
-        ->SetAlign(Align::CENTER, Align::CENTER)
-        ->SetName("Bomba");
-    bomba_button->SetCallback([this]() {
-        letters->BlowUp();
-        bomba_button->SetClickable(false);
-    });
+																			Centralized.current_menu = (FullscreenMenu *)Centralized.intermission_menu;
+																			Centralized.intermission_menu->RefreshData();
+																			Centralized.intermission_menu->ShowIntermission();
+																			Centralized.intermission_menu->RefreshMenu();
 
-    // Bomba side
-    auto bomba_frame = (new Frame(Vec2i(0, 0),
-                                  Vec2i(114, 0),
-                                  DONT_DRAW))
-        ->SetFullyOccupy(false, true)
-        ->SetFlex(Flex::WIDTH)
-        ->SetName("Bomba")
-        ->AddChildren({ bomba_button });
+																			dbg_msg("&d[SERVER Response]&r Guessed correctly: %s\n", message.c_str());
+																		}
+																		else if (code == "guess_fail")
+																		{
+																			dbg_msg("&d[SERVER Response]&r Guessing fail: %s\n", message.c_str());
+																		}
+																		delete packet;
+																	});
+										packet->Send();
+									});
 
-    // Letters bar
-    auto letters_bar = (new Frame(Vec2i(0, 0),
-                                  Vec2i(0, 165),
-                                  game_palette_background.GetSDLTexture()))
-        ->SetFullyOccupy(true, false)
-        ->SetFlex(Flex::WIDTH)
-        ->SetName("Bottom")
-        ->AddChildren({ rows, bomba_frame });
+	// Rows frame
+	this->letters = new Letters(guessing_bar);
 
-    SetFullyOccupy(true, false);
-    SetAdaptive(false, true);
-    SetFlex(Flex::HEIGHT);
-    SetName("Panel");
-    AddChildren({ guessing_bar, letters_bar });
+	// Rows side
+	auto rows = (new Frame())
+		->SetOccupy(true, false)
+		->SetFullyOccupy(false, true)
+		->SetName("Rows")
+		->AddChildren({ letters });
+
+	// Bomba
+	this->bomba_button = (Button *)(new Button(game_palette_bomba.GetTexture(), nullptr))
+		->SetSize(Vec2i(98, 147))
+		->SetAlign(Align::CENTER, Align::CENTER)
+		->SetName("Bomba");
+	this->bomba_button->SetCallback([this]()
+									{
+										letters->BlowUp();
+										bomba_button->SetClickable(false);
+									});
+
+	// Bomba side
+	auto bomba_frame = (new Frame())
+		->SetSize(Vec2i(114, 0))
+		->SetFullyOccupy(false, true)
+		->SetFlex(Flex::WIDTH)
+		->SetName("Bomba")
+		->AddChildren({ bomba_button });
+
+	// Letters bar
+	auto letters_bar = (new Frame())
+		->SetSize(Vec2i(0, 165))
+		->SetTexture(game_palette_background.GetTexture())
+		->SetDraw(DRAW_TEXTURE)
+		->SetFullyOccupy(true, false)
+		->SetFlex(Flex::WIDTH)
+		->SetName("Bottom")
+		->AddChildren({ rows, bomba_frame });
+
+	this->SetFullyOccupy(true, false);
+	this->SetAdaptive(false, true);
+	this->SetFlex(Flex::HEIGHT);
+	this->SetName("Panel");
+	this->AddChildren({ guessing_bar, letters_bar });
 }
 
-bool Panel::RandomizeWord(const std::string& word) {
-    if (letters->RandomizeWord(word)) { // todo: make dynamic num of letters but stay at 12
-        guessing_bar->GenerateForWord(word);
-        ResetBomba();
-        return true;
-    }
+bool Panel::RandomizeWord(const std::string& word)
+{
+	if (letters->RandomizeWord(word))
+	{ // todo: make dynamic num of letters but stay at 12
+		guessing_bar->GenerateForWord(word);
+		ResetBomba();
+		return true;
+	}
 
-    return false;
+	return false;
 }
 }

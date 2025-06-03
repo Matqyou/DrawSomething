@@ -19,7 +19,7 @@ public:
     float angle;
     float angular_momentum;
     float angular_decay;
-    TextureData* texture_data;
+    Texture* texture;
 
     bool active;
 
@@ -34,7 +34,7 @@ public:
                    float angle,
                    float angular_momentum,
                    float angular_decay,
-                   TextureData* texture_data);
+                   Texture* texture_data);
     ~FlyingParticle();
 
     // Ticking

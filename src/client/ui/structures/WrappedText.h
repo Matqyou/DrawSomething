@@ -12,9 +12,12 @@ class WrappedText {
 private:
     std::string text;
     TTF_Font* font;
-    std::vector<TextureData*> text_lines;
+    std::vector<Texture*> text_lines;
     Vec2i text_lines_size;
     SDL_Color text_color;
+
+    using FilterCallback = std::function<std::string(std::string&)>;
+    FilterCallback filter;
 
 public:
     WrappedText(TTF_Font* font, SDL_Color text_color);
@@ -22,11 +25,12 @@ public:
 
     // Getting
     [[nodiscard]] std::string& GetText() { return text; }
-    [[nodiscard]] std::vector<TextureData*>& GetRenderLines() { return text_lines; }
+    [[nodiscard]] std::vector<Texture*>& GetRenderLines() { return text_lines; }
     [[nodiscard]] Vec2i GetSize() const { return text_lines_size; }
     [[nodiscard]] int GetWidth() const { return text_lines_size.x; }
     [[nodiscard]] int GetHeight() const { return text_lines_size.y; }
     [[nodiscard]] int GetLineHeight() const { return TTF_GetFontHeight(font); }
+    [[nodiscard]] const SDL_Color& GetTextColor() const { return text_color; }
 
     // Options
     WrappedText* SetText(std::string new_text) {
@@ -39,6 +43,10 @@ public:
     }
     WrappedText* SetTextColor(SDL_Color new_color) {
         this->text_color = new_color;
+        return this;
+    }
+    WrappedText* SetFilter(FilterCallback filter_callback) {
+        this->filter = std::move(filter_callback);
         return this;
     }
 

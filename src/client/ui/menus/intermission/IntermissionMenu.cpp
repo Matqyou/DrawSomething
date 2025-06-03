@@ -6,34 +6,41 @@
 #include "../../../core/Application.h"
 #include "../../components/element/Button.h"
 #include "../../CommonUI.h"
+#include "../../../game/GameData.h"
 
-namespace Intermission {
-static TextureData* sGenerateContinueButton_(AssetsClass* assets, TextureData* button_base) {
-    auto drawing = assets->GetDrawing();
+namespace Intermission
+{
+static Texture *sGenerateContinueButton_(AssetsClass *assets, Texture *button_base)
+{
+	if (!button_base->UsesHitbox()) throw std::runtime_error("sGenerateContinueButton_() button_base does not use visual hitbox");
 
-    auto continue_text = assets->RenderTextBlended(CommonUI::sFontSmall.GetFont()->TTFFont(),
-                                                   "continue",
-                                                   { 255, 255, 255, 255 });
-    auto button_size = button_base->GetSize();
-    auto continue_button = assets->CreateTexture(SDL_PIXELFORMAT_RGBA8888,
-                                                 SDL_TEXTUREACCESS_TARGET,
-                                                 (int)button_size.x / 2,
-                                                 (int)button_size.y / 2)
-        ->SetScaleMode(SDL_SCALEMODE_NEAREST)
-        ->FlagForAutomaticDeletion();
-    drawing->SetRenderTarget(continue_button);
-    drawing->RenderTextureFullscreen(button_base->SDLTexture(), nullptr);
-    auto text_rect = Rectangles::CenterRelative(continue_text->GetSize(), Vec2f(193, 56));
-    drawing->RenderTexture(continue_text->SDLTexture(), nullptr, text_rect);
-    delete continue_text;
+	auto drawing = assets->GetDrawing();
 
-    return continue_button;
+	auto continue_text = assets->RenderTextBlended(CommonUI::sFontGiant1.GetFont()->TTFFont(),
+												   "continue",
+												   { 255, 255, 255, 255 });
+	const auto& button_size = button_base->GetOriginalSize();
+	auto continue_button = new VisualTexture(SDL_CreateTexture(drawing->Renderer(),
+															   SDL_PIXELFORMAT_RGBA8888,
+															   SDL_TEXTUREACCESS_TARGET,
+															   (int)button_size.x,
+															   (int)button_size.y),
+											 ((VisualTexture *)(button_base))->GetHitbox());
+	drawing->SetRenderTarget(continue_button);
+	drawing->RenderTextureFullscreen(button_base->SDLTexture(), nullptr);
+	auto text_rect = Rectangles::CenterRelative(continue_text->GetOriginalSize(), Vec2f(386, 112));
+	drawing->RenderTexture(continue_text->SDLTexture(), nullptr, text_rect);
+	delete continue_text;
+
+	return continue_button;
 }
-static TextureData* sGenerateContinueButton(AssetsClass* assets) {
-    return sGenerateContinueButton_(assets, assets->GetTexture("button2"));
+static Texture *sGenerateContinueButton(AssetsClass *assets)
+{
+	return sGenerateContinueButton_(assets, assets->GetTexture("button2"));
 }
-static TextureData* sGenerateContinueButtonPressed(AssetsClass* assets) {
-    return sGenerateContinueButton_(assets, assets->GetTexture("button_pressed"));
+static Texture *sGenerateContinueButtonPressed(AssetsClass *assets)
+{
+	return sGenerateContinueButton_(assets, assets->GetTexture("button_pressed"));
 }
 
 static LinkTexture sTextureHeader("intermission.header.background");
@@ -43,267 +50,307 @@ static LinkTexture sTextureButton("button2");
 static LinkTexture sTextureButtonPressed("button_pressed");
 static PregenerateTexture sTextureContinueButton("intermission.continue_button", sGenerateContinueButton);
 static PregenerateTexture
-    sTextureContinueButtonPressed("intermission.continue_button_pressed", sGenerateContinueButtonPressed);
+	sTextureContinueButtonPressed("intermission.continue_button_pressed", sGenerateContinueButtonPressed);
 
 }
 
 IntermissionMenu::IntermissionMenu()
-    : FullscreenMenu() {
-    name = L"IntermissionMenu";
-    auto assets = Assets::Get();
-    this->texture_turn_number = nullptr;
+	: FullscreenMenu()
+{
+	name = L"IntermissionMenu";
+	end_animation_callback = nullptr;
+	countdown_started = false;
+	auto assets = Assets::Get();
 
-    // New record render
-    auto new_record_text =
-        assets->RenderTextBlended(CommonUI::sFontBiggest.GetFont()->TTFFont(),
-                                  "NEW RECORD!",
-                                  { 0, 0, 0, 255 })
-            ->FlagForAutomaticDeletion();
+	// New record text
+	auto new_record = (TextElement *)(new TextElement())
+		->UpdateText(CommonUI::sFontBiggest.GetFont()->TTFFont(),
+					 "NEW RECORD!",
+					 { 0, 0, 0, 255 })
+		->SetAlign(Align::CENTER, Align::CENTER)
+		->SetName("NewRecordText");
 
-    // New record text
-    auto new_record = (Frame*)(new Frame(Vec2i(0, 0),
-                                         Vec2i(new_record_text->GetSize()),
-                                         new_record_text->SDLTexture()))
-        ->SetAlign(Align::CENTER, Align::CENTER)
-        ->SetName("NewRecordText");
 
-    // New record
-    auto bar = (new Frame(Vec2i(0, 100),
-                          Vec2i(0, 68),
-                          Vec2i(0, 75),
-                          Vec2i(0, 0),
-                          Intermission::sTextureHeader.GetSDLTexture()))
-        ->SetFullyOccupy(true, false)
-        ->SetFlexInvolved(false, false)
-        ->SetName("NewRecordBar")
-        ->AddChildren({ new_record });
+	// New record
+	auto bar = (new Frame())
+		->SetRelative(Vec2i(0, 100))
+		->SetSize(Vec2i(0, 68))
+		->SetTexture(Intermission::sTextureHeader.GetTexture())
+		->SetDraw(DRAW_TEXTURE)
+		->SetFullyOccupy(true, false)
+		->SetFlexInvolved(false, false)
+		->SetName("NewRecordBar")
+		->AddChildren({ new_record });
 
-    // Top Frame
-    auto top_frame = (new Frame(Vec2i(0, 0),
-                                Vec2i(0, 175),
-                                DONT_DRAW))
-        ->SetFullyOccupy(true, false)
-        ->SetName("TopFrame")
-        ->AddChildren({ bar });
+	// Top Frame
+	auto top_frame = (new Frame())
+		->SetSize(Vec2i(0, 175))
+		->SetFullyOccupy(true, false)
+		->SetName("TopFrame")
+		->AddChildren({ bar });
 
-    auto turn_render =
-        assets->RenderTextBlended(CommonUI::sFontGiant1.GetFont()->TTFFont(),
-                                  "turn",
-                                  { 255, 255, 255, 255 })
-            ->FlagForAutomaticDeletion();
+	auto turn_text = (new TextElement())
+		->UpdateText(CommonUI::sFontGiant1.GetFont()->TTFFont(),
+					 "turn",
+					 { 255, 255, 255, 255 })
+		->SetRelative(Vec2i(0, 10))
+		->SetAlign(Align::CENTER, Align::DONT)
+		->SetName("TurnText");
 
-    auto turn_text = (new Frame(Vec2i(0, 10),
-                                Vec2i(turn_render->GetSize()),
-                                turn_render->SDLTexture()))
-        ->SetAlign(Align::CENTER, Align::DONT)
-        ->SetName("TurnText");
-    text_turn_number = (Frame*)(new Frame(Vec2i(0, -10),
-                                          Vec2i(0, 0),
-                                          DRAW_TEXTURE))
-        ->SetAlign(Align::CENTER, Align::DONT)
-        ->SetName("TurnNumber");
+	text_turn_number = (TextElement *)(new TextElement())
+		->UpdateText(CommonUI::sFontGiant2.GetFont()->TTFFont(),
+					 "NaN", { 255, 255, 255, 255 })
+		->SetRelative(Vec2i(0, -10))
+		->SetDraw(DRAW_TEXTURE)
+		->SetAlign(Align::CENTER, Align::DONT)
+		->SetName("TurnNumber");
 
-    auto turn_text_frame = (new Frame(Vec2i(0, 0),
-                                      Vec2i(0, 0),
-                                      DONT_DRAW))
-        ->SetFlex(Flex::HEIGHT)
-        ->SetAlign(Align::CENTER, Align::CENTER)
-        ->SetAdaptive(true, true)
-        ->SetName("TurnTextFrame")
-        ->AddChildren({ turn_text, text_turn_number });
+	auto turn_text_frame = (new Frame())
+		->SetFlex(Flex::HEIGHT)
+		->SetAlign(Align::CENTER, Align::CENTER)
+		->SetAdaptive(true, true)
+		->SetName("TurnTextFrame")
+		->AddChildren({ turn_text, text_turn_number });
 
-    auto turn = (new Frame(Vec2i(0, 0),
-                           Vec2i(295 * 0.9, 295 * 0.9),
-                           Vec2i(308 * 0.9, 342 * 0.9),
-                           Vec2i(0, 0),
-                           Intermission::sTextureTurn.GetSDLTexture()))
-        ->SetName("Turn")
-        ->AddChildren({ turn_text_frame });
+	auto turn = (new Frame())
+		->SetSize(Vec2i(295 * 0.9, 295 * 0.9))
+		->SetTexture(Intermission::sTextureTurn.GetTexture())
+		->SetDraw(DRAW_TEXTURE)
+		->SetName("Turn")
+		->AddChildren({ turn_text_frame });
 
-    auto continue_button = (new Button(Vec2i(0, 0),
-                                       Vec2i(193, 56),
-                                       VisualTexture(Intermission::sTextureContinueButton.GetSDLTexture(),
-                                                     Vec2d(1.028423772609819, 1.3716814159292035),
-                                                     Vec2d(0, 0)),
-                                       VisualTexture(Intermission::sTextureContinueButtonPressed.GetSDLTexture(),
-                                                     Vec2d(1.0129198966408268, 1.1150442477876106),
-                                                     Vec2d(0, 0.12903225806451613))))
-        ->SetAlign(Align::CENTER, Align::DONT)
-        ->SetName("ContinueButton");
+	auto continue_button = (Button *)(new Button(Intermission::sTextureContinueButton.GetTexture(),
+												 Intermission::sTextureContinueButtonPressed.GetTexture()))
+		->SetSize(Vec2i(193, 56))
+		->SetAlign(Align::CENTER, Align::DONT)
+		->SetName("ContinueButton");
+	continue_button->SetCallback([this]()
+								 {
+									 this->menu_a->SetEnabled(false);
+									 this->menu_b->SetEnabled(true);
+									 this->BeginAnimation();
+									 this->RefreshMenu();
+								 });
 
-    auto turn_frame = (new Frame(Vec2i(0, 0),
-                                 Vec2i(0, 0),
-                                 DONT_DRAW))
-        ->SetFlex(Flex::HEIGHT, 85)
-        ->SetAlign(Align::CENTER, Align::CENTER)
-        ->SetAdaptive(true, true)
-        ->SetName("TurnFrame")
-        ->AddChildren({ turn, continue_button });
+	auto turn_frame = (new Frame())
+		->SetFlex(Flex::HEIGHT, 85)
+		->SetAlign(Align::CENTER, Align::CENTER)
+		->SetAdaptive(true, true)
+		->SetName("TurnFrame")
+		->AddChildren({ turn, continue_button });
 
-    auto bottom_frame = (new Frame(Vec2i(0, 0),
-                                   Vec2i(0, 0),
-                                   DONT_DRAW))
-        ->SetFullyOccupy(true, false)
-        ->SetOccupy(false, true)
-        ->SetName("BottomFrame")
-        ->AddChildren({ turn_frame });
+	auto bottom_frame = (new Frame())
+		->SetFullyOccupy(true, false)
+		->SetOccupy(false, true)
+		->SetName("BottomFrame")
+		->AddChildren({ turn_frame });
 
-    menu_a = (Frame*)(new Frame(Vec2i(0, 0),
-                                Vec2i(0, 0),
-                                DONT_DRAW))
-        ->SetFlex(Flex::HEIGHT)
-        ->SetFullyOccupy(true, true)
-        ->SetName("MenuA")
-        ->AddChildren({ top_frame, bottom_frame })
-        ->SetEnabled(false);
+	menu_a = (Frame *)(new Frame())
+		->SetFlex(Flex::HEIGHT)
+		->SetFullyOccupy(true, true)
+		->SetName("MenuA")
+		->AddChildren({ top_frame, bottom_frame })
+		->SetEnabled(true);
 
-    // B: Mini title
-    auto mini_title_render = assets->RenderTextBlended(CommonUI::sFontMiniProfile.GetFont()->TTFFont(),
-                                                       "The drawing was guessed correctly!",
-                                                       { 255, 255, 255, 255 })
-        ->FlagForAutomaticDeletion();
+	// B: Mini title text
+	auto mini_title_text = (TextElement *)(new TextElement())
+		->UpdateText(CommonUI::sFontMiniProfile.GetFont()->TTFFont(),
+					 "The drawing was guessed correctly!",
+					 { 255, 255, 255, 255 })
+		->SetAlign(Align::CENTER, Align::DONT)
+		->SetName("TitleText");
 
-    // B: Mini title text
-    auto mini_title_text = (Frame*)(new Frame(Vec2i(0, 0),
-                                              Vec2i(mini_title_render->GetSize()),
-                                              mini_title_render->SDLTexture()))
-        ->SetAlign(Align::CENTER, Align::DONT)
-        ->SetName("TitleText");
+	// B: Title text
+	auto title_text = (TextElement *)(new TextElement())
+		->UpdateText(CommonUI::sFontBiggest.GetFont()->TTFFont(),
+					 "VERI AMAZINK",
+					 { 255, 255, 255, 255 })
+		->SetAlign(Align::CENTER, Align::DONT)
+		->SetName("TitleText");
 
-    // B: Title
-    auto title_render = assets->RenderTextBlended(CommonUI::sFontBiggest.GetFont()->TTFFont(),
-                                                  "VERI AMAZINK",
-                                                  { 255, 255, 255, 255 })
-        ->FlagForAutomaticDeletion();
+	// B: Title frame
+	auto title = (new Frame())
+		->SetSize(Vec2i(150, 68))
+		->SetAlign(Align::CENTER, Align::DONT)
+		->SetFlex(Flex::HEIGHT)
+		->SetAdaptive(true, true)
+		->SetName("TitleFrame")
+		->AddChildren({ mini_title_text, title_text });
 
-    // B: Title text
-    auto title_text = (Frame*)(new Frame(Vec2i(0, 0),
-                                         Vec2i(title_render->GetSize()),
-                                         title_render->SDLTexture()))
-        ->SetAlign(Align::CENTER, Align::DONT)
-        ->SetName("TitleText");
+	mini_profile1 = new Intermission::MiniProfile();
+	mini_profile2 = new Intermission::MiniProfile();
 
-    // B: Title frame
-    auto title = (new Frame(Vec2i(0, 0),
-                            Vec2i(150, 68),
-                            DONT_DRAW))
-        ->SetAlign(Align::CENTER, Align::DONT)
-        ->SetFlex(Flex::HEIGHT)
-        ->SetAdaptive(true, true)
-        ->SetName("TitleFrame")
-        ->AddChildren({ mini_title_text, title_text });
+	auto mini_profiles = (Frame *)(new Frame())
+		->SetFlex(Flex::WIDTH, 75)
+		->SetAdaptive(true, true)
+		->SetName("MiniProfiles")
+		->AddChildren({ mini_profile1, mini_profile2 });
 
-    mini_profile1 = new Intermission::MiniProfile();
-    mini_profile2 = new Intermission::MiniProfile();
+	coins_earned_text = (TextElement *)(new TextElement())
+		->UpdateText(CommonUI::sFontDefault.GetTTFFont(), "COINS EARNED:", { 200, 240, 255, 255 })
+		->SetAlign(Align::CENTER, Align::DONT)
+		->SetName("CoinsEarnedText");
 
-    auto mini_profiles = (Frame*)(new Frame(Vec2i(0, 0), Vec2i(0, 0), DONT_DRAW))
-        ->SetFlex(Flex::WIDTH, 75)
-        ->SetAdaptive(true, true)
-        ->SetName("MiniProfiles")
-        ->AddChildren({ mini_profile1, mini_profile2 });
+	auto coin = (Frame *)(new Frame())
+		->SetSize(Vec2i(36, 36))
+		->SetTexture(Intermission::sTextureCoin.GetTexture())
+		->SetDraw(DRAW_TEXTURE);
+	auto coin_text = (new TextElement())
+		->UpdateText(CommonUI::sFontSmallerBold.GetTTFFont(),
+					 "+1", { 255, 255, 255, 255 })
+		->SetAlign(Align::CENTER, Align::DONT);
+	auto coin_frame = (new Frame())->SetFlex(Flex::HEIGHT)
+		->SetAdaptive(true, true)
+		->AddChildren({ coin, coin_text });
 
-    auto coins_earned_text = (TextElement*)(new TextElement(Vec2i(0, 0)))
-        ->UpdateText(CommonUI::sFontDefault.GetTTFFont(), "COINS EARNED:", { 200, 240, 255, 255 })
-        ->SetAlign(Align::CENTER, Align::DONT)
-        ->SetName("CoinsEarnedText");
+	auto coin2 = (Frame *)(new Frame())
+		->SetSize(Vec2i(36, 36))
+		->SetTexture(Intermission::sTextureCoin.GetTexture())
+		->SetDraw(DRAW_TEXTURE);
+	auto coin_text2 = (new TextElement())
+		->UpdateText(CommonUI::sFontSmallerBold.GetTTFFont(),
+					 "+1", { 255, 255, 255, 255 })
+		->SetAlign(Align::CENTER, Align::DONT);
+	auto coin_frame2 = (new Frame())->SetFlex(Flex::HEIGHT)
+		->SetAdaptive(true, true)
+		->AddChildren({ coin2, coin_text2 });
 
-    auto coin = (Frame*)(new Frame(Vec2i(0, 0), Vec2i(36, 36), Intermission::sTextureCoin.GetSDLTexture()));
-    auto coin_text =  (new TextElement(Vec2i(0, 0)))->UpdateText(CommonUI::sFontSmallerBold.GetTTFFont(), "+1", { 255, 255, 255, 255 })->SetAlign(Align::CENTER, Align::DONT);
-    auto coin_frame = (new Frame())->SetFlex(Flex::HEIGHT)->SetAdaptive(true, true)->AddChildren({ coin, coin_text });
+	auto coin3 = (Frame *)(new Frame())
+		->SetSize(Vec2i(36, 36))
+		->SetTexture(Intermission::sTextureCoin.GetTexture())
+		->SetDraw(DRAW_TEXTURE);
+	auto coin_text3 = (new TextElement())
+		->UpdateText(CommonUI::sFontSmallerBold.GetTTFFont(),
+					 "+1", { 255, 255, 255, 255 })
+		->SetAlign(Align::CENTER, Align::DONT);
+	auto coin_frame3 = (new Frame())->SetFlex(Flex::HEIGHT)
+		->SetAdaptive(true, true)
+		->AddChildren({ coin3, coin_text3 });
 
-    auto coin2 = (Frame*)(new Frame(Vec2i(0, 0), Vec2i(36, 36), Intermission::sTextureCoin.GetSDLTexture()));
-    auto coin_text2 =  (new TextElement(Vec2i(0, 0)))->UpdateText(CommonUI::sFontSmallerBold.GetTTFFont(), "+1", { 255, 255, 255, 255 })->SetAlign(Align::CENTER, Align::DONT);
-    auto coin_frame2 = (new Frame())->SetFlex(Flex::HEIGHT)->SetAdaptive(true, true)->AddChildren({ coin2, coin_text2 });
+	coins_frame = (Frame *)(new Frame())
+		->SetAlign(Align::CENTER, Align::DONT)
+		->SetFlex(Flex::WIDTH, 6)
+		->SetAdaptive(true, true)
+		->SetName("CoinsFrame")
+		->AddChildren({ coin_frame, coin_frame2, coin_frame3 });
 
-    auto coin3 = (Frame*)(new Frame(Vec2i(0, 0), Vec2i(36, 36), Intermission::sTextureCoin.GetSDLTexture()));
-    auto coin_text3 =  (new TextElement(Vec2i(0, 0)))->UpdateText(CommonUI::sFontSmallerBold.GetTTFFont(), "+1", { 255, 255, 255, 255 })->SetAlign(Align::CENTER, Align::DONT);
-    auto coin_frame3 = (new Frame())->SetFlex(Flex::HEIGHT)->SetAdaptive(true, true)->AddChildren({ coin3, coin_text3 });
+	auto coins_earned_frame = (Frame *)(new Frame())
+		->SetAlign(Align::CENTER, Align::DONT)
+		->SetAdaptive(true, true)
+		->SetFlex(Flex::HEIGHT)
+		->AddChildren({ coins_earned_text, coins_frame });
 
-    auto coins_frame = (Frame*)(new Frame(Vec2i(0, 0), Vec2i(0, 0), DONT_DRAW))
-        ->SetAlign(Align::CENTER, Align::DONT)
-        ->SetFlex(Flex::WIDTH, 6)
-        ->SetAdaptive(true, true)
-        ->SetName("CoinsFrame")
-        ->AddChildren({ coin_frame, coin_frame2, coin_frame3 });
+	auto stats_elements = (Frame *)(new Frame())
+		->SetAlign(Align::CENTER, Align::CENTER)
+		->SetFlex(Flex::HEIGHT, 6)
+		->SetAdaptive(true, true)
+		->SetName("StatsElements")
+		->AddChildren({ mini_profiles, coins_earned_frame });
 
-    auto coins_earned_frame = (Frame*)(new Frame(Vec2i(0, 0),
-                                                 Vec2i(0, 0),
-                                                 DONT_DRAW))
-        ->SetAlign(Align::CENTER, Align::DONT)
-        ->SetAdaptive(true, true)
-        ->SetFlex(Flex::HEIGHT)
-        ->AddChildren({ coins_earned_text, coins_frame });
+	scribbles = (Intermission::Scribbles *)(new Intermission::Scribbles(Vec2i(400, 400), 35))
+		->SetAlpha(100)
+		->SetAlign(Align::CENTER, Align::DONT)
+		->SetName("Scribbles")
+		->AddChildren({ stats_elements });
 
-    auto stats_elements = (Frame*)(new Frame(Vec2i(0, 0),
-                                             Vec2i(0, 0),
-                                             DONT_DRAW))
-        ->SetAlign(Align::CENTER, Align::CENTER)
-        ->SetFlex(Flex::HEIGHT, 6)
-        ->SetAdaptive(true, true)
-        ->SetName("StatsElements")
-        ->AddChildren({ mini_profiles, coins_earned_frame });
+	auto stats_frame = (new Frame())
+		->SetFlex(Flex::HEIGHT, 30)
+		->SetAlign(Align::CENTER, Align::CENTER)
+		->SetAdaptive(true, true)
+		->SetName("StatsFrame")
+		->AddChildren({ title, scribbles });
 
-    scribbles = (Intermission::Scribbles*)(new Intermission::Scribbles(Vec2i(0, 0),
-                                                                       Vec2i(400, 400),
-                                                                       35))
-        ->SetAlpha(100)
-        ->SetAlign(Align::CENTER, Align::DONT)
-        ->SetName("Scribbles")
-        ->AddChildren({ stats_elements });
+	menu_b = (Frame *)(new Frame())
+		->SetFlex(Flex::HEIGHT)
+		->SetFullyOccupy(true, true)
+		->SetName("MenuB")
+		->AddChildren({ stats_frame })
+		->SetEnabled(false);
 
-    auto stats_frame = (new Frame(Vec2i(0, 0),
-                                  Vec2i(0, 0),
-                                  DONT_DRAW))
-        ->SetFlex(Flex::HEIGHT, 30)
-        ->SetAlign(Align::CENTER, Align::CENTER)
-        ->SetAdaptive(true, true)
-        ->SetName("StatsFrame")
-        ->AddChildren({ title, scribbles });
+	this->SetTurnNumber(-1);
 
-    menu_b = (Frame*)(new Frame(Vec2i(0, 0),
-                                Vec2i(0, 0),
-                                DONT_DRAW))
-        ->SetFlex(Flex::HEIGHT)
-        ->SetFullyOccupy(true, true)
-        ->SetName("MenuB")
-        ->AddChildren({ stats_frame });
-
-    SetTurnNumber(-1);
-
-    SetFlex(Flex::HEIGHT);
-    AddChildren({ menu_a, menu_b });
-    SetName("IntermissionMenu");
-    SetColor(253, 164, 62, 255);
-    RefreshMenu();
+	this->SetFlex(Flex::HEIGHT);
+	this->AddChildren({ menu_a, menu_b });
+	this->SetName("IntermissionMenu");
+	this->SetColor(253, 164, 62, 255);
+	this->RefreshMenu();
 }
 
-IntermissionMenu::~IntermissionMenu() {
+IntermissionMenu::~IntermissionMenu()
+{
 
 }
 
-void IntermissionMenu::SetTurnNumber(int turn_number) {
-    auto assets = Assets::Get();
-    delete texture_turn_number;
-    texture_turn_number = assets->RenderTextBlended(CommonUI::sFontGiant2.GetFont()->TTFFont(),
-                                                    Strings::FString("%d", turn_number),
-                                                    { 255, 255, 255, 255 });
-    if (text_turn_number) {
-        text_turn_number->sdl_texture = texture_turn_number->SDLTexture();
-        text_turn_number->size = Vec2i(texture_turn_number->GetSize());
-        text_turn_number->visual_size = Vec2i(texture_turn_number->GetSize());
-    }
+void IntermissionMenu::SetTurnNumber(int turn_number)
+{
+	this->text_turn_number->UpdateText(CommonUI::sFontGiant2.GetFont()->TTFFont(),
+									   Strings::FString("%d", turn_number).c_str(),
+									   { 255, 255, 255, 255 });
 }
 
-void IntermissionMenu::PlayScribbles() {
-    scribbles->GenerateZigZag(3, 15, 25, 30, 50, { 0.2, 0, 0, 1.0 });
+void IntermissionMenu::ShowIntermission()
+{
+	menu_a->SetEnabled(true);
+	menu_b->SetEnabled(false);
 }
 
-void IntermissionMenu::SetProfile1(const std::string& username, TextureData* profile_picture) {
-    mini_profile1->SetText(username);
-    mini_profile1->SetProfilePicture(profile_picture);
+void IntermissionMenu::BeginAnimation()
+{
+	scribbles->GenerateZigZag(3, 15, 25, 30, 50, { 0.2, 0, 0, 1.0 });
+	mini_profile1->SetEnabled(false);
+	mini_profile2->SetEnabled(false);
+	coins_earned_text->SetEnabled(false);
+	coins_frame->SetEnabled(false);
 }
 
-void IntermissionMenu::SetProfile2(const std::string& username, TextureData* profile_picture) {
-    mini_profile2->SetText(username);
-    mini_profile2->SetProfilePicture(profile_picture);
+void IntermissionMenu::SetProfile1(const std::string& username, Texture *profile_picture)
+{
+	mini_profile1->SetText(username);
+	if (profile_picture)
+		mini_profile1->SetProfilePicture(profile_picture);
+}
+
+void IntermissionMenu::SetProfile2(const std::string& username, Texture *profile_picture)
+{
+	mini_profile2->SetText(username);
+	if (profile_picture)
+		mini_profile2->SetProfilePicture(profile_picture);
+}
+
+void IntermissionMenu::RefreshData()
+{
+	auto game = Centralized.GetCurrentGame();
+
+	// A
+	this->SetTurnNumber(game->game_turn);
+
+	// B
+	this->SetProfile1(game->players[0].username, nullptr);
+	this->SetProfile2(game->players[1].username, nullptr);
+}
+
+void IntermissionMenu::SetEndAnimationCallback(Callback end_callback)
+{
+	end_animation_callback = std::move(end_callback);
+}
+
+void IntermissionMenu::Tick(double elapsed_seconds)
+{
+	TickChildren(elapsed_seconds);
+
+	if (menu_b->enabled && !scribbles->IsPlaying() && !countdown_started)
+	{
+		mini_profile1->SetEnabled(true);
+		mini_profile2->SetEnabled(true);
+		coins_earned_text->SetEnabled(true);
+		coins_frame->SetEnabled(true);
+		RefreshMenu();
+
+		countdown_started = true;
+		end_animation_countdown = std::chrono::steady_clock::now();
+	}
+
+	if (countdown_started && end_animation_callback &&
+		std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - end_animation_countdown).count() > 3)
+		end_animation_callback();
 }

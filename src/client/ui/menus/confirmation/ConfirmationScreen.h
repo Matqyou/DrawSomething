@@ -6,16 +6,21 @@
 
 #include "../FullscreenMenu.h"
 #include "../../components/element/TextElement.h"
+#include "../../components/element/Button.h"
 
-class ConfirmationScreen : public FullscreenMenu {
+class ConfirmationScreen : public FullscreenMenu
+{
 private:
-    TextElement* question;
+	TextElement *question;
+	Button *delete_button;
+	using Callback = std::function<void()>;
 
 public:
-    ConfirmationScreen();
-    ~ConfirmationScreen() override;
+	ConfirmationScreen();
+	~ConfirmationScreen() override;
 
-    // Manipulating
-    void Prompt(const char* prompt_question);
+	// Manipulating
+	void Prompt(const char *prompt_question);
+	void SetAgreeCallback(Callback callback);
 
 };
