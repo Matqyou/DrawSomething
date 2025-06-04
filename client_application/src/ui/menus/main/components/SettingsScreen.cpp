@@ -14,7 +14,7 @@ static LinkTexture sTextureClosePressed("main_menu.settings.x_pressed");
 static LinkTexture sTextureSliderOff("main_menu.settings.slider_off");
 
 SettingsScreen::SettingsScreen()
-    : Frame() {
+    : ScreenMenu() {
 
     auto close_button = (Button*)(new Button(sTextureClose.GetTexture(),
                                              sTextureClosePressed.GetTexture()))
@@ -84,13 +84,6 @@ SettingsScreen::SettingsScreen()
         ->SetAlign(Align::CENTER, Align::CENTER)
         ->SetName("SettingsFrame")
         ->AddChildren({ settings_frame });
-//
-//    SetEnabled(false);
-//    SetColor(0, 0, 0, 150);
-//    SetFlexInvolved(false, false);
-//    SetFullyOccupy(true, true);
-//    SetName("Settings");
-//    AddChildren({ settings_card });
 
 	this->SetEnabled(false);
 	this->SetColor(0, 0, 0, 200);

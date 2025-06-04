@@ -7,6 +7,7 @@
 #include "game/account/Account.h"
 #include "game/game_info/GameInfo.h"
 #include "ui/menus/FullscreenMenu.h"
+#include "game/account/OwnedColor.h"
 
 class IntermissionMenu;
 class AuthMenu;
@@ -19,7 +20,10 @@ private:
 	Account account;
 	GameInfo *current_game;
 
+	std::vector<OwnedColor*> owned_colors;
+	std::vector<Account *> known_user_list;
 	std::vector<GameInfo *> open_games;
+
 	std::vector<Account *> admin_user_list;
 
 public:
@@ -40,9 +44,13 @@ public:
 	// Sense
 	[[nodiscard]] Account& GetAccount() { return account; }
 	[[nodiscard]] GameInfo *GetCurrentGame() { return current_game; }
+	[[nodiscard]] std::vector<OwnedColor *>& GetOwnedColors() { return owned_colors; }
 	[[nodiscard]] std::vector<GameInfo *>& GetOpenGames() { return open_games; }
 	[[nodiscard]] GameInfo *GetGame(int game_id) const;
 	[[nodiscard]] std::vector<Account *>& GetAdminUserList() { return admin_user_list; }
+
+	// Generating
+	[[nodiscard]] Account *GetKnownUser(int user_id);
 
 	// Options
 	GameData& SetCurrentGame(GameInfo *new_current_game)
@@ -52,6 +60,9 @@ public:
 	}
 
 	// Manipulating
+	void UpdateOwnedColors(const json& colors_data);
+	Account *UpdateKnownUser(const json& user_data);
+
 	void AddGame(GameInfo *new_game);
 	void RemoveGame(int game_id);
 	void ClearGames();

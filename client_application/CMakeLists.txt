@@ -188,6 +188,11 @@ add_executable(DrawSomething src/main.cpp
         src/ui/menus/main/profile/ProfileScreen.cpp
         src/ui/menus/ScreenMenu.h
         src/ui/menus/ScreenMenu.cpp
+        src/windows_system/WindowsSystem.cpp
+        src/ui/menus/main/games/GamesScreen.h
+        src/ui/menus/main/games/GamesScreen.cpp
+        src/game/account/OwnedColor.h
+        src/game/account/OwnedColor.cpp
 )
 
 add_executable(DrawSomethingEditor src/editor.cpp

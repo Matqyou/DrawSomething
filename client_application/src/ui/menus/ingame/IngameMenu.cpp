@@ -36,11 +36,14 @@ void IngameMenu::PrepareGuess() {
 	auto current_game = Centralized.GetCurrentGame();
 	if (current_game != nullptr)
 	{
+		auto opponent_id = current_game->players[1].user_id;
+		auto opponent = Centralized.GetKnownUser(opponent_id);
+
 		header->SetTitle("You are guessing");
-		header->SetDescription("Matiss B.'s drawing.");
+		header->SetDescription(Strings::FString("%s's drawing.", opponent->nickname.c_str()));
 		header->SetTurnNumber(current_game->game_turn);
+		header->SetProfilePicture(opponent->profile_picture);
 		panel->RandomizeWord(current_game->word);
-		dbg_msg("preparing guess\n");
 	}
 
     SetChildren({ header, canvas });
@@ -77,8 +80,12 @@ void IngameMenu::PrepareDraw() {
 	auto current_game = Centralized.GetCurrentGame();
 	if (current_game != nullptr)
 	{
+		auto opponent_id = current_game->players[1].user_id;
+		auto opponent = Centralized.GetKnownUser(opponent_id);
+
 		header->SetTitle(Strings::FString("You are drawing %s", current_game->word.c_str()));
-		header->SetDescription("for Matiss B.");
+		header->SetDescription(Strings::FString("for %s's.", opponent->nickname.c_str()));
+		header->SetProfilePicture(opponent->profile_picture);
 		header->SetTurnNumber(current_game->game_turn);
 	}
 

@@ -15,5 +15,8 @@ private:
 public:
     ColorSelector(Canvas* canvas, Ingame::ToolSelector* tool_selector);
 
+	// Manipulating
+	void RefreshData();
+
 };
 }

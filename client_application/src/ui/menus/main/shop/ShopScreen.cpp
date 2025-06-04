@@ -10,10 +10,11 @@ static LinkTexture sTextureColorsTitle("main_menu.shop.buy_colors");
 static LinkTexture sTextureBombsTitle("main_menu.shop.buy_bombs");
 static LinkTexture sTextureCard("main_menu.shop.card");
 static LinkTexture sTextureSubcard("main_menu.shop.subcard");
+static LinkTexture sTextureClose("main_menu.settings.x");
 //static LinkTexture sTextureAdminCard("main_menu.admin.card");
 
 ShopScreen::ShopScreen()
-	: Frame()
+	: ScreenMenu()
 {
 	Vec2i half;
 	{
@@ -56,7 +57,7 @@ ShopScreen::ShopScreen()
 		->SetRelative(Vec2i(0, 10))
 		->SetAdaptive(true, true)
 		->SetAlign(Align::CENTER, Align::DONT)
-		->SetFlex(Flex::HEIGHT,  5)
+		->SetFlex(Flex::HEIGHT, 5)
 		->SetName("ColorsFrame")
 		->AddChildren({ });
 
@@ -74,6 +75,19 @@ ShopScreen::ShopScreen()
 		->SetName("Right")
 		->AddChildren({ colors_card });
 
+	auto close_button = (Button *)(new Button(sTextureClose.GetTexture(),
+											  sTextureClose.GetTexture()))
+		->SetRelative(Vec2i(-10, 10))
+		->SetSize(Vec2i(32, 32))
+		->SetColor(150, 0, 0, 255)
+		->SetAlign(Align::RIGHT, Align::TOP)
+		->SetFlexInvolved(false, false)
+		->SetName("CloseButton");
+	close_button->SetCallback([this]()
+							  {
+								  this->SetEnabled(false);
+							  });
+
 	Frame *card = (Frame *)(new Frame())
 		->SetSize(Vec2i(sTextureCard.GetTexture()->GetOriginalSize() / 2))
 		->SetTexture(sTextureCard.GetTexture())
@@ -81,7 +95,7 @@ ShopScreen::ShopScreen()
 		->SetAlign(Align::CENTER, Align::CENTER)
 		->SetFlex(Flex::WIDTH)
 		->SetName("Card")
-		->AddChildren({ left, right });
+		->AddChildren({ left, right, close_button });
 
 	this->SetEnabled(false);
 	this->SetColor(0, 0, 0, 200);
@@ -106,10 +120,6 @@ void ShopScreen::ParseFromJson(const json& shop_data)
 	{
 		for (const json& bundle_data : shop_data["bundles"])
 		{
-//			int rarity = bundle_data.value("rarity", 1);
-//			std::string bundle_name = bundle_data.value("name", "No name provided");
-//			int price = bundle_data.value("price", -1);
-
 			auto bundle = (new ColorBundle())
 				->ParseFromJson(bundle_data);
 			colors_frame->AddChildren({ bundle });
@@ -117,12 +127,12 @@ void ShopScreen::ParseFromJson(const json& shop_data)
 	}
 }
 
-//void ShopScreen::RefreshData()
-//{
-//	for (auto user : users_frame->children)
-//		delete user;
-//	users_frame->children.clear();
-//
-//	for (auto user : Centralized.GetAdminUserList())
-//		users_frame->AddChildren({ (new UserRecord())->UpdateInfo(user) });
-//}
+void ShopScreen::UpdateOwnedBundles()
+{
+	for (auto bundle_ : colors_frame->children)
+	{
+		auto bundle = (ColorBundle*)bundle_;
+		bundle->UpdatePrice();
+	}
+}
+

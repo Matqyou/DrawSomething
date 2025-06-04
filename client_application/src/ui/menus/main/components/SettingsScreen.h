@@ -5,9 +5,10 @@
 #pragma once
 
 #include "ui/components/element/Frame.h"
+#include "ui/menus/ScreenMenu.h"
 
 namespace Main {
-class SettingsScreen : public Frame {
+class SettingsScreen : public ScreenMenu {
 private:
 
 public:

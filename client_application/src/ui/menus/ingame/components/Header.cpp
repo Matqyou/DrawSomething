@@ -9,6 +9,7 @@
 namespace Ingame {
 LinkTexture Header::game_header_turn("game.header.turn");
 LinkTexture Header::game_header_background("game.header.background");
+static LinkTexture sTextureDefaultProfilePicture("icons.icon_white");
 
 Header::Header()
     : Frame() {
@@ -116,6 +117,7 @@ void Header::SetTurnNumber(int turn_number) {
 }
 
 void Header::SetProfilePicture(Texture* profile_picture) {
-    picture->SetTexture(profile_picture);
+	Texture *profile_picture_ = profile_picture != nullptr ? profile_picture : sTextureDefaultProfilePicture.GetTexture();
+    picture->SetTexture(profile_picture_);
 }
 }

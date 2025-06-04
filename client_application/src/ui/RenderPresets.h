@@ -5,6 +5,7 @@
 #pragma once
 
 #include "ui/structures/visual_texture/VisualTexture.h"
+#include <string>
 
 class RenderPresets
 {
@@ -15,5 +16,9 @@ public:
 	static Texture *ColorButton(Texture* base, SDL_Color base_color,
 								Texture* overlay, SDL_Color overlay_color,
 								Texture* centered_texture = nullptr, bool grayed_out = false);
+
+	static Texture *Window(const std::string& texture_key,
+						   float left_scaling, float right_scaling, float top_scaling, float bottom_scaling,
+						   const Vec2f& size, SDL_Color color);
 
 };

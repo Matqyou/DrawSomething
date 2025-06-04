@@ -230,6 +230,13 @@ int main()
 																						  Centralized.GetGame(game_id)->ParseFromJson(game_data, true);
 																					  }
 
+																					  if (server_response.response_json.contains("owned_colors") && server_response.response_json["owned_colors"].is_array())
+																					  {
+																						  Centralized.UpdateOwnedColors(server_response.response_json["owned_colors"]);
+																						  Centralized.ingame_menu->GetColorSelector()->RefreshData();
+																						  Centralized.ingame_menu->RefreshMenu();
+																					  }
+
 																					  Centralized.current_menu = (FullscreenMenu *)(Centralized.ingame_menu);
 																					  Centralized.ingame_menu->PrepareDraw();
 																					  Centralized.ingame_menu->RefreshMenu();
@@ -295,17 +302,6 @@ int main()
 															   Centralized.main_menu->RefreshMenu();
 														   });
 
-	Packet ping_packet("/ping", "GET", nullptr);
-	ping_packet.SetResponseCallback([](const NetworkResponse& server_response)
-									{
-										dbg_msg("&d[SERVER Response]&r Received pong from server.\n");
-									})
-		->SetErroredCallback([]()
-							 {
-								 dbg_msg("Could not ping :((\n");
-							 });
-	ping_packet.Send();
-
 	Centralized.auth_menu->SetLoginDetails("admin", "aaaa");
 
 	Vec2i render_drag_from = Vec2i(0, 0);
@@ -347,66 +343,68 @@ int main()
 
 					if (sdl_event.key.scancode == SDL_SCANCODE_F1)
 						ToggleConsole();
-
-					if (sdl_event.key.scancode == SDL_SCANCODE_9) Centralized.current_menu->DebugPrint();
-					else if (sdl_event.key.scancode == SDL_SCANCODE_0)
-						Assets::Get()->SaveTextureToDisk(Centralized.ingame_menu->canvas->GetCanvasTexture(), "canvas_export.png");
-					else if (sdl_event.key.scancode == SDL_SCANCODE_GRAVE) render_debug = !render_debug;
-					else if (sdl_event.key.scancode == SDL_SCANCODE_4)
-					{
-						auto packet = (new Packet("/logout", "POST"));
-						packet->SetErroredCallback([packet]()
-												   { delete packet; });
-						packet->SetResponseCallback([packet](const NetworkResponse& server_response)
-													{ delete packet; });
-						packet->Send();
-
-						Centralized.current_menu = (FullscreenMenu *)Centralized.auth_menu;
-						Centralized.auth_menu->RefreshMenu();
-					}
-					else if (sdl_event.key.scancode == SDL_SCANCODE_5)
-					{
-						Centralized.current_menu = (FullscreenMenu *)Centralized.main_menu;
-						Centralized.main_menu->RefreshMenu();
-
-						// Create new request for fetching games for the user
-						auto packet = (new Packet("/get_games", "GET"));
-						packet->SetErroredCallback([packet]()
-												   { delete packet; });
-						// Insert all the received data into the ui elements
-						packet->SetResponseCallback([packet](const NetworkResponse& server_response)
-													{
-														std::string message = server_response.GetMsg();
-
-														// Update incoming data about the current user
-														auto& account = Centralized.GetAccount();
-														if (server_response.response_json.contains("user") && server_response.response_json["user"].is_object())
-														{
-															json user_data = server_response.response_json["user"];
-															account.ParseFromJson(user_data);
-														}
-
-														// Update incoming daa about all the games the user is currently in
-														if (server_response.response_json.contains("games") && server_response.response_json["games"].is_array())
-														{
-															Centralized.ClearGames();
-															for (const json& game_data : server_response.response_json["games"])
-																// Add the graphical elements
-																if (game_data.is_object())
-																	Centralized.AddGame((new GameInfo())->ParseFromJson(game_data, false));
-															Centralized.SortGames();
-														}
-
-														// Update the ui layout with new information and hitboxes
-														Centralized.main_menu->Header()->RefreshData();
-														Centralized.main_menu->Games()->RefreshData();
-														Centralized.main_menu->RefreshMenu();
-
-														dbg_msg("&d[SERVER Response]&r Updated games list: %s\n", message.c_str());
-														delete packet;
-													});
-						packet->Send();
-					}
+					else if (sdl_event.key.scancode == SDL_SCANCODE_F2)
+						render_debug = !render_debug;
+					else if (sdl_event.key.scancode == SDL_SCANCODE_9)
+						Centralized.current_menu->DebugPrint();
+//					else if (sdl_event.key.scancode == SDL_SCANCODE_0)
+//						Assets::Get()->SaveTextureToDisk(Centralized.ingame_menu->canvas->GetCanvasTexture(), "canvas_export.png");
+//					else if (sdl_event.key.scancode == SDL_SCANCODE_4)
+//					{
+//						auto packet = (new Packet("/logout", "POST"));
+//						packet->SetErroredCallback([packet]()
+//												   { delete packet; });
+//						packet->SetResponseCallback([packet](const NetworkResponse& server_response)
+//													{ delete packet; });
+//						packet->Send();
+//
+//						Centralized.GetAccount().Logout();
+//						Centralized.current_menu = (FullscreenMenu *)Centralized.auth_menu;
+//						Centralized.auth_menu->RefreshMenu();
+//					}
+//					else if (sdl_event.key.scancode == SDL_SCANCODE_5)
+//					{
+//						Centralized.current_menu = (FullscreenMenu *)Centralized.main_menu;
+//						Centralized.main_menu->RefreshMenu();
+//
+//						// Create new request for fetching games for the user
+//						auto packet = (new Packet("/get_games", "GET"));
+//						packet->SetErroredCallback([packet]()
+//												   { delete packet; });
+//						// Insert all the received data into the ui elements
+//						packet->SetResponseCallback([packet](const NetworkResponse& server_response)
+//													{
+//														std::string message = server_response.GetMsg();
+//
+//														// Update incoming data about the current user
+//														auto& account = Centralized.GetAccount();
+//														if (server_response.response_json.contains("user") && server_response.response_json["user"].is_object())
+//														{
+//															json user_data = server_response.response_json["user"];
+//															account.ParseFromJson(user_data);
+//														}
+//
+//														// Update incoming daa about all the games the user is currently in
+//														if (server_response.response_json.contains("games") && server_response.response_json["games"].is_array())
+//														{
+//															Centralized.ClearGames();
+//															for (const json& game_data : server_response.response_json["games"])
+//																// Add the graphical elements
+//																if (game_data.is_object())
+//																	Centralized.AddGame((new GameInfo())->ParseFromJson(game_data, false));
+//															Centralized.SortGames();
+//														}
+//
+//														// Update the ui layout with new information and hitboxes
+//														Centralized.main_menu->Header()->RefreshData();
+//														Centralized.main_menu->Games()->RefreshData();
+//														Centralized.main_menu->RefreshMenu();
+//
+//														dbg_msg("&d[SERVER Response]&r Updated games list: %s\n", message.c_str());
+//														delete packet;
+//													});
+//						packet->Send();
+//					}
 
 					break;
 				}

@@ -7,6 +7,8 @@
 #include "core/Application.h"
 #include "ui/CommonUI.h"
 #include "BrushSizeButton.h"
+#include "ui/RenderPresets.h"
+#include "game/GameData.h"
 
 namespace Ingame
 {
@@ -16,6 +18,8 @@ static LinkTexture sTextureEraser("game.tool_selector.eraser", CommonUI::sCallba
 static LinkTexture sTextureTrash("game.tool_selector.trash", CommonUI::sCallbackScaleNearest);
 static LinkTexture sTextureGear("game.tool_selector.gear", CommonUI::sCallbackScaleNearest);
 static LinkTexture sTextureDoneButton("game.tool_selector.done_button");
+static LinkTexture sTextureButton("button");
+static LinkTexture sTextureButtonOutline("button_outline");
 
 auto static sPregeneratePencilButton = [](AssetsClass *assets) -> Texture *
 {
@@ -96,35 +100,61 @@ ToolSelector::ToolSelector(Canvas *canvas)
 		->SetRelative(Vec2i(150, 0))
 		->SetTexture(sTextureEraserButton.GetTexture())
 		->SetName("EraserTool");
-	trash_button = (Button *)(new Button(sTextureTrash.GetTexture(), nullptr))
-		->SetRelative(Vec2i(250, 0))
-		->SetSize(Vec2i(54, 54))
-		->SetAlign(Align::DONT, Align::CENTER)
-		->SetName("ClearCanvas");
+//	trash_button = (Button *)(new Button(sTextureTrash.GetTexture(), nullptr))
+//		->SetRelative(Vec2i(250, 0))
+//		->SetSize(Vec2i(54, 54))
+//		->SetAlign(Align::DONT, Align::CENTER)
+//		->SetName("ClearCanvas");
 
 	tools.push_back(pencil_tool);
 	tools.push_back(eraser_tool);
-	tools.push_back(trash_button);
+//	tools.push_back(trash_button);
 
 	canvas->SetCustomCursor(pencil_tool->GetSelectedCursor());
 
-	done_button = (Button *)(new Button(sTextureDoneButton_.GetTexture(), nullptr))
-		->SetRelative(Vec2i(350, 0))
-		->SetSize(Vec2i(192, 50))
-		->SetAlign(Align::DONT, Align::CENTER)
-		->SetName("DoneButton");
+	auto assets = Assets::Get();
+	auto back_text = assets->RenderTextBlendedOutline(CommonUI::sFontSmaller2x.GetTTFFont(), "Exit", 2,
+													  { 255, 255, 255, 255 },
+													  { 0, 0, 0, 255 })
+		->FlagForAutomaticDeletion();
+	auto back_button_texture = RenderPresets::ColorButton(sTextureButton.GetTexture(),
+														  { 200, 200, 200, 255 },
+														  sTextureButtonOutline.GetTexture(), back_text)
+		->FlagForAutomaticDeletion();
+
+	auto done_text = assets->RenderTextBlendedOutline(CommonUI::sFontSmaller2x.GetTTFFont(), "Done", 2,
+													  { 255, 255, 255, 255 },
+													  { 0, 0, 0, 255 })
+		->FlagForAutomaticDeletion();
+	auto done_button_texture = RenderPresets::ColorButton(sTextureButton.GetTexture(),
+														  { 100, 255, 100, 255 },
+														  sTextureButtonOutline.GetTexture(), done_text)
+		->FlagForAutomaticDeletion();
+
+	auto exit_button = (Button *)(new Button(back_button_texture,
+											 back_button_texture))
+		->SetRelative(Vec2i(-150, 0))
+		->SetSize(Vec2i(back_button_texture->GetOriginalSize() / 2))
+		->SetAlign(Align::RIGHT, Align::CENTER)
+		->SetName("Exit");
+	exit_button->SetCallback([]()
+							 {
+								Centralized.current_menu = (FullscreenMenu*)Centralized.main_menu;
+								Centralized.current_menu->RefreshMenu();
+							 });
+
+	done_button = (Button *)(new Button(done_button_texture,
+										done_button_texture))
+		->SetRelative(Vec2i(-50, 0))
+		->SetSize(Vec2i(done_button_texture->GetOriginalSize() / 2))
+		->SetAlign(Align::RIGHT, Align::CENTER)
+		->SetName("Done");
+	tools.push_back(exit_button);
 	tools.push_back(done_button);
 
-	auto settings_button = (new Button(sTextureGear.GetTexture(), nullptr))
-		->SetRelative(Vec2i(592, 0))
-		->SetSize(Vec2i(54, 54))
-		->SetAlign(Align::DONT, Align::CENTER)
-		->SetName("Settings");
-	tools.push_back(settings_button);
-
 	// Callbacks
-	trash_button->SetCallback([canvas]()
-							  { canvas->ClearCanvas(); });
+//	trash_button->SetCallback([canvas]()
+//							  { canvas->ClearCanvas(); });
 	pencil_tool->SetCallback([this, canvas]()
 							 {
 								 eraser_tool->HideBrushSizeButtons();
@@ -135,10 +165,7 @@ ToolSelector::ToolSelector(Canvas *canvas)
 									 canvas->SetCustomCursor(pencil_tool->GetSelectedCursor());
 								 }
 								 else
-								 {
-									 pencil_tool->ToggleShowBrushSizeButtons();
-//            Refresh();
-								 }
+								 { pencil_tool->ToggleShowBrushSizeButtons(); }
 							 });
 	eraser_tool->SetCallback([this, canvas]()
 							 {
@@ -150,10 +177,7 @@ ToolSelector::ToolSelector(Canvas *canvas)
 									 canvas->SetCustomCursor(eraser_tool->GetSelectedCursor());
 								 }
 								 else
-								 {
-									 eraser_tool->ToggleShowBrushSizeButtons();
-//            Refresh();
-								 }
+								 { eraser_tool->ToggleShowBrushSizeButtons(); }
 							 });
 
 	// Tool selector

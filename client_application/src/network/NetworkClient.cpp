@@ -77,7 +77,7 @@ void Packet::CallErrored()
 		errored_callback();
 }
 
-void Packet::Send(bool blocking)
+void Packet::Send(bool blocking, const std::string& filepath)
 {
 	if (sent)
 		return;
@@ -85,7 +85,7 @@ void Packet::Send(bool blocking)
 	sent = true;
 	sent_at = std::chrono::steady_clock::now();
 
-	NetworkClient::SendPacket(this, blocking);
+	NetworkClient::SendPacket(this, blocking, filepath);
 }
 
 FilePacket::FilePacket(std::string route, std::string method)
@@ -172,8 +172,10 @@ void FilePacket::Send(bool blocking)
 		{
 			long http_code = 0;
 			curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
-			if (http_code >= 200 && http_code < 300) { }
-			else { SetErrored("HTTP error code: " + std::to_string(http_code)); }
+			if (http_code >= 200 && http_code < 300)
+			{ }
+			else
+			{ SetErrored("HTTP error code: " + std::to_string(http_code)); }
 		}
 		else
 		{
@@ -287,7 +289,7 @@ FilePacket *NetworkClient::GetFilePacket(int file_packet_id)
 	return nullptr;
 }
 
-void NetworkClient::SendPacket(Packet *packet, bool blocking)
+void NetworkClient::SendPacket(Packet *packet, bool blocking, const std::string& filepath)
 {
 	sent_packets.push_back(packet);
 	int packet_id = packet->GetID();
@@ -297,7 +299,7 @@ void NetworkClient::SendPacket(Packet *packet, bool blocking)
 
 	dbg_msg("&9[CLIENT] &rPacket: #%d %s %s \n&8%s\n", packet_id, method.c_str(), route.c_str(), packet->Payload().dump(2).c_str());
 
-	auto thread_func = [packet_id, route, method, send_payload]()
+	auto thread_func = [packet_id, route, method, send_payload, filepath]()
 	{
 		CURL *curl = curl_easy_init();
 		if (!curl) return;
@@ -308,18 +310,47 @@ void NetworkClient::SendPacket(Packet *packet, bool blocking)
 		std::string url = "http://localhost:8000" + route;
 		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 
+		// Check if we're sending a file
+		bool sending_file = !filepath.empty();
 		if (method == "POST")
 		{
-			curl_easy_setopt(curl, CURLOPT_POST, 1L);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, send_payload.c_str());
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, send_payload.size());
+			if (sending_file)
+			{
+				// Create multipart form for file upload
+				curl_mime *form = curl_mime_init(curl);
+				curl_mimepart *field = curl_mime_addpart(form);
+
+				curl_mime_name(field, "picture");
+				curl_mime_filedata(field, filepath.c_str());
+
+				// Set content type based on file extension
+				if (filepath.find(".png") != std::string::npos) {
+					curl_mime_type(field, "image/png");
+				} else if (filepath.find(".jpg") != std::string::npos || filepath.find(".jpeg") != std::string::npos) {
+					curl_mime_type(field, "image/jpeg");
+				} else if (filepath.find(".gif") != std::string::npos) {
+					curl_mime_type(field, "image/gif");
+				}
+
+				curl_easy_setopt(curl, CURLOPT_MIMEPOST, form);
+			}
+			else
+			{
+				// Regular JSON POST
+				curl_easy_setopt(curl, CURLOPT_POST, 1L);
+				curl_easy_setopt(curl, CURLOPT_POSTFIELDS, send_payload.c_str());
+				curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, send_payload.size());
+			}
 		}
 		else if (method == "GET")
 		{
 			curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
 		}
 
-		headers = curl_slist_append(headers, "Content-Type: application/json");
+		// Set headers - only add Content-Type for JSON requests
+		if (!sending_file) {
+			headers = curl_slist_append(headers, "Content-Type: application/json");
+		}
 		headers = curl_slist_append(headers, Strings::FString("X-Packet-Id: %d", packet_id).c_str());
 		headers = curl_slist_append(headers, ("Authorization: Bearer " + session_key).c_str());
 		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
@@ -360,6 +391,80 @@ void NetworkClient::SendPacket(Packet *packet, bool blocking)
 		std::thread(thread_func).detach();  // Continue async
 	}
 }
+
+//void NetworkClient::SendPacket(Packet *packet, bool blocking)
+//{
+//	sent_packets.push_back(packet);
+//	int packet_id = packet->GetID();
+//	std::string route = packet->Route();
+//	std::string method = packet->Method();
+//	std::string send_payload = packet->Payload().dump();
+//
+//	dbg_msg("&9[CLIENT] &rPacket: #%d %s %s \n&8%s\n", packet_id, method.c_str(), route.c_str(), packet->Payload().dump(2).c_str());
+//
+//	auto thread_func = [packet_id, route, method, send_payload]()
+//	{
+//		CURL *curl = curl_easy_init();
+//		if (!curl) return;
+//
+//		std::string raw_response_data;
+//		struct curl_slist *headers = nullptr;
+//
+//		std::string url = "http://localhost:8000" + route;
+//		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+//
+//		if (method == "POST")
+//		{
+//			curl_easy_setopt(curl, CURLOPT_POST, 1L);
+//			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, send_payload.c_str());
+//			curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, send_payload.size());
+//		}
+//		else if (method == "GET")
+//		{
+//			curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
+//		}
+//
+//		headers = curl_slist_append(headers, "Content-Type: application/json");
+//		headers = curl_slist_append(headers, Strings::FString("X-Packet-Id: %d", packet_id).c_str());
+//		headers = curl_slist_append(headers, ("Authorization: Bearer " + session_key).c_str());
+//		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+//
+//		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+//		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &raw_response_data);
+//
+//		CURLcode res = curl_easy_perform(curl);
+//		if (res == CURLE_OK)
+//		{
+//			long http_code = 0;
+//			curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+//			json response_json = ParseJson(raw_response_data);
+//
+//			std::lock_guard<std::mutex> lock(response_mutex);
+//			response_queue.push_back(NetworkResponse(raw_response_data,
+//													 http_code,
+//													 http_code >= 200 && http_code < 300,
+//													 response_json));
+//		}
+//		else
+//		{
+//			auto packet = NetworkClient::GetPacket(packet_id);
+//			packet->SetErrored(curl_easy_strerror(res));
+//		}
+//
+//		curl_slist_free_all(headers);
+//		curl_easy_cleanup(curl);
+//	};
+//
+//	if (blocking)
+//	{
+//		std::thread t(thread_func);
+//		t.join();  // Wait for the request to complete
+//	}
+//	else
+//	{
+//		std::thread(thread_func).detach();  // Continue async
+//	}
+//}
 
 void NetworkClient::SendFilePacket(FilePacket *file_packet, bool blocking)
 {

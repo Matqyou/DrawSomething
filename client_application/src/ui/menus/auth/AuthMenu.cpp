@@ -52,11 +52,10 @@ static LinkTexture sTextureTitle("title");
 
 static PregenerateTexture sTextureAuthField
 	("auth.field", [](AssetsClass *a) -> Texture *
-	{ return sGenerateAuthField(a, Vec2f(205, 35), false); });
+	{ return sGenerateAuthField(a, Vec2f(250, 35), false); });
 static PregenerateTexture sTextureAuthButton
 	("auth.button", [](AssetsClass *a) -> Texture *
 	{ return sGenerateAuthField(a, Vec2f(100, 40), true); });
-
 }
 
 AuthMenu::AuthMenu()
@@ -99,7 +98,7 @@ AuthMenu::AuthMenu()
 		->SetPlaceholderColor({ 150, 255, 0, 255 })
 		->SetMaxLength(16)
 		->SetFont(CommonUI::sFontRegular.GetFont()->TTFFont())
-		->SetSize(Vec2i(205, 35))
+		->SetSize(Vec2i(250, 35))
 		->SetTexture(Auth::sTextureAuthField.GetTexture())
 		->SetDraw(DRAW_TEXTURE)
 		->SetAlign(Align::CENTER, Align::DONT)
@@ -120,7 +119,7 @@ AuthMenu::AuthMenu()
 		->SetPlaceholderColor({ 255, 100, 0, 255 })
 		->SetMaxLength(16)
 		->SetFont(CommonUI::sFontRegular.GetFont()->TTFFont())
-		->SetSize(Vec2i(205, 35))
+		->SetSize(Vec2i(250, 35))
 		->SetTexture(Auth::sTextureAuthField.GetTexture())
 		->SetDraw(DRAW_TEXTURE)
 		->SetAlign(Align::CENTER, Align::DONT)
@@ -173,7 +172,7 @@ AuthMenu::AuthMenu()
 		->SetPlaceholderColor({ 150, 255, 0, 255 })
 		->SetMaxLength(24)
 		->SetFont(CommonUI::sFontRegular.GetFont()->TTFFont())
-		->SetSize(Vec2i(205, 35))
+		->SetSize(Vec2i(250, 35))
 		->SetTexture(Auth::sTextureAuthField.GetTexture())
 		->SetDraw(DRAW_TEXTURE)
 		->SetAlign(Align::CENTER, Align::DONT)
@@ -190,7 +189,7 @@ AuthMenu::AuthMenu()
 		->SetPlaceholderColor({ 150, 255, 0, 255 })
 		->SetMaxLength(64)
 		->SetFont(CommonUI::sFontRegular.GetFont()->TTFFont())
-		->SetSize(Vec2i(205, 35))
+		->SetSize(Vec2i(250, 35))
 		->SetTexture(Auth::sTextureAuthField.GetTexture())
 		->SetDraw(DRAW_TEXTURE)
 		->SetAlign(Align::CENTER, Align::DONT)
@@ -211,7 +210,7 @@ AuthMenu::AuthMenu()
 		->SetPlaceholderColor({ 255, 100, 0, 255 })
 		->SetMaxLength(16)
 		->SetFont(CommonUI::sFontRegular.GetFont()->TTFFont())
-		->SetSize(Vec2i(205, 35))
+		->SetSize(Vec2i(250, 35))
 		->SetTexture(Auth::sTextureAuthField.GetTexture())
 		->SetDraw(DRAW_TEXTURE)
 		->SetAlign(Align::CENTER, Align::DONT)
@@ -428,6 +427,10 @@ void AuthMenu::AttemptLogin()
 											Centralized.SortGames();
 										}
 
+										Centralized.main_menu->GetAdminScreen()->SetEnabled(false);
+										Centralized.main_menu->GetProfileScreen()->SetEnabled(false);
+										Centralized.main_menu->GetShopScreen()->SetEnabled(false);
+										Centralized.main_menu->GetSettingsScreen()->SetEnabled(false);
 										Centralized.main_menu->Profile()->RefreshData();
 										Centralized.main_menu->Games()->RefreshData();
 										Centralized.main_menu->RefreshMenu();

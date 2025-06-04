@@ -78,7 +78,7 @@ public:
 	void SetResolved(NetworkResponse server_response);
 	void SetErrored(const std::string& reason);
 	void CallErrored();
-	void Send(bool blocking = false);
+	void Send(bool blocking = false, const std::string& filepath = "");
 
 };
 
@@ -160,7 +160,8 @@ public:
 	static FilePacket *GetFilePacket(int file_packet_id);
 
 	// Manipulating
-	static void SendPacket(Packet *packet, bool blocking = false);
+//	static void SendPacket(Packet *packet, bool blocking = false);
+	static void SendPacket(Packet *packet, bool blocking = false, const std::string& filepath = "");
 	static void SendFilePacket(FilePacket *file_packet, bool blocking = false);
 //	static void SendRequest(const std::string& route, const std::string& method, json *json_data = nullptr);
 	static void SetSessionKey(const std::string& key);

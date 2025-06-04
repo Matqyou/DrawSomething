@@ -9,14 +9,14 @@
 #include <fstream>
 
 GameInfo::GameInfo()
-	: players{{ "undefined", "", nullptr, false },
-			  { "undefined", "", nullptr, false }},
+	: players{{ 0, "undefined", "", nullptr, false },
+			  { 0, "undefined", "", nullptr, false }},
 	  game_turn(0),
 	  game_state(GameState::THEIR_MOVE),
 	  word("-"),
 	  populated_with_data(false)
 {
-	pfp_update_callback = nullptr;
+	pfp_update_callback = { };
 }
 
 GameInfo::~GameInfo()
@@ -37,36 +37,41 @@ GameInfo *GameInfo::ParseFromJson(const json& game_data, bool full_data)
 		word = game_data.value("word", "-");
 	}
 
-	int party_a_id = -1;
-	std::string party_a_username = "Not provided";
-	std::string party_a_pfp = "";
-	bool party_a_online = false;
-	if (game_data.contains("party_a") && game_data["party_a"].is_object())
-	{
-		party_a_id = game_data["party_a"].value("user_id", -1);
-		party_a_username = game_data["party_a"].value("display_name", "Not provided");
-		party_a_online = game_data["party_a"].value("logged_in", false);\
+	auto party_a = Centralized.UpdateKnownUser(game_data["party_a"]);
+	auto party_b = Centralized.UpdateKnownUser(game_data["party_b"]);
 
-		if (game_data["party_a"].contains("profile_picture") && !game_data["party_a"]["profile_picture"].is_null())
-			party_a_pfp = game_data["party_a"].value("profile_picture", "");
-	}
+	int party_a_id = party_a->user_id;
+	std::string party_a_username = party_a->nickname;
+	std::string party_a_pfp = party_a->pfp_url;
+	bool party_a_online = party_a->is_logged_in;
+//	if (game_data.contains("party_a") && game_data["party_a"].is_object())
+//	{
+//		party_a_id = game_data["party_a"].value("user_id", -1);
+//		party_a_username = game_data["party_a"].value("display_name", "Not provided");
+//		party_a_online = game_data["party_a"].value("logged_in", false);\
+//
+//		if (game_data["party_a"].contains("profile_picture") && !game_data["party_a"]["profile_picture"].is_null())
+//			party_a_pfp = game_data["party_a"].value("profile_picture", "");
+//	}
 
-	int party_b_id = -1;
-	std::string party_b_username = "Not provided";
-	std::string party_b_pfp = "";
-	bool party_b_online = false;
-	if (game_data.contains("party_b") && game_data["party_b"].is_object())
-	{
-		party_b_id = game_data["party_b"].value("user_id", -1);
-		party_b_username = game_data["party_b"].value("display_name", "Not provided");
-		party_b_online = game_data["party_b"].value("logged_in", false);
-
-		if (game_data["party_b"].contains("profile_picture") && !game_data["party_b"]["profile_picture"].is_null())
-			party_b_pfp = game_data["party_b"].value("profile_picture", "");
-	}
+	int party_b_id = party_b->user_id;
+	std::string party_b_username = party_b->nickname;
+	std::string party_b_pfp = party_b->pfp_url;
+	bool party_b_online = party_b->is_logged_in;
+//	if (game_data.contains("party_b") && game_data["party_b"].is_object())
+//	{
+//		party_b_id = game_data["party_b"].value("user_id", -1);
+//		party_b_username = game_data["party_b"].value("display_name", "Not provided");
+//		party_b_online = game_data["party_b"].value("logged_in", false);
+//
+//		if (game_data["party_b"].contains("profile_picture") && !game_data["party_b"]["profile_picture"].is_null())
+//			party_b_pfp = game_data["party_b"].value("profile_picture", "");
+//	}
 
 	bool local_player_a = party_a_id == Centralized.GetAccount().user_id;
 	game_id = id;
+	players[0].user_id = local_player_a ? party_a_id : party_b_id;
+	players[1].user_id = local_player_a ? party_b_id : party_a_id;
 	players[0].username = local_player_a ? party_a_username : party_b_username;
 	players[1].username = local_player_a ? party_b_username : party_a_username;
 	players[0].profile_picture = nullptr;
@@ -117,11 +122,11 @@ void GameInfo::FetchProfilePictures()
 	file_packet->SetResponseCallback([file_packet, this](const std::vector<unsigned char>& data)
 									 {
 										 // Create a temporary file
-										 const char *temp_filename = "temp_image.png";
+										 std::string temp_filename = Strings::GenerateRandomFilename();
 										 std::ofstream temp_file(temp_filename, std::ios::binary);
 										 if (!temp_file)
 										 {
-											 dbg_msg("Failed to create temporary file: %s\n", SDL_GetError());
+											 dbg_msg("&cFailed to create temporary file: %s\n", SDL_GetError());
 											 return;
 										 }
 
@@ -130,17 +135,17 @@ void GameInfo::FetchProfilePictures()
 										 temp_file.close();
 
 										 // Load the image from the temporary file
-										 SDL_Texture *texture = IMG_LoadTexture(Assets::Get()->GetDrawing()->Renderer(), temp_filename);
+										 SDL_Texture *texture = IMG_LoadTexture(Assets::Get()->GetDrawing()->Renderer(), temp_filename.c_str());
 										 if (!texture)
 										 {
-											 dbg_msg("IMG_LoadTexture failed: %s\n", SDL_GetError());
-											 std::remove(temp_filename); // Clean up the temporary file
+											 dbg_msg("&cIMG_LoadTexture failed: %s\n", SDL_GetError());
+											 std::remove(temp_filename.c_str()); // Clean up the temporary file
 											 return;
 										 }
 
 										 players[1].profile_picture = (new Texture(texture))->FlagForAutomaticDeletion();
 
-										 std::remove(temp_filename);
+										 std::remove(temp_filename.c_str());
 										 delete file_packet;
 
 										 if (pfp_update_callback)

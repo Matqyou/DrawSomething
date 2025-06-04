@@ -6,6 +6,13 @@
 #include "ui/components/element/TextElement.h"
 #include "ui/CommonUI.h"
 #include "ColorView.h"
+#include "ui/RenderPresets.h"
+#include "ui/components/element/Button.h"
+#include "game/GameData.h"
+#include "ui/menus/main/MainMenu.h"
+
+static LinkTexture sTextureButton("button");
+static LinkTexture sTextureButtonOutline("button_outline");
 
 void ColorBundle::UpdateRarity()
 {
@@ -24,14 +31,51 @@ void ColorBundle::UpdateBundleName()
 
 void ColorBundle::UpdatePrice()
 {
+	auto& account = Centralized.GetAccount();
+	bool already_owned = std::find(account.color_bundles.begin(), account.color_bundles.end(), bundle_id) != account.color_bundles.end();
+	bool enough_money = already_owned || Centralized.GetAccount().coins >= price;
+	bool can_purchase_now = enough_money && !already_owned;
 	bundle_price_text->UpdateText(CommonUI::sFontSmallerBold.GetTTFFont(),
 								  Strings::FString("%d Coins", price).c_str(),
-								  { 255, 255, 255, 255 });
+								  enough_money ? SDL_Color(255, 255, 255, 255) : SDL_Color(255, 0, 0, 255));
+	bundle_price_text->SetEnabled(!already_owned);
+	buy_button->SetEnabled(can_purchase_now);
+	owned_text->SetEnabled(already_owned);
+
+	if (can_purchase_now)
+	{
+		buy_button->SetCallback([this]()
+								{
+									json buy_data;
+									buy_data["bundle_id"] = bundle_id;
+
+									auto packet = new Packet("/buy_colors", "POST", &buy_data);
+									packet->SetResponseCallback([packet](const NetworkResponse& server_response)
+																{
+																	if (server_response.response_json.contains("user") && server_response.response_json["user"].is_object())
+																	{
+																		json user_data = server_response.response_json["user"];
+																		auto account = Centralized.GetAccount().ParseFromJson(user_data);
+
+																		Centralized.main_menu->Header()->RefreshData();
+																		Centralized.main_menu->Profile()->RefreshData();
+																		Centralized.main_menu->GetShopScreen()->UpdateOwnedBundles();
+																		Centralized.main_menu->RefreshMenu();
+																	}
+
+																	delete packet;
+																});
+									packet->SetErroredCallback([packet]()
+															   { delete packet; });
+									packet->Send();
+								});
+	}
 }
 
 ColorBundle::ColorBundle()
 	: Frame()
 {
+	this->bundle_id = 0;
 	this->rarity = 1;
 	this->bundle_name = "No name provided";
 	this->price = -1;
@@ -55,8 +99,31 @@ ColorBundle::ColorBundle()
 		->UpdateText(CommonUI::sFontSmallerBold.GetTTFFont(),
 					 "No price provided",
 					 { 255, 255, 255, 255 })
-		->SetAlign(Align::CENTER, Align::CENTER)
+		->SetAlign(Align::CENTER, Align::ABOVE_TOP)
 		->SetName("Price");
+
+	auto assets = Assets::Get();
+	auto buy_text = assets->RenderTextBlendedOutline(CommonUI::sFontSmaller2x.GetTTFFont(), "Buy", 2,
+													 { 255, 255, 255, 255 },
+													 { 0, 0, 0, 255 })
+		->FlagForAutomaticDeletion();
+	auto buy_button_texture = RenderPresets::ColorButton(sTextureButton.GetTexture(),
+														 { 0, 255, 0 },
+														 sTextureButtonOutline.GetTexture(), buy_text)
+		->FlagForAutomaticDeletion();
+	buy_button = (Button *)(new Button(buy_button_texture,
+									   buy_button_texture))
+		->SetSize(Vec2i(buy_button_texture->GetOriginalSize() * 0.4))
+		->SetAlign(Align::CENTER, Align::UNDER_BOTTOM)
+		->SetName("Buy");
+
+	owned_text = (TextElement *)(new TextElement())
+		->UpdateTextOutline(CommonUI::sFontSmallerBold.GetTTFFont(), "Owned", 2,
+							{ 0, 255, 0, 255 },
+							{ 0, 0, 0, 255 })
+		->SetAlign(Align::CENTER, Align::UNDER_BOTTOM)
+		->SetEnabled(false)
+		->SetName("Owned");
 
 	auto left = (Frame *)(new Frame())
 		->SetFlex(Flex::HEIGHT)
@@ -66,11 +133,11 @@ ColorBundle::ColorBundle()
 		->AddChildren({ bundle_name_text, colors });
 
 	auto right = (Frame *)(new Frame())
+		->SetRelative(Vec2i(0, -7))
 		->SetSize(Vec2i(120, 0))
-		->SetFullyOccupy(false, true)
-		->SetFlex(Flex::HEIGHT)
+		->SetAlign(Align::DONT, Align::CENTER)
 		->SetName("Right")
-		->AddChildren({ bundle_price_text });
+		->AddChildren({ bundle_price_text, buy_button, owned_text });
 
 	UpdateRarity();
 	UpdateBundleName();
@@ -91,6 +158,7 @@ ColorBundle::~ColorBundle()
 ColorBundle *ColorBundle::ParseFromJson(const json& bundle_data)
 {
 	// Get commonly found data about bundles
+	bundle_id = bundle_data.value("bundle_id", 0);
 	rarity = bundle_data.value("rarity", 1);
 	bundle_name = bundle_data.value("name", "No name provided");
 	price = bundle_data.value("price", -1);

@@ -25,9 +25,8 @@ void FullscreenMenu::FullscreenEvent(const SDL_Event& sdl_event, EventContext& e
 }
 
 void FullscreenMenu::HandleEvent(const SDL_Event& sdl_event, EventContext& event_summary) {
-    this->HandleEventChildren(sdl_event, event_summary);
-
-    this->FullscreenEvent(sdl_event, event_summary);
+    HandleEventChildren(sdl_event, event_summary);
+	FullscreenEvent(sdl_event, event_summary);
 }
 
 void FullscreenMenu::RefreshMenu() {

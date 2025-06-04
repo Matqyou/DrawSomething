@@ -54,7 +54,7 @@ void Canvas::CopyRecordingToReplay(long long max_idle_milliseconds)
 Canvas::Canvas()
 	: Element(),
 	  draw_color(SDL_Color(0, 0, 0, 255)),
-	  eraser_color(SDL_Color(0, 0, 0, 0))
+	  eraser_color(SDL_Color(233, 233, 233, 255))
 {
 	this->name = L"Canvas";
 

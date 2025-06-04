@@ -15,7 +15,7 @@ class ToolSelector : public Frame {
 public:
     DrawingToolButton* pencil_tool;
     DrawingToolButton* eraser_tool;
-    Button* trash_button;
+//    Button* trash_button;
     Button* done_button;
 
     using Callback = std::function<void()>;

@@ -8,8 +8,10 @@
 #include "ui/menus/auth/components/ScrollingBackground.h"
 #include "ui/menus/picking/components/WordOption.h"
 #include "ui/RenderPresets.h"
+#include "game/GameData.h"
 
 static LinkTexture sTextureCard("picking.card");
+static LinkTexture sTextureCardOutline("picking.card_outline");
 static LinkTexture sTextureDoodles("doodles"); //
 
 static LinkTexture sTextureButton("button");
@@ -38,11 +40,15 @@ PickingMenu::PickingMenu()
 		->SetName("WordsFrame")
 		->AddChildren({ title, easy_word, medium_word, hard_word });
 
+	auto card_texture = RenderPresets::ColorButton(sTextureCard.GetTexture(),
+												   { 239, 121, 47, 255 },
+												   sTextureCardOutline.GetTexture())
+		->FlagForAutomaticDeletion();
 	auto words_card = (new Frame())
 		->SetSize(Vec2i(427, 309))
 		->SetAlign(Align::CENTER, Align::CENTER)
 		->SetDraw(DRAW_TEXTURE)
-		->SetTexture(sTextureCard.GetTexture()->SetColorMod(239, 121, 47))
+		->SetTexture(card_texture)
 		->SetName("Card")
 		->AddChildren({ words_frame });
 
@@ -55,26 +61,26 @@ PickingMenu::PickingMenu()
 
 	auto assets = Assets::Get();
 	auto back_text = assets->RenderTextBlendedOutline(CommonUI::sFontSmaller2x.GetTTFFont(), "Back", 2,
-													  { 200, 200, 200, 255 },
+													  { 255, 255, 255, 255 },
 													  { 0, 0, 0, 255 })
 		->FlagForAutomaticDeletion();
 	auto back_button_texture = RenderPresets::ColorButton(sTextureButton.GetTexture(),
-														  { 255, 255, 255 },
+														  { 200, 200, 200 },
 														  sTextureButtonOutline.GetTexture(), back_text)
 		->FlagForAutomaticDeletion();
-	auto back_button_texture_pressed = RenderPresets::ColorButton(sTextureButton.GetTexture(),
-																  { 255, 255, 255 },
-																  sTextureButtonOutline.GetTexture(), back_text, true)
-		->FlagForAutomaticDeletion();
-	auto back_button = (Button *)(new Button())
-		->SetPressedTexture(back_button_texture_pressed)
-		->SetTexture(back_button_texture)
+	auto back_button = (Button *)(new Button(back_button_texture,
+											 back_button_texture))
 		->SetDraw(DRAW_TEXTURE)
 		->SetSize(Vec2i(back_button_texture->GetOriginalSize() / 2))
-		->SetRelative(Vec2i(-10, 10))
+		->SetRelative(Vec2i(10, 10))
 		->SetFlexInvolved(false, false)
-		->SetAlign(Align::RIGHT, Align::TOP)
+		->SetAlign(Align::LEFT, Align::TOP)
 		->SetName("Back");
+	back_button->SetCallback([]()
+							 {
+								 Centralized.current_menu = (FullscreenMenu *)Centralized.main_menu;
+								 Centralized.current_menu->RefreshMenu();
+							 });
 
 	auto content = (new Frame())
 		->SetFullyOccupy(true, false)

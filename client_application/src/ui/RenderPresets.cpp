@@ -5,6 +5,7 @@
 #include "RenderPresets.h"
 #include "core/app/Assets.h"
 #include "core/app/Drawing.h"
+#include "ui/structures/window_texture/WindowTexture.h"
 
 Texture *RenderPresets::ColorButton(Texture *base,
 									SDL_Color base_color,
@@ -95,4 +96,18 @@ Texture *RenderPresets::ColorButton(Texture *base, SDL_Color base_color,
 	drawing->SetRenderTargetSDL(original_render_target);
 
 	return result;
+}
+
+Texture *RenderPresets::Window(const std::string& texture_key,
+							   float left_scaling, float right_scaling, float top_scaling, float bottom_scaling,
+							   const Vec2f& size, SDL_Color color)
+{
+	auto assets = Assets::Get();
+
+	Sheet sheet;
+	WindowTexture window_texture(&sheet, left_scaling, right_scaling, top_scaling, bottom_scaling);
+	sheet.Generate(assets, assets->GetTexture(texture_key));
+	Texture *generated = window_texture.Generate(assets, size)
+		->SetColorMod(color);
+	return generated->CopyTexture(SDL_TEXTUREACCESS_TARGET);
 }

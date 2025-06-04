@@ -19,6 +19,12 @@ void GameData::InitUI()
 	picking_menu = new PickingMenu();
 	ingame_menu = new IngameMenu();
 	current_menu = auth_menu;
+
+	account.SetProfilePictureUpdateCallback([this]()
+											{
+												main_menu->Profile()->SetProfilePicture(account.profile_picture);
+												main_menu->GetProfileScreen()->SetProfilePicture(account.profile_picture);
+											});
 }
 
 GameData::GameData()
@@ -37,6 +43,7 @@ GameData::GameData()
 GameData::~GameData()
 {
 	ClearGames();
+	// clear accounts & colors
 }
 
 GameInfo *GameData::GetGame(int game_id) const
@@ -47,6 +54,46 @@ GameInfo *GameData::GetGame(int game_id) const
 			return game;
 	}
 	return nullptr;
+}
+
+Account *GameData::GetKnownUser(int user_id)
+{
+	for (Account *user : known_user_list)
+	{
+		if (user && user->user_id == user_id)
+			return user;
+	}
+	return nullptr;
+}
+
+void GameData::UpdateOwnedColors(const json& colors_data)
+{
+	for (auto color : owned_colors)
+		delete color;
+	owned_colors.clear();
+
+	for (const json& color_data : colors_data)
+	{
+		auto owned_color = (new OwnedColor())
+			->ParseFromJson(color_data);
+		owned_colors.push_back(owned_color);
+	}
+}
+
+Account *GameData::UpdateKnownUser(const json& user_data)
+{
+	auto user_id = user_data.value("user_id", 0);
+	if (!user_id)
+		return nullptr;
+
+	auto user = GetKnownUser(user_id);
+	if (!user)
+	{
+		user = new Account();
+		known_user_list.push_back(user);
+	}
+	user->ParseFromJson(user_data);
+	return user;
 }
 
 void GameData::AddGame(GameInfo *new_game)

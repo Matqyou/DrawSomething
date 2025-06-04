@@ -7,22 +7,30 @@
 #include "ui/menus/loading/LoadingScreen.h"
 #include "ui/menus/main/components/Connections.h"
 #include "ui/menus/auth/components/ScrollingBackground.h"
+#include "game/GameData.h"
+#include "ui/menus/auth/AuthMenu.h"
+#include "ui/CommonUI.h"
+#include "ui/RenderPresets.h"
 
 static LinkTexture sTextureDoodles("doodles"); //
 
 MainMenu::MainMenu()
-    : FullscreenMenu() {
-    name = L"MainMenu";
+	: FullscreenMenu()
+{
+	name = L"MainMenu";
 
-    loading_screen = new LoadingScreen();
-	admin_menu = new AdminScreen();
+	profile_menu = new ProfileScreen();
 	shop_menu = new ShopScreen();
+	admin_menu = new AdminScreen();
+	games_menu = new GamesScreen();
+	settings_menu = new Main::SettingsScreen();
 
-    auto confirmation = new ConfirmationScreen();
-    auto settings = new Main::SettingsScreen();
-    header = new Main::Header(settings, shop_menu, admin_menu);
-    games = new Main::CurrentGames(confirmation, loading_screen);
-    profile = new Main::Profile();
+	loading_screen = new LoadingScreen();
+	confirmation_screen = new ConfirmationScreen();
+
+	header = new Main::Header(this);
+	games = new Main::CurrentGames(confirmation_screen, loading_screen);
+	profile = new Main::Profile();
 //    auto friends = new Main::Connections();
 
 	// Background
@@ -36,12 +44,12 @@ MainMenu::MainMenu()
 	auto content = (new Frame())
 		->SetFullyOccupy(true, false)
 		->SetOccupy(false, true)
-		->AddChildren({ background, games, profile, admin_menu, shop_menu, settings })
+		->AddChildren({ background, games, profile, admin_menu, games_menu, shop_menu, profile_menu, settings_menu })
 		->SetName("Content");
 
-    this->SetColor(0, 211, 112, 255);
+	this->SetColor(0, 211, 112, 255);
 	this->SetFlex(Flex::HEIGHT);
-    this->SetName("MainMenu");
-    this->AddChildren({ header, content, loading_screen, confirmation });
-    this->RefreshMenu();
+	this->SetName("MainMenu");
+	this->AddChildren({ header, content, loading_screen, confirmation_screen });
+	this->RefreshMenu();
 }

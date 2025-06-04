@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "ui/components/element/Frame.h"
 #include "network/NetworkClient.h"
+#include "ui/menus/ScreenMenu.h"
 
-class ShopScreen : public Frame
+class ShopScreen : public ScreenMenu
 {
 private:
 	Frame* colors_frame;
@@ -19,5 +19,6 @@ public:
 
 	// Manipulating
 	void ParseFromJson(const json& shop_data);
+	void UpdateOwnedBundles();
 
 };

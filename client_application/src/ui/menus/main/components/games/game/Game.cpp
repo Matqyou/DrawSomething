@@ -200,8 +200,8 @@ static Texture *sGenerateCloseButtonPressed(AssetsClass *assets)
 
 static LinkTexture sTextureGamesContent("main_menu.games.game_new");
 static LinkTexture sTextureGamesContentOutline("main_menu.games.game_new_outline");
-static LinkTexture sTextureButton("main_menu.games.button");
-static LinkTexture sTextureButtonOutline("main_menu.games.button_outline");
+static LinkTexture sTextureButton("button");
+static LinkTexture sTextureButtonOutline("button_outline");
 static LinkTexture sTextureTurn("main_menu.games.turn");
 static LinkTexture sTextureTurnOutline("main_menu.games.turn_outline");
 static LinkTexture sTextureOnline("main_menu.ball");
@@ -266,12 +266,12 @@ void Game::SetState(GameInfo::GameState game_state)
 	play_button->SetTexture(texture);
 	play_button->SetPressedTexture(texture);
 	play_button->SetClickable(game_state == GameInfo::GameState::YOUR_MOVE);
+	play_button->SetEnabled(game_state == GameInfo::GameState::YOUR_MOVE);
 
 	SDL_Color background_color = game_state == GameInfo::GameState::YOUR_MOVE ?
 								 SDL_Color{ 255, 0, 157 } : SDL_Color{ 145, 85, 122 };
 	{
 		auto background_texture = sTextureGamesContent.GetTexture();
-		auto background_outline_texture = sTextureGamesContentOutline.GetTexture();
 
 		background_texture->SetColorMod(255, 255, 255); // reset changes from other color mods
 		game_background = background_texture->CopyTexture(SDL_TEXTUREACCESS_TARGET);
@@ -311,15 +311,10 @@ Game::Game(CurrentGames *games)
 		drawing->RenderTextureFullscreen(turn_box_outline_texture->SDLTexture(), nullptr);
 	}
 
-	auto button_texture = sTextureButton.GetTexture();
-	auto button_outline_texture = sTextureButtonOutline.GetTexture()
-		->SetAlphaMod(220);
-	auto button_size = button_texture->GetOriginalSize();
 	{
 		auto play_text = assets->RenderTextBlendedOutline(CommonUI::sFontSmaller2x.GetTTFFont(), "Play", 3,
 														  { 255, 255, 255, 255 },
 														  { 0, 0, 0, 255 });
-
 		play_button_texture = RenderPresets::ColorButton(sTextureButton.GetTexture(),
 														 { 0, 180, 0 },
 														 sTextureButtonOutline.GetTexture(), play_text);
@@ -329,9 +324,8 @@ Game::Game(CurrentGames *games)
 		auto play_text = assets->RenderTextBlendedOutline(CommonUI::sFontSmaller2x.GetTTFFont(), "Play", 3,
 														  { 255, 255, 255, 255 },
 														  { 0, 0, 0, 255 });
-
 		play_grayed_button_texture = RenderPresets::ColorButton(sTextureButton.GetTexture(),
-																{ 150, 150, 150 },
+																{ 0, 180, 0 },
 																sTextureButtonOutline.GetTexture(), play_text, true);
 		delete play_text;
 	}
@@ -341,8 +335,8 @@ Game::Game(CurrentGames *games)
 															{ 0, 0, 0, 255 });
 
 		delete_button_texture = RenderPresets::ColorButton(sTextureButton.GetTexture(),
-																{ 180, 0, 0 },
-																sTextureButtonOutline.GetTexture(), delete_text, false);
+														   { 255, 0, 0 },
+														   sTextureButtonOutline.GetTexture(), delete_text, false);
 		delete delete_text;
 	}
 
@@ -450,7 +444,7 @@ Game::Game(CurrentGames *games)
 		->AddChildren({ state_text, state_description });
 
 	this->play_button = (Button *)(new Button(play_button_texture, play_button_texture))
-		->SetSize(Vec2i(257 * 0.45, 89 * 0.45))
+		->SetSize(Vec2i(play_button_texture->GetOriginalSize() / 2))
 		->SetName("PlayButton");
 	this->play_button->SetCallback([this]()
 								   {
@@ -460,10 +454,8 @@ Game::Game(CurrentGames *games)
 									   json game_data;
 									   game_data["game_id"] = game_info_->game_id;
 									   auto packet = (new Packet("/start_game", "POST", &game_data));
-									   packet->SetErroredCallback([this, packet]()
-																  {
-																	  delete packet;
-																  });
+									   packet->SetErroredCallback([packet]()
+																  { delete packet; });
 									   packet->SetResponseCallback([packet](const NetworkResponse& server_response)
 																   {
 																	   std::string code = server_response.GetCode();
@@ -508,6 +500,13 @@ Game::Game(CurrentGames *games)
 																			   }
 																		   }
 
+																		   if (server_response.response_json.contains("owned_colors") && server_response.response_json["owned_colors"].is_array())
+																		   {
+																			   Centralized.UpdateOwnedColors(server_response.response_json["owned_colors"]);
+																			   Centralized.ingame_menu->GetColorSelector()->RefreshData();
+																			   Centralized.ingame_menu->RefreshMenu();
+																		   }
+
 																		   dbg_msg("&d[SERVER Response]&r Game started: %s\n", message.c_str());
 																	   }
 																	   else if (code == "game_start_fail")
@@ -521,7 +520,7 @@ Game::Game(CurrentGames *games)
 								   });
 
 	this->delete_button = (Button *)(new Button(delete_button_texture, delete_button_texture))
-		->SetSize(Vec2i(257 * 0.45, 89 * 0.45))
+		->SetSize(Vec2i(delete_button_texture->GetOriginalSize() / 2))
 		->SetName("DeleteButton");
 
 	this->delete_button->SetCallback([this]()
@@ -532,7 +531,7 @@ Game::Game(CurrentGames *games)
 																				   json delete_data;
 																				   delete_data["game_id"] = game_info_->game_id;
 																				   auto packet = (new Packet("/delete_game", "POST", &delete_data));
-																				   packet->SetErroredCallback([this, packet]()
+																				   packet->SetErroredCallback([packet]()
 																											  {
 																												  delete packet;
 																											  });
@@ -575,7 +574,7 @@ Game::Game(CurrentGames *games)
 									 });
 
 	auto buttons_frame = (Frame *)(new Frame())
-		->SetRelative(Vec2i(-10, 0))
+		->SetRelative(Vec2i(-15, 0))
 		->SetAdaptive(true, true)
 		->SetFlex(Flex::HEIGHT, 5)
 		->SetAlign(Align::DONT, Align::CENTER)

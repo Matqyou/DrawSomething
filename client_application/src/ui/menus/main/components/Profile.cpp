@@ -7,12 +7,19 @@
 #include "ui/CommonUI.h"
 #include "game/GameData.h"
 #include "ui/components/element/Button.h"
+#include "ui/RenderPresets.h"
+#include "ui/menus/main/MainMenu.h"
+#include "ui/menus/auth/AuthMenu.h"
 
 namespace Main
 {
 static LinkTexture sTextureBase("main_menu.profile.base");
 static LinkTexture sTextureBottomBase("main_menu.profile.bottom");
 static LinkTexture sTexturePictureFrame("main_menu.profile.picture_frame");
+static LinkTexture sTextureDefaultProfilePicture("icons.icon_white");
+static LinkTexture sTextureProfilePictureFrame("main_menu.games.picture_frame");
+static LinkTexture sTextureButton("button");
+static LinkTexture sTextureButtonOutline("button_outline");
 
 static LinkTexture sTextureTopBase("main_menu.profile.top_base");
 static LinkTexture sTextureStyles[4] =
@@ -24,7 +31,27 @@ static LinkTexture sTextureStyles[4] =
 	};
 
 static LinkTexture sTextureEdit("main_menu.profile.edit_button");
-//static LinkTexture sTextureEditPressed("main_menu.profile.edit_pressed");
+
+void Profile::SetProfilePicture(Texture *texture_data)
+{
+	Texture *profile_picture_ = texture_data != nullptr ? texture_data : sTextureDefaultProfilePicture.GetTexture();
+	{
+		auto assets = Assets::Get();
+		auto drawing = assets->GetDrawing();
+
+		auto original_render_target = SDL_GetRenderTarget(drawing->Renderer());
+
+		auto frame_texture = sTextureProfilePictureFrame.GetTexture()
+			->SetColorMod(50, 50, 50);
+
+		delete profile_picture_texture;
+		profile_picture_texture = profile_picture_->CopyTexture(SDL_TEXTUREACCESS_TARGET);
+		drawing->SetRenderTarget(profile_picture_texture);
+		drawing->RenderTextureFullscreen(frame_texture->SDLTexture());
+		drawing->SetRenderTargetSDL(original_render_target);
+	}
+	profile_picture->SetTexture(profile_picture_texture);
+}
 
 Profile::Profile()
 	: Frame()
@@ -32,12 +59,7 @@ Profile::Profile()
 	auto assets = Assets::Get();
 	auto drawing = assets->GetDrawing();
 
-	Texture *random_cat = assets->GetTexture(Strings::FString("profile_pictures.cat%d", 1 + rand() % 12));
-	profile_picture_composition = random_cat->CopyTexture(SDL_TEXTUREACCESS_TARGET);
-	drawing->SetRenderTarget(profile_picture_composition);
-	sTexturePictureFrame.GetTexture()->SetColorMod(0, 0, 0);
-	drawing->RenderTextureFullscreen(sTexturePictureFrame.GetSDLTexture(), nullptr);
-	drawing->SetRenderTarget(nullptr);
+	profile_picture_texture = nullptr;
 
 	auto random_style = sTextureStyles[rand() % 4];
 	top_base_composition = sTextureTopBase.GetTexture()->CopyTexture(SDL_TEXTUREACCESS_TARGET);
@@ -47,9 +69,9 @@ Profile::Profile()
 	drawing->RenderTextureFullscreen(random_style.GetSDLTexture(), nullptr);
 	drawing->SetRenderTarget(nullptr);
 
-	auto profile_picture = (new Frame())
+	profile_picture = (Frame *)(new Frame())
 		->SetSize(Vec2i(141, 141))
-		->SetTexture(profile_picture_composition)
+		->SetTexture(profile_picture_texture)
 		->SetDraw(DRAW_TEXTURE)
 		->SetName("ProfilePicture");
 
@@ -62,13 +84,6 @@ Profile::Profile()
 					 { 200, 50, 200, 255 })
 		->SetEnabled(false)
 		->SetAlign(Align::CENTER, Align::DONT);
-
-//	auto edit_button = (Button *)(new Button(sTextureEdit.GetTexture(), sTextureEdit.GetTexture()))
-//		->SetSize(Vec2i(143, 54)/2)
-////		->SetRelative(Vec2i(-10, -10))
-//		->SetAlign(Align::RIGHT, Align::DONT)
-////		->SetFlexInvolved(false, false)
-//		->SetName("EditButton");
 
 	auto profile_info_frame = (new Frame())
 		->SetAlign(Align::CENTER, Align::CENTER)
@@ -111,13 +126,51 @@ Profile::Profile()
 		->SetName("GameStatsFrame")
 		->AddChildren({ games_played, rounds_played, highest_turn, coins_earned, coins_spent });
 
+	auto logout_text = assets->RenderTextBlendedOutline(CommonUI::sFontSmaller2x.GetTTFFont(), "Logout", 2,
+														{ 255, 255, 255, 255 },
+														{ 0, 0, 0, 255 })
+		->FlagForAutomaticDeletion();
+	auto logout_button_texture = RenderPresets::ColorButton(sTextureButton.GetTexture(),
+															{ 255, 0, 0 },
+															sTextureButtonOutline.GetTexture(), logout_text)
+		->FlagForAutomaticDeletion();
+	auto logout_button = (Button *)(new Button(logout_button_texture,
+											   logout_button_texture))
+		->SetRelative(Vec2i(-30, -30))
+		->SetSize(Vec2i(logout_button_texture->GetOriginalSize() / 2))
+		->SetFlexInvolved(false, false)
+		->SetAlign(Align::RIGHT, Align::BOTTOM)
+		->SetName("Logout");
+	logout_button->SetCallback([]()
+							   {
+								   Centralized.main_menu->GetLoadingScreen()->StartShowing("Logging out..");
+
+								   auto packet = (new Packet("/logout", "POST"));
+								   packet->SetErroredCallback([packet]()
+															  { delete packet; });
+								   packet->SetResponseCallback([packet](const NetworkResponse& server_response)
+															   {
+																   Centralized.main_menu->GetLoadingScreen()->Hide();
+
+																   Centralized.GetAccount().Logout();
+																   Centralized.current_menu = (FullscreenMenu *)Centralized.auth_menu;
+																   Centralized.auth_menu->SetResponse("Logged out successfully", true);
+																   Centralized.auth_menu->RefreshMenu();
+
+																   delete packet;
+															   });
+								   packet->Send();
+							   });
+
 	auto stats_frame = (new Frame())
 		->SetSize(Vec2i(352, 237))
 		->SetRelative(Vec2i(26, 207))
 		->SetTexture(sTextureBottomBase.GetTexture()->SetColorMod(0, 149, 100))
 		->SetDraw(DRAW_TEXTURE)
 		->SetName("StatsFrame")
-		->AddChildren({ stats_title, gamestats_frame });
+		->AddChildren({ stats_title, gamestats_frame, logout_button });
+
+	SetProfilePicture(nullptr);
 
 	this->SetRelative(Vec2i(-25, 100 - 58 - 17));
 	this->SetSize(Vec2i(501 * 0.8, 586 * 0.8));
@@ -130,7 +183,7 @@ Profile::Profile()
 
 Profile::~Profile()
 {
-	delete profile_picture_composition;
+	delete profile_picture_texture;
 	delete top_base_composition;
 }
 
@@ -164,5 +217,6 @@ void Profile::RefreshData()
 							Strings::FString("Coins spent: %d", account.coins_spent).c_str(),
 							{ 255, 200, 200, 255 });
 
+	SetProfilePicture(nullptr); // waiting
 }
 }

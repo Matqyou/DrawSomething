@@ -58,7 +58,7 @@ IntermissionMenu::IntermissionMenu()
 	: FullscreenMenu()
 {
 	name = L"IntermissionMenu";
-	end_animation_callback = nullptr;
+	end_animation_callback = { };
 	countdown_started = false;
 	auto assets = Assets::Get();
 

@@ -4,7 +4,7 @@
 
 #pragma once
 
-#define APPLICATION_VERSION "1.2.4"
+#define APPLICATION_VERSION "1.3.0"
 #define APPLICATION_NAME "DrawSomething"
 
 #include <cstdint>

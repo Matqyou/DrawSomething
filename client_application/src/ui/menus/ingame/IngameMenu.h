@@ -32,6 +32,8 @@ public:
 
 	// Sense
 	[[nodiscard]] Ingame::Canvas* GetCanvas() const { return canvas; }
+	[[nodiscard]] Ingame::ColorSelector* GetColorSelector() const { return color_selector; }
+	[[nodiscard]] Ingame::ToolSelector* GetToolSelector() const { return tool_selector; }
 
     // Manipulation
     void PrepareGuess();

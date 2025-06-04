@@ -14,4 +14,8 @@ public:
 	ScreenMenu();
 	~ScreenMenu() override;
 
+	// Ticking
+	void ScreenEvent(const SDL_Event& sdl_event, EventContext& event_summary);
+	void HandleEvent(const SDL_Event& sdl_event, EventContext& event_summary) override;
+
 };

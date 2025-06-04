@@ -33,7 +33,10 @@ class User(models.Model):
     coins_spent = models.IntegerField(default=0)
     highest_turn = models.IntegerField(default=0)
 
+    bombs = models.IntegerField(default=0)
+
     admin_user = models.BooleanField(default=False)
+    deleted = models.BooleanField(default=False)
 
     session_key = models.CharField(max_length=64, null=True, blank=True, unique=True)
     session_expiration = models.DateTimeField(null=True, blank=True)
@@ -53,6 +56,8 @@ class User(models.Model):
         if self.profile_picture:
             pfp_url = base_url + self.profile_picture.url
 
+        colors = list(self.purchased_bundles.values_list('color_bundle__bundle_id', flat=True))
+
         return {
             "user_id": self.user_id,
             "username": self.username,
@@ -64,6 +69,8 @@ class User(models.Model):
             "coins": self.coins,
             "coins_earned": self.coins_earned,
             "coins_spent": self.coins_spent,
+            "bombs": self.bombs,
+            "colors": colors,
             "highest_turn": self.highest_turn,
             "admin_user": self.admin_user,
             "creation_date": self.creation_date,
@@ -129,7 +136,8 @@ class Game(models.Model):
     choice_medium = models.CharField(max_length=32, default="")
     choice_hard = models.CharField(max_length=32, default="")
 
-    # Game statiostics and state
+    # Game statistics and state
+    current_attempt = models.IntegerField(default=1)
     turn_number = models.IntegerField(default=1)
     current_turn = models.CharField(choices=CurrentTurn.choices, default=CurrentTurn.PARTY_A, max_length=16)
     turn_stage = models.CharField(choices=TurnStage.choices, default=TurnStage.PICKING, max_length=16)
@@ -176,12 +184,16 @@ class Game(models.Model):
     # Pick new words to be chosen in the next round
     def refresh_choices(self):
         # Use words file that contains many options
-        with open('words', 'r') as f:
-            words = f.read().splitlines(keepends=False)
+        with open('words_easy', 'r') as f:
+            easy = random.choice(f.read().splitlines(keepends=False))
+        with open('words_medium', 'r') as f:
+            medium = random.choice(f.read().splitlines(keepends=False))
+        with open('words_hard', 'r') as f:
+            hard = random.choice(f.read().splitlines(keepends=False))
 
-        self.choice_easy = random.choice(words)
-        self.choice_medium = random.choice(words)
-        self.choice_hard = random.choice(words)
+        self.choice_easy = easy
+        self.choice_medium = medium
+        self.choice_hard = hard
         self.save()
 
 
@@ -192,6 +204,7 @@ class Recording(models.Model):
     turn_number = models.IntegerField(default=0)
     drawn_word = models.CharField(max_length=32)
     word_difficulty = models.CharField(max_length=16)
+    attempt = models.IntegerField(default=1)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -241,3 +254,17 @@ class Color(models.Model):
             "g": self.g,
             "b": self.b
         }
+
+
+class UserColorBundle(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='purchased_bundles')
+    color_bundle = models.ForeignKey(ColorBundle, on_delete=models.CASCADE, related_name='purchased_by')
+
+    purchase_date = models.DateTimeField(auto_now_add=True)
+    purchase_price = models.IntegerField()  # Store the price they paid (in case prices change)
+
+    class Meta:
+        unique_together = ('user', 'color_bundle')  # Prevent duplicate purchases
+
+    def __str__(self):
+        return f"{self.user.username} - {self.color_bundle.name}"

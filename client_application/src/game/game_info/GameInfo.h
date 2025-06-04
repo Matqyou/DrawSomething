@@ -22,6 +22,7 @@ public:
 	};
 
     struct PlayerInfo {
+		int user_id;
         std::string username;
 		std::string profile_picture_url;
         Texture* profile_picture;

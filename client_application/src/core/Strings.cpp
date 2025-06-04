@@ -10,6 +10,7 @@
 #include <string>
 #include <cstdarg>
 #include <algorithm>
+#include <random>
 
 // ANSI color codes
 const std::unordered_map<char, std::string> minecraftToAnsi = {
@@ -266,6 +267,24 @@ std::string ToLowerCase(const std::string& input) {
 
 char RandomUppercaseLetter() {
     return 'A' + (std::rand() % 26);
+}
+
+std::string GenerateRandomFilename(size_t length, const std::string& extension) {
+	static const char characters[] =
+		"0123456789"
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+		"abcdefghijklmnopqrstuvwxyz";
+
+	std::random_device rd;
+	std::mt19937 generator(rd());
+	std::uniform_int_distribution<> distribution(0, sizeof(characters) - 2);
+
+	std::string filename;
+	for (size_t i = 0; i < length; ++i) {
+		filename += characters[distribution(generator)];
+	}
+
+	return filename + extension;
 }
 
 std::string ConvertTimeNano(long long nanoseconds) {

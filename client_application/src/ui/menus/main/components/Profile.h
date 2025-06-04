@@ -12,6 +12,7 @@ namespace Main
 class Profile : public Frame
 {
 private:
+	Frame *profile_picture;
 	TextElement *profile_nickname;
 	TextElement *profile_username;
 	TextElement *profile_email;
@@ -23,7 +24,7 @@ private:
 	TextElement *coins_earned;
 	TextElement *coins_spent;
 
-	Texture *profile_picture_composition;
+	Texture *profile_picture_texture;
 	Texture *top_base_composition;
 
 public:
@@ -32,6 +33,7 @@ public:
 
 	// Manipulating
 	void RefreshData();
+	void SetProfilePicture(Texture *texture_data);
 
 };
 }

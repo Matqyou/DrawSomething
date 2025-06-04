@@ -7,8 +7,9 @@
 #include "ui/menus/FullscreenMenu.h"
 #include "ui/components/element/TextElement.h"
 #include "ui/components/element/Button.h"
+#include "ui/menus/ScreenMenu.h"
 
-class ConfirmationScreen : public FullscreenMenu
+class ConfirmationScreen : public ScreenMenu
 {
 private:
 	TextElement *question;

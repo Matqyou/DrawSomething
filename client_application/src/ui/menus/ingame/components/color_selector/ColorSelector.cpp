@@ -7,24 +7,26 @@
 #include "ui/CommonUI.h"
 #include "ui/menus/ingame/components/tool_selector/BrushSizeButton.h"
 #include "ui/components/element/TextElement.h"
+#include "game/GameData.h"
+#include "ui/menus/ingame/IngameMenu.h"
 
 namespace Ingame
 {
-static SDL_Color sAvailableColors[13] = {
-	SDL_Color(0, 0, 0, 255),
-	SDL_Color(255, 0, 0, 255),
-	SDL_Color(255, 255, 0, 255),
-	SDL_Color(0, 0, 255, 255),
-	SDL_Color(0, 255, 0, 255), //
-	SDL_Color(255, 0, 255, 255), //
-	SDL_Color(0, 255, 255, 255), //
-	SDL_Color(255, 128, 0, 255), //
-	SDL_Color(128, 255, 0, 255), //
-	SDL_Color(0, 255, 128, 255), //
-	SDL_Color(0, 128, 255, 255), //
-	SDL_Color(128, 0, 255, 255), //
-	SDL_Color(255, 0, 128, 255), //
-};
+//static SDL_Color sAvailableColors[13] = {
+//	SDL_Color(0, 0, 0, 255),
+//	SDL_Color(255, 0, 0, 255),
+//	SDL_Color(255, 255, 0, 255),
+//	SDL_Color(0, 0, 255, 255),
+//	SDL_Color(0, 255, 0, 255), //
+//	SDL_Color(255, 0, 255, 255), //
+//	SDL_Color(0, 255, 255, 255), //
+//	SDL_Color(255, 128, 0, 255), //
+//	SDL_Color(128, 255, 0, 255), //
+//	SDL_Color(0, 255, 128, 255), //
+//	SDL_Color(0, 128, 255, 255), //
+//	SDL_Color(128, 0, 255, 255), //
+//	SDL_Color(255, 0, 128, 255), //
+//};
 
 Texture *sGeneratePlus(AssetsClass *assets)
 {
@@ -68,10 +70,29 @@ ColorSelector::ColorSelector(Canvas *canvas, Ingame::ToolSelector *tool_selector
 	auto assets = Assets::Get();
 	auto drawing = assets->GetDrawing();
 
-	// Colors
+	// Color selector
+	this->SetColor(255, 255, 255, 50);
+	this->SetDraw(DRAW_RECT);
+	this->SetSize(Vec2i(0, 50));
+	this->SetFullyOccupy(true, false);
+	this->SetFlex(Flex::WIDTH, 4);
+	this->SetName("ColorSelector");
+
+}
+
+void ColorSelector::RefreshData()
+{
+	for (auto color : children)
+		delete color;
+	children.clear();
+
+	auto assets = Assets::Get();
+	auto drawing = assets->GetDrawing();
 	std::vector<Element *> colors;
-	for (auto sdl_color : sAvailableColors)
+	for (auto owned_color : Centralized.GetOwnedColors())
 	{
+		auto sdl_color = owned_color->GetColor();
+
 		auto color = sTextureColor.GetTexture();
 		auto color_overlay = sTextureColorOverlay.GetTexture();
 		Texture *color_composition = assets->CreateTexture(SDL_PIXELFORMAT_RGBA8888,
@@ -91,8 +112,10 @@ ColorSelector::ColorSelector(Canvas *canvas, Ingame::ToolSelector *tool_selector
 			->SetAlign(Align::DONT, Align::CENTER)
 			->SetName("Color");
 
-		new_color->SetCallback([canvas, sdl_color, tool_selector]()
+		new_color->SetCallback([sdl_color]()
 							   {
+			auto canvas = Centralized.ingame_menu->GetCanvas();
+			auto tool_selector = Centralized.ingame_menu->GetToolSelector();
 								   canvas->SetDrawColor(sdl_color);
 								   canvas->SetTool(TOOL_PENCIL);
 								   tool_selector->SetFocus(tool_selector->pencil_tool);
@@ -101,30 +124,6 @@ ColorSelector::ColorSelector(Canvas *canvas, Ingame::ToolSelector *tool_selector
 							   });
 		colors.push_back(new_color);
 	}
-
-	// More colors button
-	auto more_colors_button = (Button *)(new Button(sTexturePlus.GetTexture(), sTexturePlusPressed.GetTexture()))
-		->SetCallback([]()
-					  { std::wcout << "More Colors\n"; })
-		->SetSize(Vec2i(42, 42))
-		->SetAlign(Align::DONT, Align::CENTER)
-		->SetName("MoreColors");
-	colors.push_back(more_colors_button);
-
-	auto more_colors = (new TextElement())
-		->UpdateText(CommonUI::sFontSmaller.GetFont()->TTFFont(),"more colors", { 150, 150, 150, 255 })
-		->SetAlign(Align::DONT, Align::CENTER)
-		->SetName("MoreColorsText");
-
-	colors.push_back(more_colors);
-
-	// Color selector
-	this->SetColor(255, 255, 255, 50);
-	this->SetDraw(DRAW_RECT);
-	this->SetSize(Vec2i(0, 50));
-	this->SetFullyOccupy(true, false);
-	this->SetFlex(Flex::WIDTH, 4);
-	this->SetName("ColorSelector");
-	this->AddChildren(colors);
+	AddChildren(colors);
 }
 }

@@ -20,6 +20,7 @@ std::wstring RepeatStringW(const std::wstring& str, int times);
 std::string ToUpperCase(const std::string& input);
 std::string ToLowerCase(const std::string& input);
 char RandomUppercaseLetter();
+std::string GenerateRandomFilename(size_t length = 12, const std::string& extension = ".png");
 
 std::string ConvertTimeNano(long long nanoseconds);
 
