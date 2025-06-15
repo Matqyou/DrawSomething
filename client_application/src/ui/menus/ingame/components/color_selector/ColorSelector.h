@@ -4,12 +4,12 @@
 
 #pragma once
 
-#include "ui/components/element/Frame.h"
 #include "ui/menus/ingame/components/Canvas.h"
 #include "ui/menus/ingame/components/tool_selector/ToolSelector.h"
+#include "ui/components/element/ScrollFrame.h"
 
 namespace Ingame {
-class ColorSelector : public Frame {
+class ColorSelector : public ScrollFrame {
 private:
 
 public:

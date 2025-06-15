@@ -26,7 +26,7 @@ Account::Account()
 
 	profile_picture = nullptr;
 	pfp_url = ""; //
-	pfp_update_callback = {};
+	pfp_update_callback = { };
 }
 
 Account::~Account()
@@ -44,9 +44,12 @@ Account& Account::ParseFromJson(const json& account_data)
 	email = account_data.value("email", "Not provided");
 	is_administrator = account_data.value("admin_user", false);
 	is_logged_in = account_data.value("logged_in", false);
-	if (account_data.contains("profile_picture") && account_data["profile_picture"].is_string()) {
+	if (account_data.contains("profile_picture") && account_data["profile_picture"].is_string())
+	{
 		pfp_url = account_data["profile_picture"];
-	} else {
+	}
+	else
+	{
 		pfp_url = "";
 	}
 
@@ -59,9 +62,11 @@ Account& Account::ParseFromJson(const json& account_data)
 	coins_spent = account_data.value("coins_spent", coins_spent);
 	bombs = account_data.value("bombs", bombs);
 
-	if (account_data.contains("colors") && account_data["colors"].is_array()) {
+	if (account_data.contains("colors") && account_data["colors"].is_array())
+	{
 		color_bundles.clear();
-		for (const auto& bundle_id : account_data["colors"]) {
+		for (const auto& bundle_id : account_data["colors"])
+		{
 			if (bundle_id.is_number_integer())
 				color_bundles.push_back(bundle_id.get<int>());
 		}
@@ -114,10 +119,10 @@ void Account::FetchProfilePicture()
 										 profile_picture = (new Texture(texture))->FlagForAutomaticDeletion();
 
 										 std::remove(temp_filename.c_str());
-										 delete file_packet;
-
 										 if (pfp_update_callback)
 											 pfp_update_callback();
+
+										 delete file_packet;
 									 });
 	file_packet->Send();
 }

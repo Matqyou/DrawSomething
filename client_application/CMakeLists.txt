@@ -122,7 +122,7 @@ add_executable(DrawSomething src/main.cpp
         src/ui/structures/visual_texture/VisualTexture.cpp
         src/ui/structures/visual_texture/VisualTexture.h
         src/ui/menus/main/components/Header.cpp
-        src/ui/menus/main/components/Header.h
+        src/ui/menus/main/components/MainHeader.h
         src/ui/menus/main/components/Profile.cpp
         src/ui/menus/main/components/Profile.h
         src/ui/menus/main/components/games/CurrentGames.cpp
@@ -193,6 +193,13 @@ add_executable(DrawSomething src/main.cpp
         src/ui/menus/main/games/GamesScreen.cpp
         src/game/account/OwnedColor.h
         src/game/account/OwnedColor.cpp
+        src/ui/menus/HeaderFullscreenMenu.h
+        src/ui/menus/HeaderFullscreenMenu.cpp
+        src/ui/menus/export/ExportMenu.h
+        src/ui/menus/export/ExportMenu.cpp
+        src/ui/menus/main/shop/bombs/BombOffer.cpp
+        src/ui/menus/main/shop/bombs/BombOffer.h
+        src/ui/menus/main/shop/bombs/BombOffer.h
 )
 
 add_executable(DrawSomethingEditor src/editor.cpp

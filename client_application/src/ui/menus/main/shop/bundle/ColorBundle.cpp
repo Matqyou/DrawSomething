@@ -14,19 +14,28 @@
 static LinkTexture sTextureButton("button");
 static LinkTexture sTextureButtonOutline("button_outline");
 
+static SDL_Color RarityColor[] = {
+	SDL_Color(125, 150, 125),
+	SDL_Color(100, 200, 100),
+	SDL_Color(200, 200, 100),
+};
+
 void ColorBundle::UpdateRarity()
 {
-	Texture *background = Assets::Get()->GetTexture(Strings::FString("main_menu.shop.color_background.%d", rarity));
+	auto assets = Assets::Get();
+	auto content_texture = assets->GetTexture("main_menu.shop.color_background.content");
+	auto outline_texture = assets->GetTexture("main_menu.shop.color_background.outline");
+	auto background = RenderPresets::Composition({ content_texture, outline_texture }, { RarityColor[rarity - 1] });
+
 	SetTexture(background);
 	SetDraw(DRAW_TEXTURE);
-	SetSize(Vec2i(background->GetOriginalSize() / 2));
+	ResizeToTexture();
 }
 
 void ColorBundle::UpdateBundleName()
 {
-	bundle_name_text->UpdateText(CommonUI::sFontRegular.GetTTFFont(),
-								 bundle_name.c_str(),
-								 { 255, 255, 255, 255 });
+	bundle_name_text->UpdateTextOutline(CommonUI::sFontMiniProfile2.GetTTFFont(), bundle_name.c_str(), 2,
+										{ 0, 0, 0, 255 }, { 255, 255, 255, 255 });
 }
 
 void ColorBundle::UpdatePrice()
@@ -35,9 +44,9 @@ void ColorBundle::UpdatePrice()
 	bool already_owned = std::find(account.color_bundles.begin(), account.color_bundles.end(), bundle_id) != account.color_bundles.end();
 	bool enough_money = already_owned || Centralized.GetAccount().coins >= price;
 	bool can_purchase_now = enough_money && !already_owned;
-	bundle_price_text->UpdateText(CommonUI::sFontSmallerBold.GetTTFFont(),
-								  Strings::FString("%d Coins", price).c_str(),
-								  enough_money ? SDL_Color(255, 255, 255, 255) : SDL_Color(255, 0, 0, 255));
+	bundle_price_text->UpdateTextOutline(CommonUI::sFontSmallerBold.GetTTFFont(), Strings::FString("%d Coins", price).c_str(), 2,
+										 enough_money ? SDL_Color(255, 255, 255, 255) : SDL_Color(255, 0, 0, 255),
+										 { 0, 0, 0, 255 });
 	bundle_price_text->SetEnabled(!already_owned);
 	buy_button->SetEnabled(can_purchase_now);
 	owned_text->SetEnabled(already_owned);
@@ -57,9 +66,10 @@ void ColorBundle::UpdatePrice()
 																		json user_data = server_response.response_json["user"];
 																		auto account = Centralized.GetAccount().ParseFromJson(user_data);
 
-																		Centralized.main_menu->Header()->RefreshData();
+																		Centralized.main_header->RefreshData();
 																		Centralized.main_menu->Profile()->RefreshData();
 																		Centralized.main_menu->GetShopScreen()->UpdateOwnedBundles();
+																		Centralized.main_menu->GetShopScreen()->UpdateBombPrices();
 																		Centralized.main_menu->RefreshMenu();
 																	}
 
@@ -80,18 +90,17 @@ ColorBundle::ColorBundle()
 	this->bundle_name = "No name provided";
 	this->price = -1;
 
-	colors = (Frame *)(new Frame())
-		->SetRelative(Vec2i(8, 3))
-		->SetAlign(Align::CENTER, Align::DONT)
+	colors = (Frame * )(new Frame())
+		->SetRelative(Vec2i(8, -15))
+		->SetAlign(Align::CENTER, Align::BOTTOM)
 		->SetFlex(Flex::WIDTH, 5)
 		->SetAdaptive(true, true)
 		->SetName("Colors");
 
 	bundle_name_text = (TextElement *)(new TextElement())
-		->UpdateText(CommonUI::sFontRegular.GetTTFFont(),
-					 "No name provided",
-					 { 255, 255, 255, 255 })
-		->SetRelative(Vec2i(8, 3))
+		->UpdateTextOutline(CommonUI::sFontRegular.GetTTFFont(), "No name provided", 2,
+							{ 0, 0, 0, 255 }, { 255, 255, 255, 255 })
+		->SetRelative(Vec2i(8, 5))
 		->SetAlign(Align::CENTER, Align::DONT)
 		->SetName("Name");
 
@@ -111,8 +120,8 @@ ColorBundle::ColorBundle()
 														 { 0, 255, 0 },
 														 sTextureButtonOutline.GetTexture(), buy_text)
 		->FlagForAutomaticDeletion();
-	buy_button = (Button *)(new Button(buy_button_texture,
-									   buy_button_texture))
+	buy_button = (Button * )(new Button(buy_button_texture,
+										buy_button_texture))
 		->SetSize(Vec2i(buy_button_texture->GetOriginalSize() * 0.4))
 		->SetAlign(Align::CENTER, Align::UNDER_BOTTOM)
 		->SetName("Buy");
@@ -125,14 +134,13 @@ ColorBundle::ColorBundle()
 		->SetEnabled(false)
 		->SetName("Owned");
 
-	auto left = (Frame *)(new Frame())
-		->SetFlex(Flex::HEIGHT)
+	auto left = (Frame * )(new Frame())
 		->SetOccupy(true, false)
 		->SetFullyOccupy(false, true)
 		->SetName("Left")
 		->AddChildren({ bundle_name_text, colors });
 
-	auto right = (Frame *)(new Frame())
+	auto right = (Frame * )(new Frame())
 		->SetRelative(Vec2i(0, -7))
 		->SetSize(Vec2i(120, 0))
 		->SetAlign(Align::DONT, Align::CENTER)

@@ -3,28 +3,19 @@
 //
 
 #include "ColorView.h"
+#include "ui/RenderPresets.h"
 
 void ColorView::UpdateTexture()
 {
 	delete view_texture;
 	auto assets = Assets::Get();
-	auto drawing = assets->GetDrawing();
 
-	std::string frame_key = Strings::FString("main_menu.shop.color.%d", rarity);
-	Texture *frame = assets->GetTexture(frame_key);
-	Texture *overlay = assets->GetTexture("main_menu.shop.color.overlay");
-	auto size = frame->GetOriginalSize();
-	view_texture = Assets::Get()->CreateTexture(SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, (int)size.x, (int)size.y);
-
-	drawing->SetRenderTarget(view_texture);
-	drawing->SetColor(color);
-	drawing->Clear();
-	drawing->RenderTextureFullscreen(frame->SDLTexture(), nullptr);
-	drawing->RenderTextureFullscreen(overlay->SDLTexture(), nullptr);
-	drawing->SetRenderTarget(nullptr);
+	Texture *fill = assets->GetTexture("main_menu.shop.color.color_fill");
+//	Texture *base = assets->GetTexture("main_menu.shop.color.color_base");
+	Texture *overlay = assets->GetTexture("main_menu.shop.color.color_overlay");
+	view_texture = RenderPresets::Composition({fill, overlay}, { color });
 
 	SetTexture(view_texture);
-	SetSize(Vec2i(size/2));
 }
 
 ColorView::ColorView(int color_id, int rarity, Uint8 r, Uint8 g, Uint8 b)
@@ -37,8 +28,9 @@ ColorView::ColorView(int color_id, int rarity, Uint8 r, Uint8 g, Uint8 b)
 
 	UpdateTexture();
 
-	SetDraw(DRAW_TEXTURE);
-	SetName("ColorView");
+	this->SetSize(Vec2i(44, 44));
+	this->SetDraw(DRAW_TEXTURE);
+	this->SetName("ColorView");
 }
 
 ColorView::~ColorView()

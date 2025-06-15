@@ -11,6 +11,7 @@ urlpatterns = [
     path('logout', views.logout),
     path('delete_profile', views.delete_profile),
     path('buy_colors', views.buy_colors),
+    path('buy_bombs', views.buy_bombs),
     path('edit_profile', views.edit_profile),
     path('upload_profile_picture', views.upload_profile_picture),
     path('all_users', views.all_users),

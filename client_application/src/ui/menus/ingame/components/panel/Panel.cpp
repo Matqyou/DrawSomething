@@ -46,7 +46,7 @@ Panel::Panel()
 																			{
 																				json user_data = server_response.response_json["user"];
 																				auto account = Centralized.GetAccount().ParseFromJson(user_data);
-																				Centralized.main_menu->Header()->RefreshData();
+																				Centralized.main_header->RefreshData();
 																			}
 
 																			if (server_response.response_json.contains("game") && server_response.response_json["game"].is_object())
@@ -57,10 +57,9 @@ Panel::Panel()
 																				Centralized.SortGames();
 																			}
 
-																			Centralized.current_menu = (FullscreenMenu *)Centralized.intermission_menu;
 																			Centralized.intermission_menu->RefreshData();
 																			Centralized.intermission_menu->ShowIntermission();
-																			Centralized.intermission_menu->RefreshMenu();
+																			Centralized.intermission_menu->SwitchToThisMenu();
 
 																			dbg_msg("&d[SERVER Response]&r Guessed correctly: %s\n", message.c_str());
 																		}

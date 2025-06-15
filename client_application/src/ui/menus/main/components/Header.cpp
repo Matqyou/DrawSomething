@@ -2,7 +2,7 @@
 // Created by Matq on 26/01/2025.
 //
 
-#include "Header.h"
+#include "MainHeader.h"
 #include "ui/structures/window_texture/WindowTexture.h"
 #include "ui/components/element/TextElement.h"
 #include "ui/components/element/Button.h"
@@ -10,8 +10,6 @@
 #include "game/GameData.h"
 #include "ui/menus/main/MainMenu.h"
 
-namespace Main
-{
 Texture *sGenerateCurrencyFrame(AssetsClass *assets)
 {
 	auto drawing = assets->GetDrawing();
@@ -49,7 +47,7 @@ static PregenerateTexture sTextureHeader("main_menu_header", [](AssetsClass *ass
 });
 static PregenerateTexture sTextureCurrencyFrame("main_menu.header.currency_frame", sGenerateCurrencyFrame);
 
-Header::Header(MainMenu *parent)
+MainHeader::MainHeader(MainMenu *parent)
 	: Frame()
 {
 	this->name = L"Header";
@@ -101,6 +99,7 @@ Header::Header(MainMenu *parent)
 		->SetName("BombsBackground");
 	num_bombs = (TextElement *)(new TextElement())
 		->UpdateText(CommonUI::sFontSmaller.GetTTFFont(), "NaN", { 255, 255, 255, 255 })
+		->SetRelative(Vec2i(-7, 0))
 		->SetAlign(Align::DONT, Align::CENTER)
 		->SetName("NumberOfBombs");
 	auto bomb = (new Frame())
@@ -323,12 +322,12 @@ Header::Header(MainMenu *parent)
 	this->AddChildren({ currency_frame, bombs_frame, logo, buttons_frame });
 }
 
-Header::~Header()
+MainHeader::~MainHeader()
 {
 
 }
 
-void Header::RefreshData()
+void MainHeader::RefreshData()
 {
 	auto account = Centralized.GetAccount();
 	num_coins->UpdateTextOutline(CommonUI::sFontSmaller.GetTTFFont(),
@@ -341,5 +340,4 @@ void Header::RefreshData()
 								 { 0, 0, 0, 255 });
 	admin_button->SetEnabled(account.is_administrator);
 	games_button->SetEnabled(account.is_administrator);
-}
 }

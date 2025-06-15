@@ -16,6 +16,7 @@ public:
 
     // Manipulation
     void RefreshMenu();
+	virtual void SwitchToThisMenu();
 
 };
 

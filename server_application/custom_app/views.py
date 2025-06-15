@@ -244,6 +244,44 @@ def buy_colors(request):
 
 @allowed_methods(['POST'])
 @authed_user
+def buy_bombs(request):
+    user: User = request.user  # type: ignore
+
+    try:
+        # Parse JSON request body
+        data = json.loads(request.body)
+
+        bombs_id = data.get("bombs_id")
+
+        if bombs_id is False:
+            return JsonResponse({"message": "No bombs_id supplied"}, status=400)
+
+        if not (0 <= bombs_id <= 2):
+            return JsonResponse({"message": f"Bombs offer {bombs_id} was not found"}, status=404)
+
+        price = (5, 12, 30)[bombs_id]
+        bombs = (1, 3, 10)[bombs_id]
+
+        if user.coins < price:
+            return JsonResponse({"message": "You don't have enough coins to buy this"}, status=400)
+
+        # Process the purchase
+        user.coins -= price
+        user.coins_spent += price
+        user.bombs += bombs
+        user.save()
+
+        base_url = get_base_url(request)
+        return JsonResponse({
+            "message": "Bomb/s have been purchased",
+            "user": user.display_fields(base_url)
+        }, status=201)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
+
+
+@allowed_methods(['POST'])
+@authed_user
 def edit_profile(request):
     user: User = request.user  # type: ignore
 

@@ -6,12 +6,16 @@
 
 #include "network/NetworkClient.h"
 #include "ui/menus/ScreenMenu.h"
+#include "ui/components/element/ScrollFrame.h"
+#include "ui/menus/main/shop/bombs/BombOffer.h"
 
 class ShopScreen : public ScreenMenu
 {
 private:
-	Frame* colors_frame;
-
+	BombOffer *bombs1;
+	BombOffer *bombs2;
+	BombOffer *bombs3;
+	ScrollFrame* colors_frame;
 
 public:
 	ShopScreen();
@@ -20,5 +24,6 @@ public:
 	// Manipulating
 	void ParseFromJson(const json& shop_data);
 	void UpdateOwnedBundles();
+	void UpdateBombPrices();
 
 };

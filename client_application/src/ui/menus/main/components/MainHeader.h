@@ -12,9 +12,7 @@
 #include "ui/menus/main/shop/ShopScreen.h"
 
 class MainMenu;
-namespace Main
-{
-class Header : public Frame
+class MainHeader : public Frame
 {
 private:
 	TextElement *num_coins;
@@ -27,11 +25,10 @@ private:
 	Button *profile_button;
 
 public:
-	explicit Header(MainMenu* parent);
-	~Header() override;
+	explicit MainHeader(MainMenu* parent);
+	~MainHeader() override;
 
 	// Manipulating
 	void RefreshData();
 
 };
-}

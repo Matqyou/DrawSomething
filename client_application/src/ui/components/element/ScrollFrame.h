@@ -9,10 +9,25 @@
 class ScrollFrame : public Frame {
 private:
     Orientation scroll_direction;
-    int scroll_amount;
+    double scroll;
+
+	Texture* capture_area;
+
+	void UpdateCaptureArea();
 
 public:
-    explicit ScrollFrame(Orientation scroll_direction);
+    ScrollFrame();
     ~ScrollFrame();
+
+	// Options
+	ScrollFrame* SetScrollDirection(Orientation direction) {
+		scroll_direction = direction;
+		return this;
+	}
+
+	// Ticking
+	void HandleEvent(const SDL_Event& sdl_event, EventContext& event_summary) override;
+	void Render() override;
+	void PreComposition() override;
 
 };

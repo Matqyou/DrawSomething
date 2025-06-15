@@ -39,42 +39,6 @@ public:
 
 };
 
-//class AssetsClass;
-//class TextureData {
-//private:
-//    friend class AssetsClass;
-//    const std::string m_Key;
-//    SDL_Texture* m_SDLTexture;
-//    float m_Width, m_Height;
-//    float m_WidthHalf, m_HeightHalf;
-//    std::string m_LoadExtension;
-//
-//    bool m_AutomaticDeletion;
-//
-//public:
-//    explicit TextureData(SDL_Texture* sdl_texture = nullptr, std::string key = "NaN", std::string load_extension = "NaN");
-//    ~TextureData();
-//
-//    // Getting
-//    [[nodiscard]] SDL_Texture* SDLTexture() const { return m_SDLTexture; }
-//    [[nodiscard]] float GetWidth() const { return m_Width; }
-//    [[nodiscard]] float GetHeight() const { return m_Height; }
-//    [[nodiscard]] Vec2f GetSize() const { return { m_Width, m_Height }; }
-//    [[nodiscard]] Vec2f GetHalfSize() const { return { m_WidthHalf, m_HeightHalf }; }
-//    [[nodiscard]] const std::string& Key() const { return m_Key; }
-//
-//    // Options
-//    TextureData* FlagForAutomaticDeletion();
-//    TextureData* SetSDLTexture(SDL_Texture* sdl_texture);
-//    TextureData* SetBlendMode(SDL_BlendMode blend_mode);
-//    TextureData* SetColorMod(Uint8 r, Uint8 g, Uint8 b);
-//    TextureData* SetColorMod(SDL_Color color);
-//    TextureData* SetColorModFloat(float r, float g, float b);
-//    TextureData* SetColorModFloat(SDL_FColor color);
-//    TextureData* SetAlphaMod(int alpha);
-//    TextureData* SetScaleMode(SDL_ScaleMode scale_mode);
-//};
-
 class Sound
 {
 private:

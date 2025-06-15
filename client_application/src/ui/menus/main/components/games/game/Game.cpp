@@ -636,6 +636,7 @@ Game *Game::UpdateInfo(GameInfo *game_info)
 
 		statistics->UpdateInfo(game_info);
 	}
+
 	return this;
 }
 }

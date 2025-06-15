@@ -33,9 +33,11 @@ void exit_application()
 
 bool gConsoleVisible = true;
 
-void ToggleConsole() {
+void ToggleConsole()
+{
 	HWND console = GetConsoleWindow();
-	if (console) {
+	if (console)
+	{
 		gConsoleVisible = !gConsoleVisible;
 		ShowWindow(console, gConsoleVisible ? SW_SHOW : SW_HIDE);
 	}
@@ -278,10 +280,13 @@ int main()
 																								Centralized.SortGames();
 																							}
 
-																							Centralized.current_menu = (FullscreenMenu *)Centralized.main_menu;
+//																							Centralized.current_menu = (FullscreenMenu *)Centralized.main_menu;
 																							Centralized.main_menu->Games()->RefreshData();
 																							Centralized.main_menu->Profile()->RefreshData();
-																							Centralized.main_menu->RefreshMenu();
+//																							Centralized.main_menu->RefreshMenu();
+
+																							Centralized.PassDrawnImage(Centralized.ingame_menu->GetCanvas()->GetCanvasTexture()->CopyTexture(SDL_TEXTUREACCESS_TARGET));
+																							Centralized.export_menu->SwitchToThisMenu();
 
 																							dbg_msg("&d[SERVER Response]&r Finished drawing: %s\n", message.c_str());
 																						}

@@ -83,6 +83,35 @@ SDL_FRect CenterRelative(const Vec2<T>& original, const Vec2<T>& container) {
              static_cast<float>(original.y) };
 }
 
+inline SDL_FRect ClipBounds(const SDL_FRect& original, const SDL_FRect& container) {
+	SDL_FRect clipped = original;
+
+	if (clipped.x < container.x) {
+		float overflow = container.x - clipped.x;
+		clipped.x = container.x;
+		clipped.w -= overflow;  // Reduce width by the amount we moved right
+	}
+
+	if (clipped.y < container.y) {
+		float overflow = container.y - clipped.y;
+		clipped.y = container.y;
+		clipped.h -= overflow;  // Reduce height by the amount we moved down
+	}
+
+	if (clipped.x + clipped.w > container.x + container.w) {
+		clipped.w = (container.x + container.w) - clipped.x;
+	}
+
+	if (clipped.y + clipped.h > container.y + container.h) {
+		clipped.h = (container.y + container.h) - clipped.y;
+	}
+
+	if (clipped.w < 0) clipped.w = 0;
+	if (clipped.h < 0) clipped.h = 0;
+
+	return clipped;
+}
+
 template<typename T>
 bool PointCollides(T x, T y, T rect_x, T rect_y, T rect_x2, T rect_y2) {
     return !(x < rect_x || x > rect_x2 || y < rect_y|| y > rect_y2);

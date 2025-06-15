@@ -18,7 +18,10 @@ void GameData::InitUI()
 	main_menu = new MainMenu();
 	picking_menu = new PickingMenu();
 	ingame_menu = new IngameMenu();
+	export_menu = new ExportMenu();
 	current_menu = auth_menu;
+
+	main_header = new MainHeader(main_menu);
 
 	account.SetProfilePictureUpdateCallback([this]()
 											{
@@ -30,18 +33,33 @@ void GameData::InitUI()
 GameData::GameData()
 {
 	current_game = nullptr;
+	drawn_image = nullptr;
 
 	// UI
+	main_header = nullptr;
+
 	intermission_menu = nullptr;
 	auth_menu = nullptr;
 	main_menu = nullptr;
 	picking_menu = nullptr;
 	ingame_menu = nullptr;
 	current_menu = nullptr;
+	export_menu = nullptr;
 }
 
 GameData::~GameData()
 {
+	delete main_header;
+
+	delete intermission_menu;
+	delete auth_menu;
+	delete main_menu;
+	delete picking_menu;
+	delete ingame_menu;
+	delete current_menu;
+	delete export_menu;
+
+	delete drawn_image;
 	ClearGames();
 	// clear accounts & colors
 }

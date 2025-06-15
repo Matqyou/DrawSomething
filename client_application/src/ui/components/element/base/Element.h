@@ -117,7 +117,7 @@ public:
         this->relative = relative;
         return this;
     }
-    Element* SetSize(const Vec2i& size) {
+    virtual Element* SetSize(const Vec2i& size) {
         this->size = size;
         return this;
     }

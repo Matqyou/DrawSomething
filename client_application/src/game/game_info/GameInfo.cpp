@@ -146,10 +146,10 @@ void GameInfo::FetchProfilePictures()
 										 players[1].profile_picture = (new Texture(texture))->FlagForAutomaticDeletion();
 
 										 std::remove(temp_filename.c_str());
-										 delete file_packet;
-
 										 if (pfp_update_callback)
 											 pfp_update_callback();
+
+										 delete file_packet;
 									 });
 	file_packet->Send();
 }

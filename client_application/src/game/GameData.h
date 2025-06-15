@@ -8,6 +8,8 @@
 #include "game/game_info/GameInfo.h"
 #include "ui/menus/FullscreenMenu.h"
 #include "game/account/OwnedColor.h"
+#include "ui/menus/main/components/MainHeader.h"
+#include "ui/menus/export/ExportMenu.h"
 
 class IntermissionMenu;
 class AuthMenu;
@@ -20,20 +22,27 @@ private:
 	Account account;
 	GameInfo *current_game;
 
-	std::vector<OwnedColor*> owned_colors;
+	std::vector<OwnedColor *> owned_colors;
 	std::vector<Account *> known_user_list;
 	std::vector<GameInfo *> open_games;
 
 	std::vector<Account *> admin_user_list;
 
+	Texture *drawn_image;
+
 public:
 	// UI
+	// Header
+	MainHeader *main_header;
+
+	// Menus
 	IntermissionMenu *intermission_menu;
 	AuthMenu *auth_menu;
 	MainMenu *main_menu;
 	PickingMenu *picking_menu;
 	IngameMenu *ingame_menu;
 	FullscreenMenu *current_menu;
+	ExportMenu* export_menu;
 
 	void InitUI();
 
@@ -48,6 +57,7 @@ public:
 	[[nodiscard]] std::vector<GameInfo *>& GetOpenGames() { return open_games; }
 	[[nodiscard]] GameInfo *GetGame(int game_id) const;
 	[[nodiscard]] std::vector<Account *>& GetAdminUserList() { return admin_user_list; }
+	[[nodiscard]] Texture *GetDrawnImage() const { return drawn_image; }
 
 	// Generating
 	[[nodiscard]] Account *GetKnownUser(int user_id);
@@ -56,6 +66,11 @@ public:
 	GameData& SetCurrentGame(GameInfo *new_current_game)
 	{
 		this->current_game = new_current_game;
+		return *this;
+	}
+	GameData& PassDrawnImage(Texture *image)
+	{
+		this->drawn_image = image;
 		return *this;
 	}
 

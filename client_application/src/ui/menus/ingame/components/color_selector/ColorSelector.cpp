@@ -65,12 +65,13 @@ static PregenerateTexture sTexturePlus("game.color_selector.plus_", sGeneratePlu
 static PregenerateTexture sTexturePlusPressed("game.color_selector.plus_pressed", sGeneratePlusPressed);
 
 ColorSelector::ColorSelector(Canvas *canvas, Ingame::ToolSelector *tool_selector)
-	: Frame()
+	: ScrollFrame()
 {
 	auto assets = Assets::Get();
 	auto drawing = assets->GetDrawing();
 
 	// Color selector
+	this->SetScrollDirection(Orientation::HORIZONTAL);
 	this->SetColor(255, 255, 255, 50);
 	this->SetDraw(DRAW_RECT);
 	this->SetSize(Vec2i(0, 50));

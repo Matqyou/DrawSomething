@@ -14,8 +14,13 @@
 
 static LinkTexture sTextureDoodles("doodles"); //
 
+void MainMenu::ReassignChildren()
+{
+	this->SetChildren({ Centralized.main_header, content, loading_screen, confirmation_screen });
+}
+
 MainMenu::MainMenu()
-	: FullscreenMenu()
+	: HeaderFullscreenMenu()
 {
 	name = L"MainMenu";
 
@@ -28,7 +33,7 @@ MainMenu::MainMenu()
 	loading_screen = new LoadingScreen();
 	confirmation_screen = new ConfirmationScreen();
 
-	header = new Main::Header(this);
+//	header = new MainHeader(this);
 	games = new Main::CurrentGames(confirmation_screen, loading_screen);
 	profile = new Main::Profile();
 //    auto friends = new Main::Connections();
@@ -41,7 +46,7 @@ MainMenu::MainMenu()
 		->SetName("Background");
 
 	// Content
-	auto content = (new Frame())
+	content = (Frame*)(new Frame())
 		->SetFullyOccupy(true, false)
 		->SetOccupy(false, true)
 		->AddChildren({ background, games, profile, admin_menu, games_menu, shop_menu, profile_menu, settings_menu })
@@ -50,6 +55,5 @@ MainMenu::MainMenu()
 	this->SetColor(0, 211, 112, 255);
 	this->SetFlex(Flex::HEIGHT);
 	this->SetName("MainMenu");
-	this->AddChildren({ header, content, loading_screen, confirmation_screen });
 	this->RefreshMenu();
 }

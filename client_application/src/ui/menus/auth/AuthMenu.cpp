@@ -89,9 +89,9 @@ AuthMenu::AuthMenu()
 
 	username_field = (TextBox *)(new TextBox())
 		->SetCallback([](std::string& text)
-					  {
-						  std::wcout << Strings::FStringColorsW(L"Callback: %s\n", text.c_str());
-					  })
+		  {
+			  std::wcout << Strings::FStringColorsW(L"Callback: %s\n", text.c_str());
+		  })
 		->SetTextAlign(SimpleAlign::CENTER, SimpleAlign::CENTER)
 		->SetPlaceholder("Username")
 		->SetTextColor({ 150, 255, 0, 255 })
@@ -106,13 +106,13 @@ AuthMenu::AuthMenu()
 
 	password_field = (TextBox *)(new TextBox())
 		->SetCallback([](std::string& text)
-					  {
-						  std::wcout << Strings::FStringColorsW(L"Callback: %s\n", text.c_str());
-					  })
+		  {
+			  std::wcout << Strings::FStringColorsW(L"Callback: %s\n", text.c_str());
+		  })
 		->SetFilter([](const std::string& input_text) -> std::string
-					{
-						return std::string(input_text.length(), '*');
-					})
+			{
+				return std::string(input_text.length(), '*');
+			})
 		->SetTextAlign(SimpleAlign::CENTER, SimpleAlign::CENTER)
 		->SetPlaceholder("Password")
 		->SetTextColor({ 255, 100, 0, 255 })
@@ -136,10 +136,10 @@ AuthMenu::AuthMenu()
 		->SetName("Submit")
 		->AddChildren({ login_label });
 	login_button->SetCallback([this, login_button]()
-							  {
-								  auth_frame->SetFocus(login_button);
-								  AttemptLogin();
-							  });
+		  {
+			  auth_frame->SetFocus(login_button);
+			  AttemptLogin();
+		  });
 
 	auto goto_register_label = (TextElement *)(new TextElement())
 		->UpdateTextOutline(CommonUI::sFontRegular.GetTTFFont(), "Register", 1,
@@ -151,7 +151,7 @@ AuthMenu::AuthMenu()
 		->SetName("Register")
 		->AddChildren({ goto_register_label });
 	goto_register_button->SetCallback([this]()
-									  { this->OpenRegisterScreen(); });
+		  { this->OpenRegisterScreen(); });
 
 	login_buttons_frame = (Frame *)(new Frame())
 		->SetFlex(Flex::WIDTH, 5)
@@ -163,9 +163,9 @@ AuthMenu::AuthMenu()
 	// Register
 	nickname_field = (TextBox *)(new TextBox())
 		->SetCallback([](std::string& text)
-					  {
-						  std::wcout << Strings::FStringColorsW(L"Callback: %s\n", text.c_str());
-					  })
+			  {
+				  std::wcout << Strings::FStringColorsW(L"Callback: %s\n", text.c_str());
+			  })
 		->SetTextAlign(SimpleAlign::CENTER, SimpleAlign::CENTER)
 		->SetPlaceholder("Nickname")
 		->SetTextColor({ 150, 255, 0, 255 })
@@ -180,9 +180,9 @@ AuthMenu::AuthMenu()
 
 	email_field = (TextBox *)(new TextBox())
 		->SetCallback([](std::string& text)
-					  {
-						  std::wcout << Strings::FStringColorsW(L"Callback: %s\n", text.c_str());
-					  })
+			  {
+				  std::wcout << Strings::FStringColorsW(L"Callback: %s\n", text.c_str());
+			  })
 		->SetTextAlign(SimpleAlign::CENTER, SimpleAlign::CENTER)
 		->SetPlaceholder("email@domain.com")
 		->SetTextColor({ 150, 255, 0, 255 })
@@ -197,13 +197,13 @@ AuthMenu::AuthMenu()
 
 	confirmation_field = (TextBox *)(new TextBox())
 		->SetCallback([](std::string& text)
-					  {
-						  std::wcout << Strings::FStringColorsW(L"Callback: %s\n", text.c_str());
-					  })
+			  {
+				  std::wcout << Strings::FStringColorsW(L"Callback: %s\n", text.c_str());
+			  })
 		->SetFilter([](const std::string& input_text) -> std::string
-					{
-						return std::string(input_text.length(), '*');
-					})
+			{
+				return std::string(input_text.length(), '*');
+			})
 		->SetTextAlign(SimpleAlign::CENTER, SimpleAlign::CENTER)
 		->SetPlaceholder("Confirm Password")
 		->SetTextColor({ 255, 100, 0, 255 })
@@ -227,10 +227,10 @@ AuthMenu::AuthMenu()
 		->SetName("Register")
 		->AddChildren({ register_label });
 	register_button->SetCallback([this, register_button]()
-								 {
-									 auth_frame->SetFocus(register_button);
-									 AttemptRegister();
-								 });
+		 {
+			 auth_frame->SetFocus(register_button);
+			 AttemptRegister();
+		 });
 
 	auto goto_login_label = (TextElement *)(new TextElement())
 		->UpdateTextOutline(CommonUI::sFontRegular.GetTTFFont(), "Back", 1,
@@ -242,7 +242,7 @@ AuthMenu::AuthMenu()
 		->SetName("Login")
 		->AddChildren({ goto_login_label });
 	goto_login_button->SetCallback([this]()
-								   { this->OpenLoginScreen(); });
+	   { this->OpenLoginScreen(); });
 
 	register_buttons_frame = (Frame *)(new Frame())
 		->SetFlex(Flex::WIDTH, 5)
@@ -284,11 +284,52 @@ AuthMenu::AuthMenu()
 		->SetName("Card")
 		->AddChildren({ auth_frame });
 
+	// Demo
+	auto admin_label = (TextElement *)(new TextElement())
+		->UpdateTextOutline(CommonUI::sFontRegular.GetTTFFont(), "Admin", 1,
+							{ 255, 255, 255, 255 }, { 0, 0, 0, 64 })
+		->SetAlign(Align::CENTER, Align::CENTER)
+		->SetName("ButtonLabel");
+	auto admin_button = (Button*)(new Button(Auth::sTextureAuthButton.GetTexture(),
+											 Auth::sTextureAuthButton.GetTexture()))
+		->SetSize(Vec2i(100, 30))
+		->SetName("Admin")
+		->AddChildren({ admin_label });
+	admin_button->SetCallback([this]()
+							  {
+								  SetRegisterDetails("admin", "Adminchik", "draw@gmail.com", "aaaa", "aaaa");
+							  });
+
+	auto user_label = (TextElement *)(new TextElement())
+		->UpdateTextOutline(CommonUI::sFontRegular.GetTTFFont(), "User", 1,
+							{ 255, 255, 255, 255 }, { 0, 0, 0, 64 })
+		->SetAlign(Align::CENTER, Align::CENTER)
+		->SetName("ButtonLabel");
+	auto user_button = (Button*)(new Button(Auth::sTextureAuthButton.GetTexture(),
+											Auth::sTextureAuthButton.GetTexture()))
+		->SetSize(Vec2i(100, 30))
+		->SetName("User")
+		->AddChildren({ user_label });
+	user_button->SetCallback([this]()
+							  {
+								  SetRegisterDetails("matq", "Matty", "matty2064@gmail.com", "aaaa", "aaaa");
+							  });
+
+	auto accounts_frame = (Frame*)(new Frame())
+		->SetRelative(Vec2i(-10, -10))
+		->SetFlexInvolved(false, false)
+		->SetAdaptive(true, true)
+		->SetFlex(Flex::HEIGHT, 5)
+		->SetAlign(Align::RIGHT, Align::BOTTOM)
+		->SetName("Accounts")
+		->AddChildren({ admin_button, user_button });
+	//
+
 	// Content
 	auto content = (new Frame())
 		->SetFullyOccupy(true, false)
 		->SetOccupy(false, true)
-		->AddChildren({ background, auth_card })
+		->AddChildren({ background, auth_card, accounts_frame })
 		->SetName("Content");
 
 	this->SetColor(94, 152, 224, 255);
@@ -384,71 +425,70 @@ void AuthMenu::AttemptLogin()
 	login_data["password"] = password_field->GetText().GetText();
 	auto packet = (new Packet("/login", "POST", &login_data));
 	packet->SetErroredCallback([this, packet]()
-							   {
-								   loading_screen->Hide();
-								   SetResponse(packet->ErrorReason(), false);
-								   RefreshMenu();
-								   delete packet;
-							   });
+	   {
+		   loading_screen->Hide();
+		   SetResponse(packet->ErrorReason(), false);
+		   RefreshMenu();
+		   delete packet;
+	   });
 	packet->SetResponseCallback([packet](const NetworkResponse& server_response)
-								{
-									std::string code = server_response.GetCode();
-									std::string message = server_response.GetMsg();
+		{
+			std::string code = server_response.GetCode();
+			std::string message = server_response.GetMsg();
 
-									if (code == "login_success")
-									{
-										Centralized.auth_menu->GetLoadingScreen()->Hide();
-										Centralized.auth_menu->SetResponse(message, true);
-										Centralized.auth_menu->RefreshMenu();
+			if (code == "login_success")
+			{
+				Centralized.auth_menu->GetLoadingScreen()->Hide();
+				Centralized.auth_menu->SetResponse(message, true);
+				Centralized.auth_menu->RefreshMenu();
 
-										Centralized.current_menu = (FullscreenMenu *)Centralized.main_menu;
+				std::string session_key = server_response.response_json.value("session_key", "no_key_provided");
+				std::string expires_at = server_response.response_json.value("expires_at", "no_date_provided");
 
-										std::string session_key = server_response.response_json.value("session_key", "no_key_provided");
-										std::string expires_at = server_response.response_json.value("expires_at", "no_date_provided");
+				NetworkClient::SetSessionKey(session_key);
+				if (server_response.response_json.contains("user") && server_response.response_json["user"].is_object())
+				{
+					json user_data = server_response.response_json["user"];
+					auto account = Centralized.GetAccount().ParseFromJson(user_data);
+					Centralized.main_header->RefreshData();
+				}
 
-										NetworkClient::SetSessionKey(session_key);
-										if (server_response.response_json.contains("user") && server_response.response_json["user"].is_object())
-										{
-											json user_data = server_response.response_json["user"];
-											auto account = Centralized.GetAccount().ParseFromJson(user_data);
-											Centralized.main_menu->Header()->RefreshData();
-										}
+				if (server_response.response_json.contains("games") && server_response.response_json["games"].is_array())
+				{
+					Centralized.ClearGames();
+					for (const json& game_data : server_response.response_json["games"])
+						if (game_data.is_object())
+						{
+							auto add_game = (new GameInfo())->ParseFromJson(game_data, false);
+							Centralized.AddGame(add_game);
+						}
 
-										if (server_response.response_json.contains("games") && server_response.response_json["games"].is_array())
-										{
-											Centralized.ClearGames();
-											for (const json& game_data : server_response.response_json["games"])
-												if (game_data.is_object())
-												{
-													auto add_game = (new GameInfo())->ParseFromJson(game_data, false);
-													Centralized.AddGame(add_game);
-												}
+					Centralized.SortGames();
+				}
 
-											Centralized.SortGames();
-										}
+				Centralized.main_menu->GetAdminScreen()->SetEnabled(false);
+				Centralized.main_menu->GetProfileScreen()->SetEnabled(false);
+				Centralized.main_menu->GetShopScreen()->SetEnabled(false);
+				Centralized.main_menu->GetSettingsScreen()->SetEnabled(false);
+				Centralized.main_menu->Profile()->RefreshData();
+				Centralized.main_menu->Games()->RefreshData();
 
-										Centralized.main_menu->GetAdminScreen()->SetEnabled(false);
-										Centralized.main_menu->GetProfileScreen()->SetEnabled(false);
-										Centralized.main_menu->GetShopScreen()->SetEnabled(false);
-										Centralized.main_menu->GetSettingsScreen()->SetEnabled(false);
-										Centralized.main_menu->Profile()->RefreshData();
-										Centralized.main_menu->Games()->RefreshData();
-										Centralized.main_menu->RefreshMenu();
+				Centralized.main_menu->SwitchToThisMenu();
 
-										dbg_msg("&d[SERVER Response]&r Logged in: %s &8(until %s, %s)\n",
-												message.c_str(), expires_at.c_str(), session_key.c_str());
-									}
-									else if (code == "login_fail")
-									{
-										Centralized.auth_menu->GetLoadingScreen()->Hide();
-										Centralized.auth_menu->SetResponse(message, false);
-										Centralized.auth_menu->RefreshMenu();
+				dbg_msg("&d[SERVER Response]&r Logged in: %s &8(until %s, %s)\n",
+						message.c_str(), expires_at.c_str(), session_key.c_str());
+			}
+			else if (code == "login_fail")
+			{
+				Centralized.auth_menu->GetLoadingScreen()->Hide();
+				Centralized.auth_menu->SetResponse(message, false);
+				Centralized.auth_menu->RefreshMenu();
 
-										dbg_msg("&d[SERVER Response]&r Invalid login: %s\n", message.c_str());
-									}
+				dbg_msg("&d[SERVER Response]&r Invalid login: %s\n", message.c_str());
+			}
 
-									delete packet;
-								});
+			delete packet;
+		});
 	packet->Send();
 }
 
@@ -464,35 +504,35 @@ void AuthMenu::AttemptRegister()
 	register_data["email"] = email_field->GetText().GetText();
 	auto packet = (new Packet("/register", "POST", &register_data));
 	packet->SetErroredCallback([this, packet]()
-							   {
-								   loading_screen->Hide();
-								   SetResponse(packet->ErrorReason(), false);
-								   RefreshMenu();
-								   delete packet;
-							   });
+	   {
+		   loading_screen->Hide();
+		   SetResponse(packet->ErrorReason(), false);
+		   RefreshMenu();
+		   delete packet;
+	   });
 	packet->SetResponseCallback([packet](const NetworkResponse& server_response)
-								{
-									std::string code = server_response.GetCode();
-									std::string message = server_response.GetMsg();
+		{
+			std::string code = server_response.GetCode();
+			std::string message = server_response.GetMsg();
 
-									if (code == "register_fail")
-									{
-										Centralized.auth_menu->GetLoadingScreen()->Hide();
-										Centralized.auth_menu->SetResponse(message, false);
-										Centralized.auth_menu->RefreshMenu();
+			if (code == "register_fail")
+			{
+				Centralized.auth_menu->GetLoadingScreen()->Hide();
+				Centralized.auth_menu->SetResponse(message, false);
+				Centralized.auth_menu->RefreshMenu();
 
-										dbg_msg("&d[SERVER Response]&r Registration failed: %s\n", message.c_str());
-									}
-									else if (code == "register_success")
-									{
-										Centralized.auth_menu->GetLoadingScreen()->Hide();
-										Centralized.auth_menu->SetResponse(message, true);
-										Centralized.auth_menu->OpenLoginScreen();
+				dbg_msg("&d[SERVER Response]&r Registration failed: %s\n", message.c_str());
+			}
+			else if (code == "register_success")
+			{
+				Centralized.auth_menu->GetLoadingScreen()->Hide();
+				Centralized.auth_menu->SetResponse(message, true);
+				Centralized.auth_menu->OpenLoginScreen();
 
-										dbg_msg("&d[SERVER Response]&r Registration successful: %s\n", message.c_str());
-									}
+				dbg_msg("&d[SERVER Response]&r Registration successful: %s\n", message.c_str());
+			}
 
-									delete packet;
-								});
+			delete packet;
+		});
 	packet->Send();
 }

@@ -4,46 +4,46 @@
 
 #include "ShopScreen.h"
 #include "ui/menus/main/shop/bundle/ColorBundle.h"
-//#include "client/game/GameData.h"
+#include "ui/RenderPresets.h"
+#include "ui/CommonUI.h"
+#include "ui/menus/main/shop/bombs/BombOffer.h"
 
 static LinkTexture sTextureColorsTitle("main_menu.shop.buy_colors");
-static LinkTexture sTextureBombsTitle("main_menu.shop.buy_bombs");
 static LinkTexture sTextureCard("main_menu.shop.card");
-static LinkTexture sTextureSubcard("main_menu.shop.subcard");
+static LinkTexture sTextureCardOutline("main_menu.shop.card_outline");
 static LinkTexture sTextureClose("main_menu.settings.x");
-//static LinkTexture sTextureAdminCard("main_menu.admin.card");
+
+static LinkTexture sTextureBombs("main_menu.shop.bombs");
+static LinkTexture sTextureBombCard("main_menu.shop.bomb_card");
+static LinkTexture sTextureBombCardOutline("main_menu.shop.bomb_card_outline");
 
 ShopScreen::ShopScreen()
 	: ScreenMenu()
 {
-	Vec2i half;
-	{
-		auto halff = sTextureCard.GetTexture()->GetOriginalSize() / 2;
-		halff.x /= 2;
-		half = Vec2i(halff);
-	}
+	auto bomb_card_texture = RenderPresets::Composition({ sTextureBombCard.GetTexture(),
+														  sTextureBombCardOutline.GetTexture() }, {
+															SDL_Color(255, 110, 0) });
 
 	auto bombs_title = (Frame *)(new Frame())
-		->SetRelative(Vec2i(0, 10))
-		->SetSize(Vec2i(sTextureColorsTitle.GetTexture()->GetOriginalSize() / 2))
-		->SetTexture(sTextureBombsTitle.GetTexture())
+		->SetRelative(Vec2i(0, 30))
+		->SetSize(Vec2i(sTextureBombs.GetTexture()->GetOriginalSize()))
 		->SetDraw(DRAW_TEXTURE)
+		->SetTexture(sTextureBombs.GetTexture())
 		->SetAlign(Align::CENTER, Align::DONT)
-		->SetName("BuyColors");
+		->SetName("Title");
+
+	bombs1 = new BombOffer(0);
+	bombs2 = new BombOffer(1);
+	bombs3 = new BombOffer(2);
 
 	auto bombs_card = (Frame *)(new Frame())
-		->SetSize(Vec2i(sTextureSubcard.GetTexture()->GetOriginalSize() / 2))
-		->SetTexture(sTextureSubcard.GetTexture())
+		->SetRelative(Vec2i(550, 100))
 		->SetDraw(DRAW_TEXTURE)
-		->SetAlign(Align::CENTER, Align::CENTER)
-		->SetFlex(Flex::HEIGHT)
-		->SetName("Colors")
-		->AddChildren({ bombs_title });
-
-	auto left = (Frame *)(new Frame())
-		->SetSize(half)
-		->SetName("Left")
-		->AddChildren({ bombs_card });
+		->SetTexture(bomb_card_texture)
+		->SetSize(Vec2i(bomb_card_texture->GetOriginalSize()))
+		->SetFlex(Flex::HEIGHT, 10)
+		->SetName("Bombs")
+		->AddChildren({ bombs_title, bombs1, bombs2, bombs3 });
 
 	auto colors_title = (Frame *)(new Frame())
 		->SetRelative(Vec2i(0, 10))
@@ -53,27 +53,14 @@ ShopScreen::ShopScreen()
 		->SetAlign(Align::CENTER, Align::DONT)
 		->SetName("BuyColors");
 
-	colors_frame = (Frame *)(new Frame())
-		->SetRelative(Vec2i(0, 10))
-		->SetAdaptive(true, true)
-		->SetAlign(Align::CENTER, Align::DONT)
+	colors_frame = (ScrollFrame *)(new ScrollFrame())
+		->SetScrollDirection(Orientation::VERTICAL)
+		->SetRelative(Vec2i(40, 100))
+		->SetSize(Vec2i(0, 505))
+		->SetAdaptive(true, false)
 		->SetFlex(Flex::HEIGHT, 5)
 		->SetName("ColorsFrame")
 		->AddChildren({ });
-
-	auto colors_card = (Frame *)(new Frame())
-		->SetSize(Vec2i(sTextureSubcard.GetTexture()->GetOriginalSize() / 2))
-		->SetTexture(sTextureSubcard.GetTexture())
-		->SetDraw(DRAW_TEXTURE)
-		->SetAlign(Align::CENTER, Align::CENTER)
-		->SetFlex(Flex::HEIGHT, 10)
-		->SetName("Colors")
-		->AddChildren({ colors_title, colors_frame });
-
-	auto right = (Frame *)(new Frame())
-		->SetSize(half)
-		->SetName("Right")
-		->AddChildren({ colors_card });
 
 	auto close_button = (Button *)(new Button(sTextureClose.GetTexture(),
 											  sTextureClose.GetTexture()))
@@ -88,14 +75,15 @@ ShopScreen::ShopScreen()
 								  this->SetEnabled(false);
 							  });
 
-	Frame *card = (Frame *)(new Frame())
-		->SetSize(Vec2i(sTextureCard.GetTexture()->GetOriginalSize() / 2))
-		->SetTexture(sTextureCard.GetTexture())
+	auto card_texture = RenderPresets::ColorButton(sTextureCard.GetTexture(), { 226, 139, 72, 255 },
+												   sTextureCardOutline.GetTexture(), { 255, 255, 255, 255 });
+	auto card = (Frame *)(new Frame())
+		->SetSize(Vec2i(card_texture->GetOriginalSize()))
+		->SetTexture(card_texture)
 		->SetDraw(DRAW_TEXTURE)
 		->SetAlign(Align::CENTER, Align::CENTER)
-		->SetFlex(Flex::WIDTH)
-		->SetName("Card")
-		->AddChildren({ left, right, close_button });
+		->SetName("Colors")
+		->AddChildren({ colors_title, colors_frame, bombs_card, close_button });
 
 	this->SetEnabled(false);
 	this->SetColor(0, 0, 0, 200);
@@ -125,14 +113,22 @@ void ShopScreen::ParseFromJson(const json& shop_data)
 			colors_frame->AddChildren({ bundle });
 		}
 	}
+
+	UpdateBombPrices();
 }
 
 void ShopScreen::UpdateOwnedBundles()
 {
 	for (auto bundle_ : colors_frame->children)
 	{
-		auto bundle = (ColorBundle*)bundle_;
+		auto bundle = (ColorBundle *)bundle_;
 		bundle->UpdatePrice();
 	}
 }
 
+void ShopScreen::UpdateBombPrices()
+{
+	bombs1->UpdatePrice();
+	bombs2->UpdatePrice();
+	bombs3->UpdatePrice();
+}

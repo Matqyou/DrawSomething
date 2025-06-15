@@ -357,7 +357,7 @@ ProfileScreen::ProfileScreen()
 																	 json user_data = server_response.response_json["user"];
 																	 auto account = Centralized.GetAccount().ParseFromJson(user_data);
 
-																	 Centralized.main_menu->Header()->RefreshData();
+																	 Centralized.main_header->RefreshData();
 																	 Centralized.main_menu->Profile()->RefreshData();
 //																	 Centralized.main_menu->Games()->RefreshData();
 																	 RefreshData();
